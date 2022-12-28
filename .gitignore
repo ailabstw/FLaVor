@@ -1,0 +1,22 @@
+*__pycache__*
+build
+dist
+*lightning_logs*
+*egg-info*
+*exp
+*.so
+*_exp_*
+*_test_*
+*backup
+*pretrain*
+*.sh
+
+# vscode
+.vscode/
+
+# jupyter notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# mac
+.DS_Store
