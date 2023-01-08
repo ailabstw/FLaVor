@@ -1,0 +1,184 @@
+#!/usr/bin/env python
+import argparse
+import json
+import multiprocessing as mp
+import numbers
+import os
+import subprocess
+import sys
+
+import numpy as np
+
+from flavors.cook.utils import (
+    CleanAllEvent,
+    CleanInfoJson,
+    IsSetEvent,
+    SetEvent,
+    WaitEvent,
+)
+
+os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["LOCAL_MODEL_PATH"] = '/weight/local.ckpt' if not os.environ["LOCAL_MODEL_PATH"] else os.environ["LOCAL_MODEL_PATH"]
+
+
+def logging_subprocess(process):
+    _, stderr = process.communicate()
+    if stderr:
+        print(stderr)
+        SetEvent("Error")
+        SetEvent("TrainInitDone")
+        SetEvent("TrainFinished")
+
+
+def transfer_data_to_tensor(batch, map_location="cuda"):
+
+    if isinstance(batch, np.ndarray):
+        batch = batch
+
+    if callable(getattr(batch, "to", None)):
+        return batch.to(map_location)
+
+    # when list
+    if isinstance(batch, list):
+        for i, x in enumerate(batch):
+            batch[i] = transfer_data_to_tensor(x, map_location)
+        return batch
+
+    # when tuple
+    if isinstance(batch, tuple):
+        batch = list(batch)
+        for i, x in enumerate(batch):
+            batch[i] = transfer_data_to_tensor(x, map_location)
+        return tuple(batch)
+
+    # when dict
+    if isinstance(batch, dict):
+        for k, v in batch.items():
+            batch[k] = transfer_data_to_tensor(v, map_location)
+
+        return batch
+
+    return batch
+
+
+def load_checkpoint(path, map_location="cuda"):
+    try:
+        import torch
+
+        return torch.load(path, map_location=map_location)
+    except RuntimeError:
+        import pickle
+
+        with open(path, "rb") as f:
+            ckpt = pickle.load(f)
+        return transfer_data_to_tensor(ckpt, map_location=map_location)
+
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
+    parser.add_argument(
+        "-p", "--preprocess", type=str, help="data preprocess command", default=None
+    )
+    parser.add_argument(
+        "--ignore-ckpt", action="store_true", help="ignore ckpt check for 3rd party aggregator", default=False
+    )
+    args, unparsed = parser.parse_known_args()
+
+    CleanAllEvent()
+    CleanInfoJson()
+    if os.path.exists(os.environ["LOCAL_MODEL_PATH"]):
+        os.remove(os.environ["LOCAL_MODEL_PATH"])
+    os.makedirs(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), exist_ok=True)
+
+    if args.preprocess:
+        print("Start data process.")
+        try:
+            subprocess.check_output(
+                [ele for ele in args.preprocess.split(" ") if ele.strip()],
+                stderr=subprocess.STDOUT,
+            )
+        except subprocess.CalledProcessError as e:
+            raise Exception(e.output.decode("utf-8"))
+
+    print("Start training process.")
+    trainingProcess = subprocess.Popen(
+        [ele for ele in args.main.split(" ") if ele.strip()],
+        stderr=subprocess.PIPE,
+        universal_newlines=True,
+    )
+    monitorProcess = mp.Process(target=logging_subprocess, kwargs={"process": trainingProcess})
+    monitorProcess.start()
+
+    if not IsSetEvent("Error"):
+        print("Wait TrainInitDone.")
+    WaitEvent("TrainInitDone")
+
+    if not IsSetEvent("Error"):
+        print("Set TrainStarted.")
+    SetEvent("TrainStarted")
+
+    if not IsSetEvent("Error"):
+        print("Wait TrainFinished.")
+    WaitEvent("TrainFinished")
+
+    trainingProcess.terminate()
+    trainingProcess.kill()
+
+    monitorProcess.terminate()
+    monitorProcess.join()
+    monitorProcess.close()
+
+    if IsSetEvent("Error"):
+        sys.exit()
+
+    if IsSetEvent("TrainStarted"):
+        raise AssertionError("TrainStarted event should be cleared")
+
+    if not args.ignore_ckpt:
+        print("Check Checkpoint")
+        ckpt = load_checkpoint(os.environ["LOCAL_MODEL_PATH"])
+        if "state_dict" not in ckpt:
+            raise KeyError("state_dict not in checkpoint")
+    else:
+        print("Skip Checkpoint Checking")
+
+    print("Check json")
+    with open(
+        os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json"), "r"
+    ) as openfile:
+        info = json.load(openfile)
+    if "metadata" not in info:
+        raise KeyError("metadata missing")
+    if "metrics" not in info:
+        raise KeyError("metrics missing")
+    if "epoch" not in info["metadata"]:
+        raise KeyError("epoch missing")
+    if (
+        "basic/confusion_tp" not in info["metrics"]
+        or "basic/confusion_fp" not in info["metrics"]
+        or "basic/confusion_fn" not in info["metrics"]
+        or "basic/confusion_tn" not in info["metrics"]
+        or "basic/weight" not in info["metrics"]
+    ):
+        raise KeyError("basic metrics missing")
+
+    for k, v in info["metadata"].items():
+        if not isinstance(v, str):
+            raise TypeError("Value in metadata should be string")
+
+    for k, v in info["metrics"].items():
+        if not isinstance(v, numbers.Number):
+            raise TypeError("Value in metrics should be number")
+
+    CleanInfoJson()
+    if os.path.exists(os.environ["LOCAL_MODEL_PATH"]):
+        os.remove(os.environ["LOCAL_MODEL_PATH"])
+
+    print("Run Successfullly !!!")
+
+
+if __name__ == "__main__":
+
+    main()

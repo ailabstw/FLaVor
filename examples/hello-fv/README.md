@@ -1,15 +1,4 @@
-### Step 1: Assign Process to EdgeEvalServicer
-
-Directly call data preprocess (if any)  and validation process as command line.
-```python
-from flavors.taste.servicer import EdgeEvalServicer
-
-eval_service = EdgeEvalServicer()
-eval_service.dataSubProcess = None
-eval_service.valSubProcess = "python test.py"
-```
-
-### Step 2: Export Results
+### Step 1: Export Results
 
 Export the validation results to `/output/result.json`. The file must contain two items, `metadata` and `results`, where `metadata` is the basic information of the edge, and `results` shows results and how users expect to present.
 #### Format
@@ -32,14 +21,14 @@ Export the validation results to `/output/result.json`. The file must contain tw
 	  * values: number 2d array
 	  * x-axis: string
 	  * y-axis: string
-	* plots
+	* plots (line plot)
 	  * title: string
 	  * labels: string array
 	  * x-values: number 2d array
 	  * y-values: number 2d array
 	  * x-axis: string
 	  * y-axis: string
-	* images
+	* images (self-defined image file)
 	  * title: string
 	  * filename: string
 #### Example
@@ -94,7 +83,16 @@ Export the validation results to `/output/result.json`. The file must contain tw
   }
 ```
 
-### Step 3: Start Service.
-```python
-eval_service.start()
+### Step 2: Set Dockerfile CMD
+After installing `flavors`, users can run federated validation through the following command:
+```bash
+flavors-fv -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
+Bundle the code into the Docker image set this command as CMD.
+```dockerfile
+ENV PROCESS="python main.py"
+CMD flavors-fv -m "${PROCESS}"
+```
+
+### Reminder
+For more information about the AILabs FV Framework, including how to use the UI interface, please refer [here](https://harmonia.taimedimg.com/flp/documents/fv/1.0/developers/).

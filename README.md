@@ -21,13 +21,13 @@ conda install flavors
 
 
 ```bash
-pip install https://gitlab.com/XXX.zip -U
+pip install https://github.com/ailabstw/flavors/archive/refs/heads/release/stable.zip -U
 ```
 
 #### Install bleeding-edge (no guarantees)
 
 ```bash
-pip install https://gitlab.com/XXX.zip -U
+pip install https://github.com/ailabstw/flavors/archive/refs/heads/master.zip -U
 ```
 
 ## Getting Started
@@ -45,9 +45,10 @@ TODO: Introduction of AILABS
 
 If you have any questions please:
 
-1.  [Read the FL docs](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/).
+1. [Read the FL docs](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/).
 2. [Read the FV docs](https://harmonia.taimedimg.com/flp/documents/fv/1.0/developers/)
-3.  [Search through existing Discussions](https://gitlab.corp.ailabs.tw/federated-learning/flavors/-/issues), or  add a new question.
-4.  Send us Email.
+3. [Search through existing Discussions](https://gitlab.corp.ailabs.tw/federated-learning/flavors/-/issues), or add a new question.
 
 ## License
+
+FLAVors has a XXX license, as found in the LICENSE file.

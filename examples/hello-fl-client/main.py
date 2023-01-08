@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import argparse
 import os
-from multiprocessing import Process
 
 import torch
 import torch.nn as nn
@@ -11,8 +10,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms
 
-from flavors.cook.log_msg import LogLevel, PackLogMsg
-from flavors.cook.servicer import EdgeAppServicer, serve
+from flavors.cook.utils import SaveInfoJson, SetEvent, WaitEvent
 
 
 class Net(nn.Module):
@@ -87,7 +85,7 @@ def test(model, device, test_loader):
     return 100.0 * correct / len(test_loader.dataset)
 
 
-def run(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, logQueue):
+def main():
     # Training settings
     parser = argparse.ArgumentParser(description="PyTorch MNIST Example")
     parser.add_argument(
@@ -159,40 +157,39 @@ def run(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, lo
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
 
-    logQueue.put(PackLogMsg(LogLevel.INFO, "Load dataset ..."))
     dataset1 = datasets.MNIST("/data", train=True, transform=transform)
     dataset2 = datasets.MNIST("/data", train=False, transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
-    logQueue.put(PackLogMsg(LogLevel.INFO, "Set model and optimizer ..."))
     model = Net().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)
-    trainInitDoneEvent.set()
 
-    logQueue.put(PackLogMsg(LogLevel.INFO, "Start Training ..."))
+    # Tell the server that all preparations for training have been completed.
+    SetEvent("TrainInitDone")
+
     for epoch in range(args.epochs):
 
         # Wait for the server
-        trainStartedEvent.wait()
-        trainStartedEvent.clear()
+        WaitEvent("TrainStarted")
 
         # Load checkpoint sent from the server
-        if epoch != 0 or os.path.exists(namespace.globalModelPath):
-            model.load_state_dict(torch.load(namespace.globalModelPath)["state_dict"])
+        if epoch != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
+            model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
         train(args, model, device, train_loader, optimizer, epoch)
         precision = test(model, device, test_loader)
         scheduler.step()
 
         # Save checkpoint
-        torch.save({"state_dict": model.state_dict()}, "mnist_cnn.ckpt")
+        torch.save({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
 
         # Save information that the server needs to know
-        namespace.metadata = {"epoch": str(epoch), "datasetSize": str(len(dataset1))}
-        namespace.metrics = {
+        output_dict = {}
+        output_dict["metadata"] = {"epoch": str(epoch), "datasetSize": str(len(dataset1))}
+        output_dict["metrics"] = {
             "precision": precision,
             "basic/confusion_tp": -1,  # If N/A or you don't want to track, fill in -1.
             "basic/confusion_fp": -1,
@@ -200,32 +197,12 @@ def run(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, lo
             "basic/confusion_tn": -1,
             "basic/weight": -1,
         }
-        namespace.epoch_path = "mnist_cnn.ckpt"
+        SaveInfoJson(output_dict)
 
         # Tell the server that this round of training work has ended.
-        trainFinishedEvent.set()
-
-
-def main(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, logQueue):
-    try:
-        run(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, logQueue)
-    except Exception as err:
-        logQueue.put(PackLogMsg(LogLevel.ERROR, str(err)))
+        SetEvent("TrainFinished")
 
 
 if __name__ == "__main__":
 
-    app_service = EdgeAppServicer()
-    app_service.dataPreProcess = None
-    app_service.trainingProcess = Process(
-        target=main,
-        kwargs={
-            "namespace": app_service.namespace,
-            "trainInitDoneEvent": app_service.trainInitDoneEvent,
-            "trainStartedEvent": app_service.trainStartedEvent,
-            "trainFinishedEvent": app_service.trainFinishedEvent,
-            "logQueue": app_service.logQueue,
-        },
-    )
-
-    serve(app_service)
+    main()

@@ -1,94 +1,92 @@
-### Step 1: Assign Process to EdgeAppServicer
+### Step 1: Modify the training code
+ 1. Handle events
+	 - `TrainInitDone`: Tells the server that preparations for training have been completed.
+	 - `TrainStarted`: The server uses this event to tell the client that it can continue with the next round of training. Therefore, the client needs to pause and wait before receiving the signal.
+	 - `TrainFinished`: An event that tells the server that this round of training work has ended. After the server receives the signal, it will start aggregating the model weights received from each client.
+ 2. Load the global model from the environment variable `GLOBAL_MODEL_PATH` before each round of training. If no pre-trained weight is provided, skip this step at the initial round.
+ 3. Save the local model to the environment variable `LOCAL_MODEL_PATH` after each round of training.
+ 4. Save information that needs to be exchanged between the server and client via `SaveInfoJson`.
 
-Assign data preprocess (if any)  and training process to `EdgeAppServicer` as example. There are **5 additional arguments** that require passing into the training function.
-
- - **`namespace`**: Stores messages that need to be exchanged between the server and client.
-	 - `globalModelPath`: [str] The model path sent back by the server.
-	 - `epoch_path`: [str] The model path that the client is going to pass to the server in that round.
-	 - `metadata`: [dict(float)] Contains meta information, i.e., "epoch" and "datasetSize".
-	 - `metrics`: [dict(float)] Contains any metrics the user wants to monitor.
- - **`trainInitDoneEvent`**:  An event that tells the server that all preparations for training have been completed.
- - **`trainStartedEvent`**: The server uses this event to tell the client that it can continue with the next round of training. Therefore, the client needs to pause and wait before receiving the signal.
- - **`trainFinishedEvent`**: An event that tells the server that this round of training work has ended. After the server receives the signal, it will start aggregating the model weights received from each client.
- - **`logQueue`:** Store any messages to be sent to the server, including error handling. There are 3 types of logging level: `LogLevel.INFO`,`LogLevel.WARNING` and `LogLevel.ERROR`. When fatal errors happen, send a log with `LogLevel.ERROR`, and the systems will be shut down.
-
+#### Code Example
 ```python
-from multiprocessing import Process
-from flavors.cook.servicer import EdgeAppServicer
-
-app_server = EdgeAppServicer()
-
-app_server.dataPreProcess = None
-app_server.trainingProcess = Process(
-    target=MyTrainingFunction,
-    kwargs={
-         "namespace": app_server.namespace,
-         "trainInitDoneEvent": app_server.trainInitDoneEvent,
-         "trainStartedEvent": app_server.trainStartedEvent,
-         "trainFinishedEvent": app_server.trainFinishedEvent,
-         "logQueue": app_server.logQueue,
-         ...... #Other self-defined arguments
-     },
-)
-```
-
-### Step 2: Modify the training code
-
-After passing the namespace, event, and log queues to the training function, insert them in the corresponding places according to the definitions introduced in the previous step.
-
-```python
+import os
 import torch #Use PyTorch as an example
-from flavors.cook.log_msg import PackLogMsg LogLevel #Include INFO, WARNING, and ERROR
-import ... #Other packages you need
+from flavors.cook.utils import SaveInfoJson, SetEvent, WaitEvent
 
-def run(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, logQueue, **kwargs):
+def main():
 
 	dataloader = ...
 	optimizer = ...
 	model = ...
 
 	# Tell the server that all preparations for training have been completed.
-	trainInitDoneEvent.set()
-	logQueue.put(PackLogMsg(LogLevel.INFO, "Init Done")) #Not necessary
+	SetEvent("TrainInitDone")
 
 	for epoch in range(epochs):
 
 		# Wait for the server
-		trainStartedEvent.wait()
-		trainStartedEvent.clear()
+		WaitEvent("TrainStarted")
 
-		# Load checkpoint sent from the server
-		model.load_state_dict(torch.load(namespace.globalModelPath)["state_dict"])
+		# Load checkpoint sent from the server (exclude epoch 0 if no pre-trained weight)
+		model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
 		train()
 		metrics = val() # Example: metrics = {"precision":0.8, "f1":0.7}
 
 		# Save information that the server needs to know
-		save_checkpoint(model, epoch_ckpt_path)
-		namespace.metadata = {"epoch": epoch, datasetSize: len(dataset["train"])}
-		namespace.metrics = metrics
-		namespace.epoch_path = epoch_ckpt_path
+		save_checkpoint({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
+		output_dict = {}
+		output_dict["metadata"] = {"epoch": epoch, datasetSize: len(dataset["train"])}
+		output_dict["metrics"] = metrics
+		SaveInfoJson(output_dict)
 
-		#Tell the server that this round of training work has ended.
-		trainFinishedEvent.set()
-```
-```python
-def MyTrainingFunction(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, logQueue, **kwargs):
-	try:
-        run(namespace, trainInitDoneEvent, trainStartedEvent, trainFinishedEvent, logQueue, **kwargs)
-    except Exception as err:
-	    #Error handling.
-        logQueue.put(PackLogMsg(LogLevel.ERROR, str(err)))
+        # Tell the server that this round of training work has ended.
+        SetEvent("TrainFinished")
 ```
 
-### Step 3: Start Service.
-```python
-from flavors.cook.servicer import serve
+#### Json Example
+```json
+  {
+    "metadata":{
+      "datasetSize": 100,
+      "epoch": 36
+    },
+    metrics:{
+	  # (Required) If N/A or you don't want to track, fill in -1.
+      "basic/confusion_tp": -1,
+      "basic/confusion_fp": -1,
+      "basic/confusion_fn": -1,
+      "basic/confusion_tn": -1,
 
-serve(app_service)
+	  # (Optional) Other metrics users expect to tracked.
+      "mIOU": 0.8500
+	}
+
 ```
+ **Reminder:** If the training code is not implemented in Python, the user needs to implement several function imported from `flavors.cook.utils` in the example.
+
+### Step 2: Set Dockerfile CMD
+After installing `flavors`, users can run federated learning through the following command:
+```bash
+flavors-fl -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+```
+Bundle the code into the Docker image set this command as CMD.
+```dockerfile
+ENV PROCESS="python main.py"
+CMD flavors-fl -m "${PROCESS}"
+```
+
+### Optional Step:  Check implementation
+Users may run `flavors-check` to preliminarily check whether the implementation is correct on their computer. If pretrained weight is given, environment variables `GLOBAL_MODEL_PATH` must be set before executing the code.
+```bash
+export GLOBAL_MODEL_PATH=/ABC/DEF.ckpt(optional, if pretrained weight exists)
+flavors-check -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+```
+If users are going to use their aggregator instead of the default one provided by AILabs, use `--ignore-ckpt` to skip the checkpoint checking step.
+```bash
+flavors-check --ignore-ckpt -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+```
+
 
 ### Reminder
-
- - Bundle code into a Docker image that can deploy to AILabs FL Framework.
- - More information can be found [here](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/).
+For more information about the AILabs FL Framework, including how to use the UI interface, please refer [here](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/).

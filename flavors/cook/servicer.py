@@ -1,179 +1,235 @@
+import json
 import logging
-import multiprocessing as mp
 import os
-import shutil
+import subprocess
 from concurrent import futures
-from multiprocessing import Process
+from multiprocessing import Event, Process
 
 import grpc
 
 from . import service_pb2, service_pb2_grpc
-from .log_msg import LogLevel, PackLogMsg, UnPackLogMsg
+from .utils import SetEvent, WaitEvent
 
-log_filename = "/log/appService.log"
-file_handler = logging.FileHandler(log_filename, mode="w", encoding=None, delay=False)
-logging.basicConfig(
-    filename=log_filename,
-    format="%(asctime)s %(levelname)-8s %(filename)s:%(lineno)d] %(message)s",
-    level=logging.INFO,
+os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "1"
+
+log_format = logging.Formatter(
+    fmt="%(asctime)s %(levelname)-8s %(filename)s:%(lineno)d] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S",
 )
+
+logger = logging.getLogger("main")
+logger.setLevel(logging.INFO)
+logger_path = "/log/appService.log"
+os.makedirs(os.path.dirname(logger_path), exist_ok=True)
+handler = logging.FileHandler(logger_path, mode="w", encoding=None, delay=False)
+handler.setFormatter(log_format)
+handler.setLevel(logging.INFO)
+logger.addHandler(handler)
+
+process_logger = logging.getLogger("process")
+process_logger.setLevel(logging.INFO)
+process_logger_path = "/log/appProcess.log"
+os.makedirs(os.path.dirname(process_logger_path), exist_ok=True)
+process_handler = logging.FileHandler(process_logger_path, mode="w", encoding=None, delay=False)
+process_handler.setFormatter(log_format)
+process_handler.setLevel(logging.INFO)
+process_logger.addHandler(process_handler)
+
 
 class EdgeAppServicer(service_pb2_grpc.EdgeAppServicer):
     def __init__(self):
 
         self.__OPERATOR_URI = os.getenv("OPERATOR_URI") or "127.0.0.1:8787"
         self.__channel = grpc.insecure_channel(self.__OPERATOR_URI)
-        logging.info(f"grpc.insecure_channel: {self.__OPERATOR_URI} Done.")
+        logger.info(f"[init] grpc.insecure_channel: {self.__OPERATOR_URI} Done.")
         self.__stub = service_pb2_grpc.EdgeOperatorStub(self.__channel)
-        logging.info("service_pb2_grpc.EdgeOperatorStub Done.")
+        logger.info("[init] service_pb2_grpc.EdgeOperatorStub Done.")
 
-        self.trainInitDoneEvent = mp.Event()
-        self.trainStartedEvent = mp.Event()
-        self.trainFinishedEvent = mp.Event()
-        self.namespace = mp.Manager().Namespace()
-        self.logQueue = mp.Queue()
+        self.EdgeAliveEvent = Event()
 
-        self.EdgeAliveEvent = mp.Event()
-
-        self.loggingProcess = Process(target=self.__logEventLoop)
-        self.loggingProcess.start()
         self.dataPreProcess = None
         self.trainingProcess = None
 
     def IsDataValidated(self, request, context):
         resp = service_pb2.Empty()
-        logging.info(f"Sending response: {resp}")
+        logger.info(f"[IsDataValidated] Sending response: {resp}")
         return resp
 
     def TrainInit(self, request, context):
-        logging.info("TrainInit")
 
+        if isinstance(self.trainingProcess, subprocess.Popen):
+            resp = service_pb2.Empty()
+            logger.info("[TrainInit] Process already exists.")
+            logger.info(f"[TrainInit] Sending response: {resp}")
+            return resp
+
+        if self.dataPreProcess:
+            logger.info("[TrainInit] Start data preprocessing.")
+            logger.info("[TrainInit] {}.".format(self.dataPreProcess))
+            try:
+                subprocess.check_output(
+                    [ele for ele in self.dataPreProcess.split(" ") if ele.strip()],
+                    stderr=subprocess.STDOUT,
+                )
+            except subprocess.CalledProcessError as e:
+                err = e.output.decode("utf-8")
+                logger.error(f"[TrainInit] CalledProcessError: {err}")
+                self.__sendLog("ERROR", err)
+                WaitEvent("Error")
+
+        logger.info("[TrainInit] Start training process.")
+        logger.info("[TrainInit] {}.".format(self.trainingProcess))
+        self.trainingProcess = subprocess.Popen(
+            [ele for ele in self.trainingProcess.split(" ") if ele.strip()],
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+
+        logger.info("[TrainInit] Start monitor process.")
         try:
-            if self.dataPreProcess:
-                logging.info("Run data preprocess.")
-                self.dataPreProcess.start()
-                self.dataPreProcess.join()
-                self.dataPreProcess.close()
-
-            self.namespace.localModelPath = os.environ["LOCAL_MODEL_PATH"]
-            self.namespace.globalModelPath = os.environ["GLOBAL_MODEL_PATH"]
-
-            logging.info("Run training preprocess.")
-            self.trainingProcess.start()
-
-            self.trainInitDoneEvent.wait()
-
+            self.monitorProcess = Process(
+                target=self.__subprocessLog, kwargs={"process": self.trainingProcess}
+            )
+            self.monitorProcess.start()
         except Exception as err:
-            self.logQueue.put(PackLogMsg(LogLevel.ERROR, str(err)))
+            logger.error(f"[TrainInit] Exception: {err}")
+            self.__sendLog("ERROR", str(err))
+
+        logger.info("[TrainInit] Wait for TrainInitDone.")
+        WaitEvent("TrainInitDone")
 
         resp = service_pb2.Empty()
-        logging.info(f"Sending response: {resp}")
+        logger.info(f"[TrainInit] Sending response: {resp}")
         return resp
 
     def LocalTrain(self, request, context):
-        logging.info("LocalTrain")
+
+        logger.info("[LocalTrain] Trainer has been called to start training.")
+        SetEvent("TrainStarted")
+
+        logger.info("[LocalTrain] Wait until the training has done.")
+        WaitEvent("TrainFinished")
+
+        logger.info("[LocalTrain] Read info from training process.")
+        try:
+            with open(
+                os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json"), "r"
+            ) as openfile:
+                info = json.load(openfile)
+        except Exception as err:
+            logger.error(f"[LocalTrain] Exception: {err}")
+            self.__sendLog("ERROR", str(err))
+            WaitEvent("Error")
+
+        logger.info("[LocalTrain] model datasetSize: {}".format(info["metadata"]["datasetSize"]))
+        logger.info("[LocalTrain] model metrics: {}".format(info["metrics"]))
 
         try:
-            logging.info(f"pretrained (global) model path: [{self.namespace.globalModelPath}]")
-            logging.info(f"local model path: [{self.namespace.localModelPath}]")
-            logging.info(f"epoch count: [{request.EpR}]")
-
-            logging.info("trainer has been called to start training.")
-            self.trainStartedEvent.set()
-
-            logging.info("wait until the training has done.")
-            self.trainFinishedEvent.wait()
-            logging.info("training finished event clear.")
-            self.trainFinishedEvent.clear()
-
-            logging.info(f"model last epoch path: [{self.namespace.epoch_path}]")
-            shutil.copyfile(self.namespace.epoch_path, self.namespace.localModelPath)
-
-            logging.info("model datasetSize: {}".format(self.namespace.metadata["datasetSize"]))
-            logging.info(f"model metrics: {self.namespace.metrics}")
-            logging.info(f"config.GRPC_CLIENT_URI: {self.__OPERATOR_URI}")
-
             result = service_pb2.LocalTrainResult(
-                error=0, metadata=self.namespace.metadata, metrics=self.namespace.metrics
+                error=0, metadata=info["metadata"], metrics=info["metrics"]
             )
-            logging.info("service_pb2.LocalTrainResult Done.")
-            response = self.__stub.LocalTrainFinish(result, timeout=30)
-            logging.info("stub.LocalTrainFinish Done.")
-            logging.debug(f"sending grpc message succeeds, response: {response}")
-
+            response = self.__stub.LocalTrainFinish(result, timeout=30)  # noqa F841
+        except grpc.RpcError as rpc_error:
+            logger.error(f"[LocalTrain] RpcError: {rpc_error}")
+            self.__sendLog("ERROR", str(rpc_error))
+            WaitEvent("Error")
         except Exception as err:
-            self.logQueue.put(PackLogMsg(LogLevel.ERROR, str(err)))
+            logger.error(f"[LocalTrain] Exception: {err}")
+            self.__sendLog("ERROR", str(err))
+            WaitEvent("Error")
 
         resp = service_pb2.Empty()
-        logging.info(f"Sending response: {resp}")
+        logger.info(f"[LocalTrain] Sending response: {resp}")
         return resp
 
     def TrainInterrupt(self, request, context):
         # Not Implemented
-        logging.info("TrainInterrupt")
+        logger.info("[TrainInterrupt] TrainInterrupt")
         self.EdgeAliveEvent.set()
         return service_pb2.Empty()
 
     def TrainFinish(self, _request, _context):
-        logging.info("TrainFinish")
+        logger.info("[TrainFinish] TrainFinish")
         self.EdgeAliveEvent.set()
         return service_pb2.Empty()
 
-    def __logEventLoop(self):
+    def __sendLog(self, level, message):
 
-        while True:
-            obj = self.logQueue.get()
-            level, message = UnPackLogMsg(obj)
-            logging.info(f"Send log level: {level} message: {message}")
+        logger.info(f"[__sendLog] Send grpc log level: {level} message: {message}")
+        try:
             message = service_pb2.Log(level=level, message=message)
-            try:
-                response = self.__stub.LogMessage(message)
-                logging.info(f"Log sending succeeds, response: {response}")
-            except grpc.RpcError as rpc_error:
-                logging.error(f"grpc error: {rpc_error}")
-            except Exception as err:
-                logging.error(f"got error: {err}")
-            if level == "ERROR":
-                self.EdgeAliveEvent.set()
-                return
+            response = self.__stub.LogMessage(message)  # noqa F841
+            logger.info(f"[__sendLog] Log sending succeeds, response: {response}")
+        except grpc.RpcError as rpc_error:
+            logger.error(f"[__sendLog] RpcError: {rpc_error}")
+        except Exception as err:
+            logger.error(f"[__sendLog] Exception: {err}")
+
+        if level == "ERROR":
+            logger.info("[__sendLog] Set edge alive event")
+            self.EdgeAliveEvent.set()
+
+    def __sendprocessLog(self, level, message):
+
+        process_logger.info(f"[__sendprocessLog] Send grpc log level: {level} message: {message}")
+        channel = grpc.insecure_channel(self.__OPERATOR_URI)
+        process_logger.info("[__sendprocessLog] grpc.insecure_channel for multiprocess Done.")
+        stub = service_pb2_grpc.EdgeOperatorStub(channel)
+        process_logger.info(
+            "[__sendprocessLog] service_pb2_grpc.EdgeOperatorStub for multiprocess Done."
+        )
+        try:
+            message = service_pb2.Log(level=level, message=message)
+            response = stub.LogMessage(message)  # noqa F841
+            process_logger.info(f"[__sendprocessLog] Log sending succeeds, response: {response}")
+        except grpc.RpcError as rpc_error:
+            process_logger.error(f"[__sendprocessLog] RpcError: {rpc_error}")
+        except Exception as err:
+            process_logger.error(f"[__sendprocessLog] Exception: {err}")
+
+        process_logger.info("[__sendprocessLog] Close multiprocess grpc channel.")
+        channel.close()
+
+        if level == "ERROR":
+            process_logger.info("[__sendprocessLog] Set edge alive event")
+            self.EdgeAliveEvent.set()
+
+    def __subprocessLog(self, process):
+
+        _, stderr = process.communicate()
+        if stderr:
+            process_logger.error(f"[__subprocessLog] Exception: {stderr}")
+            self.__sendprocessLog("ERROR", str(stderr))
 
     def close_service(self):
 
-        if self.dataPreProcess and not self.dataPreProcess._closed:
-            try:
-                self.dataPreProcess.terminate()
-                self.dataPreProcess.join()
-                self.dataPreProcess.close()
-                logging.info("close data preprocess.")
-            except Exception as err:
-                logging.error(f"got error for closing data preprocess: {err}")
-
+        logger.info("[close_service] Close training process.")
         try:
             self.trainingProcess.terminate()
-            self.trainingProcess.join()
-            self.trainingProcess.close()
-            logging.info("close training process.")
+            self.trainingProcess.kill()
         except Exception as err:
-            logging.error(f"got error for closing training preprocess: {err}")
+            logger.error(f"[close_service] Got error for closing training preprocess: {err}")
 
+        logger.info("[close_service] Close monitor process.")
         try:
-            self.loggingProcess.terminate()
-            self.loggingProcess.join()
-            self.loggingProcess.close()
-            logging.info("close logging process.")
+            self.monitorProcess.terminate()
+            self.monitorProcess.join()
+            self.monitorProcess.close()
         except Exception as err:
-            logging.error(f"got error for closing logging preprocess: {err}")
+            logger.error(f"[close_service] Got error for closing monitor preprocess: {err}")
 
+        logger.info("[close_service] Close grpc channel.")
         self.__channel.close()
-        logging.info("channel.close() Done.")
+
+        logger.info("[close_service] Close service done.")
 
 
 def serve(app_service):
 
     APPLICATION_URI = "0.0.0.0:7878"
 
-    logging.info(f"Start server... {APPLICATION_URI}")
+    logger.info(f"[serve] Start server... {APPLICATION_URI}")
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     service_pb2_grpc.add_EdgeAppServicer_to_server(app_service, server)

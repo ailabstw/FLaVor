@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+import argparse
+import os
+
+from flavors.taste.servicer import EdgeEvalServicer
+
+os.environ["PYTHONWARNINGS"] = "ignore"
+
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p", "--preprocess", type=str, help="data preprocess command", default=None
+    )
+    parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
+    args, unparsed = parser.parse_known_args()
+
+    eval_service = EdgeEvalServicer()
+    eval_service.dataSubProcess = args.preprocess
+    eval_service.valSubProcess = args.main
+
+    eval_service.start()
+
+
+if __name__ == "__main__":
+
+    main()

@@ -1,7 +1,10 @@
 import json
 import logging
+import os
 import subprocess
 import sys
+
+os.environ["PYTHONWARNINGS"] = "ignore"
 
 
 class EdgeEvalServicer(object):
@@ -24,13 +27,12 @@ class EdgeEvalServicer(object):
 
         with open(self.__progress_file, "w") as jsonFile:
             json.dump(data, jsonFile, indent=2)
-            
+
     def terminate(self, message):
         logging.error(message)
         with open(self.__log_filename, "w") as F:
             F.write(message)
         sys.exit()
-
 
     def start(self):
 

@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+import argparse
+import os
+
+from flavors.cook.servicer import EdgeAppServicer, serve
+
+os.environ["PYTHONWARNINGS"] = "ignore"
+
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p", "--preprocess", type=str, help="data preprocess command", default=None
+    )
+    parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
+    args, unparsed = parser.parse_known_args()
+
+    app_service = EdgeAppServicer()
+    app_service.dataPreProcess = args.preprocess
+    app_service.trainingProcess = args.main
+
+    serve(app_service)
+
+
+if __name__ == "__main__":
+
+    main()

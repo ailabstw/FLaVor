@@ -3,4 +3,5 @@ COPY . /app
 workdir /app
 RUN pip install -r requirements.txt
 
-CMD [ "python", "main.py"]
+ENV PROCESS="python main.py"
+CMD flavors-fl -m "${PROCESS}"
