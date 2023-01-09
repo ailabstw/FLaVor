@@ -18,8 +18,8 @@ from flavors.cook.utils import (
 )
 
 os.environ["PYTHONWARNINGS"] = "ignore"
-os.environ["LOCAL_MODEL_PATH"] = '/weight/local.ckpt' if not os.environ["LOCAL_MODEL_PATH"] else os.environ["LOCAL_MODEL_PATH"]
-
+os.environ["LOCAL_MODEL_PATH"] = os.environ.get("LOCAL_MODEL_PATH", "/weight/local.ckpt")
+os.environ["GLOBAL_MODEL_PATH"] = os.environ.get("GLOBAL_MODEL_PATH", "/weight/global.ckpt")
 
 def logging_subprocess(process):
     _, stderr = process.communicate()
