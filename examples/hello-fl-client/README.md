@@ -65,19 +65,8 @@ def main():
 ```
  **Reminder:** If the training code is not implemented in Python, the user needs to implement several function imported from `flavors.cook.utils` in the example.
 
-### Step 2: Set Dockerfile CMD
-After installing `flavors`, users can run federated learning through the following command:
-```bash
-flavors-fl -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
-```
-Bundle the code into the Docker image set this command as CMD.
-```dockerfile
-ENV PROCESS="python main.py"
-CMD flavors-fl -m "${PROCESS}"
-```
-
-### Optional Step:  Check implementation
-Users may run `flavors-check` to preliminarily check whether the implementation is correct on their computer. If pretrained weight is given, environment variables `GLOBAL_MODEL_PATH` must be set before executing the code.
+### (Optional) Step 2:  Check implementation
+After installing `flavors`, users may run `flavors-check` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker . If pretrained weight is given, environment variables `GLOBAL_MODEL_PATH` must be set before executing the code.
 ```bash
 export GLOBAL_MODEL_PATH=/ABC/DEF.ckpt(optional, if pretrained weight exists)
 flavors-check -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
@@ -85,6 +74,17 @@ flavors-check -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
 If users are going to use their aggregator instead of the default one provided by AILabs, use `--ignore-ckpt` to skip the checkpoint checking step.
 ```bash
 flavors-check --ignore-ckpt -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+```
+
+### Step 3: Set Dockerfile CMD
+After installing `flavors`, users can run federated learning through the following command:
+```bash
+flavors-fl -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+```
+Bundle the code into the Docker image and set `flavors-fl` as CMD.
+```dockerfile
+ENV PROCESS="python main.py"
+CMD flavors-fl -m "${PROCESS}"
 ```
 
 

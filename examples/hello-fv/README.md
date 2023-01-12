@@ -88,7 +88,7 @@ After installing `flavors`, users can run federated validation through the follo
 ```bash
 flavors-fv -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
-Bundle the code into the Docker image set this command as CMD.
+Bundle the code into the Docker image and set `flavors-fv` as CMD.
 ```dockerfile
 ENV PROCESS="python main.py"
 CMD flavors-fv -m "${PROCESS}"

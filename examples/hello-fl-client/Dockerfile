@@ -1,4 +1,4 @@
-FROM nvcr.io/nvidia/pytorch:22.05-py3
+FROM pytorch/pytorch:1.12.0-cuda11.3-cudnn8-runtime
 COPY . /app
 workdir /app
 RUN pip install -r requirements.txt

@@ -1,5 +1,5 @@
-# AILabs FLAVors
-AILabs **F**ederated **L**earning **A**nd **V**alidation Framework allows multiple parties to collaboratively build and evaluate AI models without compromising data privacy. **FLAVors** is a Python package that helps users to join us.
+# AILabs FLaVors
+AILabs **F**ederated **L**earning **a**nd **V**alidation Framework allows multiple parties to collaboratively build and evaluate AI models without compromising data privacy. **FLaVors** is a Python package that helps users to join us.
 
 > ***If you combine good flavors, model/food turns into an orchestra.***
 
@@ -51,4 +51,4 @@ If you have any questions please:
 
 ## License
 
-FLAVors has a XXX license, as found in the LICENSE file.
+FLaVors has a XXX license, as found in the LICENSE file.
