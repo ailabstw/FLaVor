@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import argparse
 import json
+import os
 
 import numpy as np
 import torch
@@ -64,12 +65,14 @@ def main():
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
-    dataset = datasets.MNIST("/data", train=False, download=False, transform=transform)
+    dataset = datasets.MNIST(
+        os.environ["INPUT_PATH"], train=False, download=False, transform=transform
+    )
 
     test_loader = torch.utils.data.DataLoader(dataset, **test_kwargs)
     model = Net().to(device)
 
-    model.load_state_dict(torch.load("/weight/weight.ckpt")["state_dict"])
+    model.load_state_dict(torch.load(os.environ["WEIGHT_PATH"])["state_dict"])
 
     model.eval()
 
@@ -145,22 +148,22 @@ def main():
                     "labels": ["Class 1"],
                     "x-axis": "fpr",
                     "y-axis": "tpr",
-                    "x-values": [[fpr[1].tolist()]],
-                    "y-values": [[tpr[1].tolist()]],
+                    "x-values": [fpr[1].tolist()],
+                    "y-values": [tpr[1].tolist()],
                 },
                 {
                     "title": "Class 9 roc curve",
                     "labels": ["Class 9"],
                     "x-axis": "fpr",
                     "y-axis": "tpr",
-                    "x-values": [[fpr[9].tolist()]],
-                    "y-values": [[tpr[9].tolist()]],
+                    "x-values": [fpr[9].tolist()],
+                    "y-values": [tpr[9].tolist()],
                 },
             ],
         },
     }
 
-    with open("/output/result.json", "w", encoding="utf-8") as f:
+    with open(os.path.join(os.environ["OUTPUT_PATH"], "result.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
 
 

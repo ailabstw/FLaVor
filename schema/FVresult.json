@@ -1,0 +1,214 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "$ref": "#/definitions/FVresult",
+    "definitions": {
+        "FVresult": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "metadata": {
+                    "$ref": "#/definitions/Metadata"
+                },
+                "results": {
+                    "$ref": "#/definitions/Results"
+                }
+            },
+            "required": [
+                "metadata",
+                "results"
+            ],
+            "title": "FVresult"
+        },
+        "Metadata": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "datasetSize": {
+                    "type": "integer"
+                }
+            },
+            "required": [
+                "datasetSize"
+            ],
+            "title": "Metadata"
+        },
+        "Results": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "tables": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Bar"
+                    }
+                },
+                "bars": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Bar"
+                    }
+                },
+                "heatmaps": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Heatmap"
+                    }
+                },
+                "plots": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Plot"
+                    }
+                },
+                "images": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Image"
+                    }
+                }
+            },
+            "required": [],
+            "title": "Results"
+        },
+        "Bar": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "number"
+                    }
+                },
+                "y-axis": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "labels",
+                "title",
+                "values"
+            ],
+            "title": "Bar"
+        },
+        "Heatmap": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "x-labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "y-labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "values": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "x-axis": {
+                    "type": "string"
+                },
+                "y-axis": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "title",
+                "values",
+                "x-axis",
+                "x-labels",
+                "y-axis",
+                "y-labels"
+            ],
+            "title": "Heatmap"
+        },
+        "Image": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "filename",
+                "title"
+            ],
+            "title": "Image"
+        },
+        "Plot": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "title": {
+                    "type": "string"
+                },
+                "labels": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "x-values": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "y-values": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "number"
+                        }
+                    }
+                },
+                "x-axis": {
+                    "type": "string"
+                },
+                "y-axis": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "labels",
+                "title",
+                "x-axis",
+                "x-values",
+                "y-axis",
+                "y-values"
+            ],
+            "title": "Plot"
+        }
+    }
+}

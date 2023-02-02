@@ -133,8 +133,8 @@ class EdgeAppStub(object):
         Args:
             channel: A grpc.Channel.
         """
-        self.IsDataValidated = channel.unary_unary(
-            "/protos.EdgeApp/IsDataValidated",
+        self.DataValidate = channel.unary_unary(
+            "/protos.EdgeApp/DataValidate",
             request_serializer=service__pb2.Empty.SerializeToString,
             response_deserializer=service__pb2.Empty.FromString,
         )
@@ -163,7 +163,7 @@ class EdgeAppStub(object):
 class EdgeAppServicer(object):
     """Missing associated documentation comment in .proto file."""
 
-    def IsDataValidated(self, request, context):
+    def DataValidate(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details("Method not implemented!")
@@ -196,8 +196,8 @@ class EdgeAppServicer(object):
 
 def add_EdgeAppServicer_to_server(servicer, server):
     rpc_method_handlers = {
-        "IsDataValidated": grpc.unary_unary_rpc_method_handler(
-            servicer.IsDataValidated,
+        "DataValidate": grpc.unary_unary_rpc_method_handler(
+            servicer.DataValidate,
             request_deserializer=service__pb2.Empty.FromString,
             response_serializer=service__pb2.Empty.SerializeToString,
         ),
@@ -231,7 +231,7 @@ class EdgeApp(object):
     """Missing associated documentation comment in .proto file."""
 
     @staticmethod
-    def IsDataValidated(
+    def DataValidate(
         request,
         target,
         options=(),
@@ -246,7 +246,7 @@ class EdgeApp(object):
         return grpc.experimental.unary_unary(
             request,
             target,
-            "/protos.EdgeApp/IsDataValidated",
+            "/protos.EdgeApp/DataValidate",
             service__pb2.Empty.SerializeToString,
             service__pb2.Empty.FromString,
             options,
@@ -390,6 +390,11 @@ class AggregateServerOperatorStub(object):
             request_serializer=service__pb2.AggregateResult.SerializeToString,
             response_deserializer=service__pb2.Empty.FromString,
         )
+        self.LogMessage = channel.unary_unary(
+            "/protos.AggregateServerOperator/LogMessage",
+            request_serializer=service__pb2.Log.SerializeToString,
+            response_deserializer=service__pb2.Empty.FromString,
+        )
 
 
 class AggregateServerOperatorServicer(object):
@@ -401,12 +406,23 @@ class AggregateServerOperatorServicer(object):
         context.set_details("Method not implemented!")
         raise NotImplementedError("Method not implemented!")
 
+    def LogMessage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details("Method not implemented!")
+        raise NotImplementedError("Method not implemented!")
+
 
 def add_AggregateServerOperatorServicer_to_server(servicer, server):
     rpc_method_handlers = {
         "AggregateFinish": grpc.unary_unary_rpc_method_handler(
             servicer.AggregateFinish,
             request_deserializer=service__pb2.AggregateResult.FromString,
+            response_serializer=service__pb2.Empty.SerializeToString,
+        ),
+        "LogMessage": grpc.unary_unary_rpc_method_handler(
+            servicer.LogMessage,
+            request_deserializer=service__pb2.Log.FromString,
             response_serializer=service__pb2.Empty.SerializeToString,
         ),
     }
@@ -438,6 +454,35 @@ class AggregateServerOperator(object):
             target,
             "/protos.AggregateServerOperator/AggregateFinish",
             service__pb2.AggregateResult.SerializeToString,
+            service__pb2.Empty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+        )
+
+    @staticmethod
+    def LogMessage(
+        request,
+        target,
+        options=(),
+        channel_credentials=None,
+        call_credentials=None,
+        insecure=False,
+        compression=None,
+        wait_for_ready=None,
+        timeout=None,
+        metadata=None,
+    ):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            "/protos.AggregateServerOperator/LogMessage",
+            service__pb2.Log.SerializeToString,
             service__pb2.Empty.FromString,
             options,
             channel_credentials,

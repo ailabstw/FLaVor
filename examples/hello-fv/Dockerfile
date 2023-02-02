@@ -4,4 +4,4 @@ workdir /app
 RUN pip install -r requirements.txt
 
 ENV PROCESS="python main.py"
-CMD flavors-fv -m "${PROCESS}"
+CMD flavor-fv -m "${PROCESS}"

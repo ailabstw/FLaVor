@@ -10,7 +10,7 @@ import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from torchvision import datasets, transforms
 
-from flavors.cook.utils import SaveInfoJson, SetEvent, WaitEvent
+from flavor.cook.utils import SaveInfoJson, SetEvent, WaitEvent
 
 
 class Net(nn.Module):
@@ -157,8 +157,8 @@ def main():
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
 
-    dataset1 = datasets.MNIST("/data", train=True, transform=transform)
-    dataset2 = datasets.MNIST("/data", train=False, transform=transform)
+    dataset1 = datasets.MNIST(os.environ["INPUT_PATH"], train=True, transform=transform)
+    dataset2 = datasets.MNIST(os.environ["INPUT_PATH"], train=False, transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
 
@@ -188,14 +188,13 @@ def main():
 
         # Save information that the server needs to know
         output_dict = {}
-        output_dict["metadata"] = {"epoch": str(epoch), "datasetSize": str(len(dataset1))}
+        output_dict["metadata"] = {"epoch": epoch, "datasetSize": len(dataset1), "importance": 1.0}
         output_dict["metrics"] = {
             "precision": precision,
             "basic/confusion_tp": -1,  # If N/A or you don't want to track, fill in -1.
             "basic/confusion_fp": -1,
             "basic/confusion_fn": -1,
             "basic/confusion_tn": -1,
-            "basic/weight": -1,
         }
         SaveInfoJson(output_dict)
 
