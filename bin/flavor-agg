@@ -1,0 +1,31 @@
+#!/usr/bin/env python
+import argparse
+import os
+
+os.environ["OUTPUT_PATH"] = os.getenv("OUTPUT_PATH", "/output")
+os.environ["LOG_PATH"] = os.getenv("LOG_PATH", "/log")
+
+from flavor.cook.servicer import AggregateServerAppServicer, serve # noqa: E402
+
+os.environ["PYTHONWARNINGS"] = "ignore"
+
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
+    parser.add_argument(
+        "--init-once", action="store_true", help="Initialize aggregator just once", default=False
+    )
+    args, unparsed = parser.parse_known_args()
+
+    app_service = AggregateServerAppServicer()
+    app_service.mainProcess = args.main
+    app_service.init_once = args.init_once
+
+    serve(app_service, stype="server")
+
+
+if __name__ == "__main__":
+
+    main()

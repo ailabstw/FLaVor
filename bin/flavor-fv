@@ -2,7 +2,7 @@
 import argparse
 import os
 
-from flavors.taste.servicer import EdgeEvalServicer
+from flavor.taste.servicer import EdgeEvalServicer
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 
@@ -17,8 +17,8 @@ def main():
     args, unparsed = parser.parse_known_args()
 
     eval_service = EdgeEvalServicer()
-    eval_service.dataSubProcess = args.preprocess
-    eval_service.valSubProcess = args.main
+    eval_service.preProcess = args.preprocess
+    eval_service.mainProcess = args.main
 
     eval_service.start()
 

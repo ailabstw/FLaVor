@@ -2,7 +2,7 @@
 import argparse
 import os
 
-from flavors.cook.servicer import EdgeAppServicer, serve
+from flavor.cook.servicer import EdgeAppServicer, serve
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 
@@ -17,10 +17,10 @@ def main():
     args, unparsed = parser.parse_known_args()
 
     app_service = EdgeAppServicer()
-    app_service.dataPreProcess = args.preprocess
-    app_service.trainingProcess = args.main
+    app_service.preProcess = args.preprocess
+    app_service.mainProcess = args.main
 
-    serve(app_service)
+    serve(app_service, stype="client")
 
 
 if __name__ == "__main__":

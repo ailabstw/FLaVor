@@ -2,14 +2,14 @@
 import argparse
 import json
 import multiprocessing as mp
-import numbers
 import os
 import subprocess
 import sys
 
 import numpy as np
+from jsonschema import validate
 
-from flavors.cook.utils import (
+from flavor.cook.utils import (
     CleanAllEvent,
     CleanInfoJson,
     IsSetEvent,
@@ -18,8 +18,32 @@ from flavors.cook.utils import (
 )
 
 os.environ["PYTHONWARNINGS"] = "ignore"
-os.environ["LOCAL_MODEL_PATH"] = os.environ.get("LOCAL_MODEL_PATH", "/weight/local.ckpt")
-os.environ["GLOBAL_MODEL_PATH"] = os.environ.get("GLOBAL_MODEL_PATH", "/weight/global.ckpt")
+
+input_path_default = os.getenv("INPUT_PATH", "/data")
+output_path_default = os.getenv("OUTPUT_PATH", "/output")
+local_path_default = os.getenv("LOCAL_MODEL_PATH", "/weight/local.ckpt")
+global_path_default = os.getenv("GLOBAL_MODEL_PATH", "/weight/global.ckpt")
+log_path_default = os.getenv("LOG_PATH", "/log")
+
+input_path = input(
+    "Set $INPUT_PATH: (Press ENTER if using default env - {})".format(input_path_default)
+)
+os.environ["INPUT_PATH"] = input_path if input_path else input_path_default
+output_path = input(
+    "Set $OUTPUT_PATH: (Press ENTER if using default env - {})".format(output_path_default)
+)
+os.environ["OUTPUT_PATH"] = output_path if output_path else output_path_default
+local_path = input(
+    "Set $LOCAL_MODEL_PATH: (Press ENTER if using default env - {})".format(local_path_default)
+)
+os.environ["LOCAL_MODEL_PATH"] = local_path if local_path else local_path_default
+global_path = input(
+    "Set $GLOBAL_MODEL_PATH: (Press ENTER if using default env - {})".format(global_path_default)
+)
+os.environ["GLOBAL_MODEL_PATH"] = global_path if global_path else global_path_default
+log_path = input("Set $LOG_PATH: (Press ENTER if using default env - {})".format(log_path_default))
+os.environ["LOG_PATH"] = log_path if log_path else log_path_default
+
 
 def logging_subprocess(process):
     _, stderr = process.communicate()
@@ -82,7 +106,10 @@ def main():
         "-p", "--preprocess", type=str, help="data preprocess command", default=None
     )
     parser.add_argument(
-        "--ignore-ckpt", action="store_true", help="ignore ckpt check for 3rd party aggregator", default=False
+        "--ignore-ckpt",
+        action="store_true",
+        help="ignore ckpt check for 3rd party aggregator",
+        default=False,
     )
     args, unparsed = parser.parse_known_args()
 
@@ -144,33 +171,21 @@ def main():
     else:
         print("Skip Checkpoint Checking")
 
-    print("Check json")
+    print("Validate info json")
     with open(
         os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json"), "r"
     ) as openfile:
-        info = json.load(openfile)
-    if "metadata" not in info:
-        raise KeyError("metadata missing")
-    if "metrics" not in info:
-        raise KeyError("metrics missing")
-    if "epoch" not in info["metadata"]:
-        raise KeyError("epoch missing")
-    if (
-        "basic/confusion_tp" not in info["metrics"]
-        or "basic/confusion_fp" not in info["metrics"]
-        or "basic/confusion_fn" not in info["metrics"]
-        or "basic/confusion_tn" not in info["metrics"]
-        or "basic/weight" not in info["metrics"]
-    ):
-        raise KeyError("basic metrics missing")
+        instance = json.load(openfile)
 
-    for k, v in info["metadata"].items():
-        if not isinstance(v, str):
-            raise TypeError("Value in metadata should be string")
+    with open(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), "../schema/FLresult.json"), "r"
+    ) as openfile:
+        schema = json.load(openfile)
 
-    for k, v in info["metrics"].items():
-        if not isinstance(v, numbers.Number):
-            raise TypeError("Value in metrics should be number")
+    try:
+        validate(instance=instance, schema=schema)
+    except Exception:
+        raise Exception("Json Schema Error")
 
     CleanInfoJson()
     if os.path.exists(os.environ["LOCAL_MODEL_PATH"]):

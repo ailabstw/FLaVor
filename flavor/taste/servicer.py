@@ -10,13 +10,13 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 class EdgeEvalServicer(object):
     def __init__(self):
 
-        self.__log_filename = "/log/error.log"
-        self.__progress_file = "/log/progress.json"
+        self.__log_filename = os.path.join(os.environ["LOG_PATH"], "error.log")
+        self.__progress_file = os.path.join(os.environ["LOG_PATH"], "progress.log")
         with open(self.__progress_file, "w") as f:
             json.dump({"status": "", "completedPercentage": ""}, f, indent=2)
 
-        self.dataSubProcess = None
-        self.valSubProcess = None
+        self.preProcess = None
+        self.mainProcess = None
 
     def update_progress(self, status, completedPercentage):
         with open(self.__progress_file, "r") as jsonFile:
@@ -32,6 +32,7 @@ class EdgeEvalServicer(object):
         logging.error(message)
         with open(self.__log_filename, "w") as F:
             F.write(message)
+        raise Exception(message)
         sys.exit()
 
     def start(self):
@@ -41,11 +42,11 @@ class EdgeEvalServicer(object):
 
         # 2. preprocessing
         self.update_progress("preprocessing", 50)
-        if self.dataSubProcess:
+        if self.preProcess:
             try:
                 logging.info("Start data preprocessing.")
                 subprocess.check_output(
-                    [ele for ele in self.dataSubProcess.split(" ") if ele.strip()],
+                    [ele for ele in self.preProcess.split(" ") if ele.strip()],
                     stderr=subprocess.STDOUT,
                 )
             except subprocess.CalledProcessError as e:
@@ -59,7 +60,7 @@ class EdgeEvalServicer(object):
         try:
             logging.info("Start validation.")
             subprocess.check_output(
-                [ele for ele in self.valSubProcess.split(" ") if ele.strip()],
+                [ele for ele in self.mainProcess.split(" ") if ele.strip()],
                 stderr=subprocess.STDOUT,
             )
         except subprocess.CalledProcessError as e:

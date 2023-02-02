@@ -1,54 +1,50 @@
-# AILabs FLaVors
-AILabs **F**ederated **L**earning **a**nd **V**alidation Framework allows multiple parties to collaboratively build and evaluate AI models without compromising data privacy. **FLaVors** is a Python package that helps users to join us.
+# AILabs FLaVor
+AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows multiple parties to collaboratively build and evaluate AI models without compromising data privacy. **FLaVor** also provides a python package for users to join us, even if your code is implemented in other programming languages.
 
-> ***If you combine good flavors, model/food turns into an orchestra.***
+> ***If you combine good FLaVors, model turns into an orchestra.***
 
 ## Installation
 
-#### Simple installation from PyPI
+#### PyPI
 
 ```bash
-pip install flavors
+pip install flavor
 ```
 
 #### Conda
 
 ```bash
-conda install flavors
+conda install flavor
 ```
 
 #### Install stable versions
 
 
 ```bash
-pip install https://github.com/ailabstw/flavors/archive/refs/heads/release/stable.zip -U
+pip install https://github.com/ailabstw/flavor/archive/refs/heads/release/stable.zip -U
 ```
 
 #### Install bleeding-edge (no guarantees)
 
 ```bash
-pip install https://github.com/ailabstw/flavors/archive/refs/heads/master.zip -U
+pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
 ```
 
 ## Getting Started
 
  - [Federated Learning Client](examples/hello-fl-client)
+ - [Federated Learning Server](examples/hello-fl-server)
  - [Federated Validation](examples/hello-fv)
 
 
 
-## Community
-
-TODO: Introduction of AILABS
-
-### Asking for help
+## Asking for help
 
 If you have any questions please:
 
-1. [Read the FL docs](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/).
-2. [Read the FV docs](https://harmonia.taimedimg.com/flp/documents/fv/1.0/developers/)
-3. [Search through existing Discussions](https://gitlab.corp.ailabs.tw/federated-learning/flavors/-/issues), or add a new question.
+1. Read the docs (TO BE ADDED).
+2. [Search through existing Discussions](https://gitlab.corp.ailabs.tw/federated-learning/flavor/-/issues), or add a new question.
 
 ## License
 
-FLaVors has a XXX license, as found in the LICENSE file.
+FLaVor has a XXX license, as found in the LICENSE file.

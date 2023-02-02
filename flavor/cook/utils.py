@@ -1,0 +1,106 @@
+import json
+import os
+import time
+from typing import Union
+
+EventSet = {
+    "TrainInitDone",
+    "TrainStarted",
+    "TrainFinished",
+    "Error",
+    "AggregateStarted",
+    "AggregateFinished",
+}
+PathSet = {"localModels", "localInfos", "globalModel", "globalInfo"}
+
+
+def SetEvent(event: str):
+    if event not in EventSet:
+        raise ValueError("Unknown event {}".format(event))
+    os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
+    open(os.path.join(os.environ["OUTPUT_PATH"], event), "w").close()
+
+
+def WaitEvent(event: str):
+    if event not in EventSet:
+        raise ValueError("Unknown event {}".format(event))
+    while not os.path.exists(os.path.join(os.environ["OUTPUT_PATH"], event)):
+        time.sleep(1)
+    os.remove(os.path.join(os.environ["OUTPUT_PATH"], event))
+
+
+def CleanAllEvent():
+    for event in EventSet:
+        if os.path.exists(os.path.join(os.environ["OUTPUT_PATH"], event)):
+            os.remove(os.path.join(os.environ["OUTPUT_PATH"], event))
+
+
+def IsSetEvent(event: str) -> bool:
+    if event not in EventSet:
+        raise ValueError("Unknown event {}".format(event))
+    return os.path.exists(os.path.join(os.environ["OUTPUT_PATH"], event))
+
+
+def SaveInfoJson(info: dict):
+    with open(
+        os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json"), "w"
+    ) as openfile:
+        json.dump(info, openfile)
+
+
+def CleanInfoJson():
+    info_path = os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json")
+    if os.path.exists(info_path):
+        os.remove(os.path.join(info_path))
+
+
+def SetPaths(filename: str, items: Union[str, list]):
+    if filename not in PathSet:
+        raise ValueError("Unknown filename {}".format(filename))
+    os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
+    with open(os.path.join(os.environ["OUTPUT_PATH"], filename), "w") as F:
+        if isinstance(items, str):
+            F.write(items)
+        else:
+            F.write("\n".join(items))
+
+
+def GetPaths(filename: str) -> list:
+    if filename not in PathSet:
+        raise ValueError("Unknown filename {}".format(filename))
+    with open(os.path.join(os.environ["OUTPUT_PATH"], filename), "r") as F:
+        content = F.read().splitlines()
+    return content
+
+
+def SaveGlobalInfoJson(infos: list, output_info_path: str):
+    out = {"metadata": {}, "metrics": {}}
+
+    for info in infos:
+
+        with open(info, "r") as openfile:
+            client_info_dict = json.load(openfile)
+
+        # epoch
+        out["metadata"]["epoch"] = client_info_dict["metadata"]["epoch"]
+
+        # datasetSize
+        if "datasetSize" not in out["metadata"]:
+            out["metadata"]["datasetSize"] = [client_info_dict["metadata"]["datasetSize"]]
+        else:
+            out["metadata"]["datasetSize"].append(client_info_dict["metadata"]["datasetSize"])
+
+        # metrics
+        for metric in client_info_dict.get("metrics", {}):
+            if metric not in out["metrics"]:
+                out["metrics"][metric] = [client_info_dict["metrics"][metric]]
+            else:
+                out["metrics"][metric].append(client_info_dict["metrics"][metric])
+
+    for metric in out["metrics"]:
+        if "basic/" in metric:
+            continue
+        out["metrics"][metric] = sum(out["metrics"][metric]) / len(out["metrics"][metric])
+
+    with open(output_info_path, "w") as openfile:
+        json.dump(out, openfile)
