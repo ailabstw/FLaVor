@@ -2,8 +2,10 @@
 import argparse
 import os
 
-os.environ["OUTPUT_PATH"] = os.getenv("OUTPUT_PATH", "/output")
 os.environ["LOG_PATH"] = os.getenv("LOG_PATH", "/log")
+os.environ["OUTPUT_PATH"] = os.getenv("OUTPUT_PATH", "/output")
+os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
+os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
 
 from flavor.cook.servicer import AggregateServerAppServicer, serve # noqa: E402
 
@@ -11,7 +13,7 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 
 
 def main():
-
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
     parser.add_argument(
