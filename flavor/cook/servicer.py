@@ -4,11 +4,12 @@ import os
 import subprocess
 from concurrent import futures
 from multiprocessing import Event, Process
+from platform import python_version
 
 import grpc
 
 from . import service_pb2, service_pb2_grpc
-from .utils import SaveGlobalInfoJson, SetEvent, SetPaths, WaitEvent
+from .utils import SaveGlobalInfoJson, SetEvent, SetPaths, WaitEvent, compareVersion
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "1"
@@ -111,7 +112,8 @@ class BaseServicer:
             try:
                 self.monitorProcess.terminate()
                 self.monitorProcess.join()
-                self.monitorProcess.close()
+                if compareVersion(python_version(), "3.7") >= 0:
+                    self.monitorProcess.close()
             except Exception as err:
                 logger.error(f"[close_service] Got error for closing monitor preprocess: {err}")
 
