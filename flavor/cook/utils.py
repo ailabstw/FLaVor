@@ -1,6 +1,7 @@
 import json
 import os
 import time
+from itertools import zip_longest
 from typing import Union
 
 EventSet = {
@@ -102,3 +103,24 @@ def SaveGlobalInfoJson(infos: list, output_info_path: str):
 
     with open(output_info_path, "w") as openfile:
         json.dump(out, openfile)
+
+
+def LoadGlobalInfoJson() -> dict:
+
+    with open(
+        os.path.join(os.path.dirname(os.environ["GLOBAL_MODEL_PATH"]), "merged-info.json"), "r"
+    ) as openfile:
+        merged_info = json.load(openfile)
+
+    return merged_info
+
+
+def compareVersion(v1: str, v2: str) -> int:
+    v1, v2 = list(map(int, v1.split("."))), list(map(int, v2.split(".")))
+    for rev1, rev2 in zip_longest(v1, v2, fillvalue=0):
+        if rev1 == rev2:
+            continue
+
+        return -1 if rev1 < rev2 else 1
+
+    return 0
