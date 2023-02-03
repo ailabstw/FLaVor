@@ -113,6 +113,9 @@ def main():
     )
     args, unparsed = parser.parse_known_args()
 
+    os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
+    os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
+
     CleanAllEvent()
     CleanInfoJson()
     if os.path.exists(os.environ["LOCAL_MODEL_PATH"]):

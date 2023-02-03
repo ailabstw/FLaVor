@@ -17,7 +17,6 @@ PathSet = {"localModels", "localInfos", "globalModel", "globalInfo"}
 def SetEvent(event: str):
     if event not in EventSet:
         raise ValueError("Unknown event {}".format(event))
-    os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
     open(os.path.join(os.environ["OUTPUT_PATH"], event), "w").close()
 
 
@@ -57,7 +56,6 @@ def CleanInfoJson():
 def SetPaths(filename: str, items: Union[str, list]):
     if filename not in PathSet:
         raise ValueError("Unknown filename {}".format(filename))
-    os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
     with open(os.path.join(os.environ["OUTPUT_PATH"], filename), "w") as F:
         if isinstance(items, str):
             F.write(items)
