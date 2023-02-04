@@ -96,11 +96,11 @@ Run federated validation through the following command:
 ```bash
 flavor-fv -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
-Bundle the code into the Docker image and set `flavor-fv` as `CMD`.
+Bundle the code into the [Docker](Dockerfile) image and set `flavor-fv` as `CMD`.
 ```dockerfile
 ENV PROCESS="python main.py"
 CMD flavor-fv -m "${PROCESS}"
 ```
 
 ### Reminder
-For more information about the AILabs FV Framework, including how to use the UI interface, please refer here (TO BE ADDED).
+For more information about the AILabs FV Framework, including how to use the UI interface, please refer [here](https://harmonia.taimedimg.com/flp/documents/fv/1.0/manuals/).

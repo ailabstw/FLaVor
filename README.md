@@ -32,5 +32,5 @@ pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
 
 If you have any questions please:
 
-1. Read the docs (TO BE ADDED).
+1. Read the [FL doc](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/)/[FV doc](https://harmonia.taimedimg.com/flp/documents/fv/1.0/manuals/).
 2. Search through existing Discussions, or add a new question.

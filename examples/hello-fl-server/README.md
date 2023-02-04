@@ -63,11 +63,11 @@ or
 ```bash
 flavor-agg --init-once -m MAIN_PROCESS_CMD #Initialize once.
 ```
-Bundle the code into the Docker image and set `flavor-agg` as `CMD`.
+Bundle the code into the [Docker](Dockerfile) image and set `flavor-agg` as `CMD`.
 ```dockerfile
 ENV PROCESS="python main.py"
 CMD flavor-agg -m "${PROCESS}"
 ```
 
 ### Reminder
-For more information about the AILabs FL Framework, including how to use the UI interface, please refer here(TO BE ADDED).
+For more information about the AILabs FL Framework, including how to use the UI interface, please refer [here](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/).

@@ -9,7 +9,7 @@
 5. Export client information to `info.json` and save it in the same directory as the local model via `SaveInfoJson`. Please refer to the example below for the format.
 - **Reminder**
   - If there are any log files, they can be saved to `$LOG_PATH` (folder); additional files can be put to`$OUTPUT_PATH` (folder).
-  - If the training code is not implemented in Python, the user needs to implement several function imported from `flavor.cook.utils` in the example.
+  - If the training code is not implemented in Python, the user needs to implement several function imported from [`flavor.cook.utils`](../../flavor/cook/utils.py) in the example.
 
 #### Code Example
 ```python
@@ -24,12 +24,12 @@ def main():
     optimizer = ...
     model = ...
 
-    # Tell the server that all preparations for training have been completed.
+    # (Handle Events) Tell the server that all preparations for training have been completed.
     SetEvent("TrainInitDone")
 
     for epoch in range(epochs):
 
-        # Wait for the server
+        # (Handle Events) Wait for the server
         WaitEvent("TrainStarted")
 
         # Load checkpoint sent from the server (exclude epoch 0 if no pre-trained weight)
@@ -49,7 +49,7 @@ def main():
         output_dict["metrics"] = metrics
         SaveInfoJson(output_dict)
 
-        # Tell the server that this round of training work has ended.
+        # (Handle Events) Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
 ```
 
@@ -91,11 +91,11 @@ Run federated learning through the following command:
 ```bash
 flavor-fl -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
 ```
-Bundle the code into the Docker image and set `flavor-fl` as `CMD`.
+Bundle the code into the [Docker](Dockerfile) image and set `flavor-fl` as `CMD`.
 ```dockerfile
 ENV PROCESS="python main.py"
 CMD flavor-fl -m "${PROCESS}"
 ```
 
 ### Reminder
-For more information including how to use the UI interface, please refer here (TO BE ADDED).
+For more information including how to use the UI interface, please refer [here](https://harmonia.taimedimg.com/flp/documents/fl/2.0/manuals/).
