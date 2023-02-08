@@ -70,9 +70,9 @@ class BaseServicer:
         process_logger.info(f"[sendprocessLog] Send grpc log level: {level} message: {message}")
         channel = grpc.insecure_channel(self.OPERATOR_URI)
         process_logger.info("[sendprocessLog] grpc.insecure_channel for multiprocess Done.")
-        stub = getattr(service_pb2_grpc, self.stub.__name__)(channel)
+        stub = getattr(service_pb2_grpc, self.stub.__class__.__name__)(channel)
         process_logger.info(
-            f"[sendprocessLog] service_pb2_grpc.{self.stub.__name__} for multiprocess Done."
+            f"[sendprocessLog] service_pb2_grpc.{self.stub.__class__.__name__} for multiprocess Done."
         )
         try:
             message = service_pb2.Log(level=level, message=message)
