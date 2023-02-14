@@ -8,9 +8,9 @@ EventSet = {
     "TrainInitDone",
     "TrainStarted",
     "TrainFinished",
-    "Error",
     "AggregateStarted",
     "AggregateFinished",
+    "Error",
 }
 PathSet = {"localModels", "localInfos", "globalModel", "globalInfo"}
 
@@ -26,6 +26,8 @@ def WaitEvent(event: str):
         raise ValueError("Unknown event {}".format(event))
     while not os.path.exists(os.path.join(os.environ["OUTPUT_PATH"], event)):
         time.sleep(1)
+        if IsSetEvent("Error"):
+            os._exit(os.EX_OK)
     os.remove(os.path.join(os.environ["OUTPUT_PATH"], event))
 
 

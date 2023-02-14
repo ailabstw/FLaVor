@@ -8,15 +8,15 @@ os.environ["PYTHONWARNINGS"] = "ignore"
 
 
 class EdgeEvalServicer(object):
-    def __init__(self):
+    def __init__(self, mainProcess, preProcess):
 
         self.__log_filename = os.path.join(os.environ["LOG_PATH"], "error.log")
         self.__progress_file = os.path.join(os.environ["LOG_PATH"], "progress.log")
         with open(self.__progress_file, "w") as f:
             json.dump({"status": "", "completedPercentage": ""}, f, indent=2)
 
-        self.preProcess = None
-        self.mainProcess = None
+        self.preProcess = preProcess
+        self.mainProcess = mainProcess
 
     def update_progress(self, status, completedPercentage):
         with open(self.__progress_file, "r") as jsonFile:

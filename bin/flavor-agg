@@ -7,7 +7,7 @@ os.environ["OUTPUT_PATH"] = os.getenv("OUTPUT_PATH", "/output")
 os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
 os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
 
-from flavor.cook.servicer import AggregateServerAppServicer, serve # noqa: E402
+from flavor.cook.servicer import AggregateServerAppServicer, serve  # noqa: E402
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 
@@ -21,10 +21,7 @@ def main():
     )
     args, unparsed = parser.parse_known_args()
 
-    app_service = AggregateServerAppServicer()
-    app_service.mainProcess = args.main
-    app_service.init_once = args.init_once
-
+    app_service = AggregateServerAppServicer(mainProcess=args.main, init_once=args.init_once)
     serve(app_service, stype="server")
 
 

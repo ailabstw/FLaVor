@@ -55,10 +55,7 @@ def main():
     if os.path.exists(result_file):
         os.remove(result_file)
 
-    eval_service = EdgeEvalServicer()
-    eval_service.preProcess = args.preprocess
-    eval_service.mainProcess = args.main
-
+    eval_service = EdgeEvalServicer(mainProcess=args.main, preProcess=args.preprocess)
     eval_service.start()
 
     with open(os.path.join(os.environ["OUTPUT_PATH"], "result.json"), "r") as openfile:

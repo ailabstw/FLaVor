@@ -29,6 +29,7 @@ setup(
         "bin/flavor-agg",
         "bin/flavor-fv",
         "bin/check-fl",
+        "bin/check-agg",
         "bin/check-fv",
     ],
 )
