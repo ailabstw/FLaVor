@@ -16,10 +16,7 @@ def main():
     parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
     args, unparsed = parser.parse_known_args()
 
-    eval_service = EdgeEvalServicer()
-    eval_service.preProcess = args.preprocess
-    eval_service.mainProcess = args.main
-
+    eval_service = EdgeEvalServicer(mainProcess=args.main, preProcess=args.preprocess)
     eval_service.start()
 
 

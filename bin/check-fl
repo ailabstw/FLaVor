@@ -1,23 +1,12 @@
 #!/usr/bin/env python
 import argparse
 import json
-import multiprocessing as mp
 import os
-import subprocess
-import sys
-from platform import python_version
 
 import numpy as np
 from jsonschema import validate
 
-from flavor.cook.utils import (
-    CleanAllEvent,
-    CleanInfoJson,
-    IsSetEvent,
-    SetEvent,
-    WaitEvent,
-    compareVersion,
-)
+from flavor.cook.utils import CleanAllEvent, CleanInfoJson, IsSetEvent
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 
@@ -45,15 +34,6 @@ global_path = input(
 os.environ["GLOBAL_MODEL_PATH"] = global_path if global_path else global_path_default
 log_path = input("Set $LOG_PATH: (Press ENTER if using default env - {})".format(log_path_default))
 os.environ["LOG_PATH"] = log_path if log_path else log_path_default
-
-
-def logging_subprocess(process):
-    _, stderr = process.communicate()
-    if stderr:
-        print(stderr)
-        SetEvent("Error")
-        SetEvent("TrainInitDone")
-        SetEvent("TrainFinished")
 
 
 def transfer_data_to_tensor(batch, map_location="cuda"):
@@ -124,47 +104,16 @@ def main():
         os.remove(os.environ["LOCAL_MODEL_PATH"])
     os.makedirs(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), exist_ok=True)
 
-    if args.preprocess:
-        print("Start data process.")
-        try:
-            subprocess.check_output(
-                [ele for ele in args.preprocess.split(" ") if ele.strip()],
-                stderr=subprocess.STDOUT,
-            )
-        except subprocess.CalledProcessError as e:
-            raise Exception(e.output.decode("utf-8"))
+    from flavor.cook.servicer import EdgeAppServicer
 
-    print("Start training process.")
-    trainingProcess = subprocess.Popen(
-        [ele for ele in args.main.split(" ") if ele.strip()],
-        stderr=subprocess.PIPE,
-        universal_newlines=True,
-    )
-    monitorProcess = mp.Process(target=logging_subprocess, kwargs={"process": trainingProcess})
-    monitorProcess.start()
+    app_service = EdgeAppServicer(mainProcess=args.main, preProcess=args.preprocess, debugMode=True)
 
-    if not IsSetEvent("Error"):
-        print("Wait TrainInitDone.")
-    WaitEvent("TrainInitDone")
+    states = ["DataValidate", "TrainInit", "LocalTrain", "TrainFinish"]
 
-    if not IsSetEvent("Error"):
-        print("Set TrainStarted.")
-    SetEvent("TrainStarted")
-
-    if not IsSetEvent("Error"):
-        print("Wait TrainFinished.")
-    WaitEvent("TrainFinished")
-
-    trainingProcess.terminate()
-    trainingProcess.kill()
-
-    monitorProcess.terminate()
-    monitorProcess.join()
-    if compareVersion(python_version(), "3.7") >= 0:
-        monitorProcess.close()
-
-    if IsSetEvent("Error"):
-        sys.exit()
+    for state in states:
+        getattr(app_service, state)({}, {})
+        if IsSetEvent("Error"):
+            os._exit(os.EX_OK)
 
     if IsSetEvent("TrainStarted"):
         raise AssertionError("TrainStarted event should be cleared")
@@ -175,6 +124,8 @@ def main():
         if "state_dict" not in ckpt:
             raise KeyError("state_dict not in checkpoint")
     else:
+        if not os.path.exists(os.environ["LOCAL_MODEL_PATH"]):
+            raise FileNotFoundError("Local model is not exist")
         print("Skip Checkpoint Checking")
 
     print("Validate info json")

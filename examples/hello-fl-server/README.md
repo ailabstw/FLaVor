@@ -1,4 +1,4 @@
-### Step 1: Get your aggregator code ready
+### Step 1: Get your aggregator code ready (for users who want to apply a custom aggregator)
  1. All required paths are stored in the `$OUTPUT_PATH` folder. Users can fetch them through `GetPaths`.
 	 - `localModels`: All checkpoint paths sent from edges.
 	 - `localInfos`: All info.json paths returned from edges. (Servicer has already dealt with them, users can ignore)
@@ -54,14 +54,24 @@ def main():
         SetEvent("AggregateFinished")
 ```
 
-### Step 2: Set Dockerfile CMD
-Run aggregator through the following command:
+### (Optional) Step 2:  Check implementation
+Run `check-agg` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker. To run `check-agg`, besides the code for the aggregator, the user also needs to prepare the training code for the client.
 ```bash
-flavor-agg -m MAIN_PROCESS_CMD #Initialize every round.
+check-agg -m AGGREGATOR_PROCESS_CMD[required] -cm CLIENT_MAIN_CMD[required] -cp CLIENT_PREPROCESS_CMD[optional]
 ```
 or
 ```bash
-flavor-agg --init-once -m MAIN_PROCESS_CMD #Initialize once.
+check-agg --init-once -m AGGREGATOR_PROCESS_CMD[required] -cm CLIENT_MAIN_CMD[required] -cp CLIENT_PREPROCESS_CMD[optional]
+```
+
+### Step 3: Set Dockerfile CMD
+Run aggregator through the following command:
+```bash
+flavor-agg -m AGGREGATOR_PROCESS_CMD #Initialize every round.
+```
+or
+```bash
+flavor-agg --init-once -m AGGREGATOR_PROCESS_CMD #Initialize once.
 ```
 Bundle the code into the [Docker](Dockerfile) image and set `flavor-agg` as `CMD`.
 ```dockerfile
