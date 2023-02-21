@@ -36,10 +36,14 @@ def main():
         model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
         train()
-        metrics = val() # Example: metrics = {"precision":0.8, "f1":0.7}
 
         # Save checkpoint
         save_checkpoint({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
+
+        # To evaluate the global model, load again before the validation process (exclude epoch 0 if no pre-trained weight)
+        model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
+
+        metrics = val() # Example: metrics = {"precision":0.8, "f1":0.7}
 
         # Save client information
         output = {}
@@ -91,7 +95,7 @@ Run federated learning through the following command:
 ```bash
 flavor-fl -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
 ```
-Bundle the code into the [Docker](Dockerfile) image and set `flavor-fl` as `CMD`.
+Bundle the code into the [Docker](pytorch/Dockerfile) image and set `flavor-fl` as `CMD`.
 ```dockerfile
 ENV PROCESS="python main.py"
 CMD flavor-fl -m "${PROCESS}"

@@ -1,33 +1,8 @@
 #!/usr/bin/env python
 import argparse
-import json
 import os
 
-from jsonschema import validate
-
-from flavor.taste.servicer import EdgeEvalServicer
-
 os.environ["PYTHONWARNINGS"] = "ignore"
-
-input_path_default = os.getenv("INPUT_PATH", "/data")
-output_path_default = os.getenv("OUTPUT_PATH", "/output")
-weight_path_default = os.getenv("WEIGHT_PATH", "/weight/weight.ckpt")
-log_path_default = os.getenv("LOG_PATH", "/log")
-
-input_path = input(
-    "Set $INPUT_PATH: (Press ENTER if using default env - {})".format(input_path_default)
-)
-os.environ["INPUT_PATH"] = input_path if input_path else input_path_default
-output_path = input(
-    "Set $OUTPUT_PATH: (Press ENTER if using default env - {})".format(output_path_default)
-)
-os.environ["OUTPUT_PATH"] = output_path if output_path else output_path_default
-weight_path = input(
-    "Set $WEIGHT_PATH: (Press ENTER if using default env - {})".format(weight_path_default)
-)
-os.environ["WEIGHT_PATH"] = weight_path if weight_path else weight_path_default
-log_path = input("Set $LOG_PATH: (Press ENTER if using default env - {})".format(log_path_default))
-os.environ["LOG_PATH"] = log_path if log_path else log_path_default
 
 
 def main():
@@ -39,37 +14,39 @@ def main():
     parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
     args, unparsed = parser.parse_known_args()
 
+    input_path_default = os.getenv("INPUT_PATH", "/data")
+    output_path_default = os.getenv("OUTPUT_PATH", "/output")
+    weight_path_default = os.getenv("WEIGHT_PATH", "/weight/weight.ckpt")
+    log_path_default = os.getenv("LOG_PATH", "/log")
+
+    input_path = input(
+        "Set $INPUT_PATH: (Press ENTER if using default env - {})".format(input_path_default)
+    )
+    os.environ["INPUT_PATH"] = input_path if input_path else input_path_default
+    output_path = input(
+        "Set $OUTPUT_PATH: (Press ENTER if using default env - {})".format(output_path_default)
+    )
+    os.environ["OUTPUT_PATH"] = output_path if output_path else output_path_default
+    weight_path = input(
+        "Set $WEIGHT_PATH: (Press ENTER if using default env - {})".format(weight_path_default)
+    )
+    os.environ["WEIGHT_PATH"] = weight_path if weight_path else weight_path_default
+    log_path = input(
+        "Set $LOG_PATH: (Press ENTER if using default env - {})".format(log_path_default)
+    )
+    os.environ["LOG_PATH"] = log_path if log_path else log_path_default
+
+    os.environ["SCHEMA_PATH"] = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "../schema/FVresult.json"
+    )
+
     os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
     os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
 
-    log_file = os.path.join(os.environ["LOG_PATH"], "error.log")
-    progress_file = os.path.join(os.environ["LOG_PATH"], "progress.log")
-    result_file = os.path.join(os.environ["OUTPUT_PATH"], "result.json")
-
-    if os.path.exists(log_file):
-        os.remove(log_file)
-
-    if os.path.exists(progress_file):
-        os.remove(progress_file)
-
-    if os.path.exists(result_file):
-        os.remove(result_file)
+    from flavor.taste.servicer import EdgeEvalServicer
 
     eval_service = EdgeEvalServicer(mainProcess=args.main, preProcess=args.preprocess)
     eval_service.start()
-
-    with open(os.path.join(os.environ["OUTPUT_PATH"], "result.json"), "r") as openfile:
-        instance = json.load(openfile)
-
-    with open(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), "../schema/FVresult.json"), "r"
-    ) as openfile:
-        schema = json.load(openfile)
-
-    try:
-        validate(instance=instance, schema=schema)
-    except Exception:
-        raise Exception("Json Schema Error")
 
     print("Run Successfullly !!!")
 

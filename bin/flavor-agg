@@ -2,13 +2,6 @@
 import argparse
 import os
 
-os.environ["LOG_PATH"] = os.getenv("LOG_PATH", "/log")
-os.environ["OUTPUT_PATH"] = os.getenv("OUTPUT_PATH", "/output")
-os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
-os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
-
-from flavor.cook.servicer import AggregateServerAppServicer, serve  # noqa: E402
-
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 
@@ -20,6 +13,13 @@ def main():
         "--init-once", action="store_true", help="Initialize aggregator just once", default=False
     )
     args, unparsed = parser.parse_known_args()
+
+    os.environ["LOG_PATH"] = os.getenv("LOG_PATH", "/log")
+    os.environ["OUTPUT_PATH"] = os.getenv("OUTPUT_PATH", "/output")
+    os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
+    os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
+
+    from flavor.cook.servicer import AggregateServerAppServicer, serve
 
     app_service = AggregateServerAppServicer(mainProcess=args.main, init_once=args.init_once)
     serve(app_service, stype="server")

@@ -7,9 +7,18 @@ from multiprocessing import Event, Process
 from platform import python_version
 
 import grpc
+from jsonschema import validate
 
 from . import service_pb2, service_pb2_grpc
-from .utils import SaveGlobalInfoJson, SetEvent, SetPaths, WaitEvent, compareVersion
+from .utils import (
+    CleanAllEvent,
+    CleanInfoJson,
+    SaveGlobalInfoJson,
+    SetEvent,
+    SetPaths,
+    WaitEvent,
+    compareVersion,
+)
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "1"
@@ -148,7 +157,16 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
         self.stub = service_pb2_grpc.EdgeOperatorStub(self.channel)
         logger.info("[init] service_pb2_grpc.EdgeOperatorStub Done.")
 
+        with open(os.environ["SCHEMA_PATH"], "r") as openfile:
+            self.schema = json.load(openfile)
+
     def DataValidate(self, request, context):
+
+        CleanAllEvent()
+        CleanInfoJson()
+        if os.path.exists(os.environ["LOCAL_MODEL_PATH"]):
+            os.remove(os.environ["LOCAL_MODEL_PATH"])
+
         resp = service_pb2.Empty()
         logger.info(f"[IsDataValidated] Sending response: {resp}")
         return resp
@@ -220,6 +238,12 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
         except Exception as err:
             logger.error(f"[LocalTrain] Exception: {err}")
             self.sendLog("ERROR", str(err))
+
+        try:
+            validate(instance=info, schema=self.schema)
+        except Exception:
+            logger.error("[LocalTrain] Exception: Json Schema Error")
+            self.sendLog("ERROR", "Json Schema Error")
 
         logger.info("[LocalTrain] model datasetSize: {}".format(info["metadata"]["datasetSize"]))
         logger.info("[LocalTrain] model metrics: {}".format(info["metrics"]))

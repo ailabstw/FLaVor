@@ -157,7 +157,9 @@ def main():
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))]
     )
 
-    dataset1 = datasets.MNIST(os.environ["INPUT_PATH"], train=True, transform=transform)
+    dataset1 = datasets.MNIST(
+        os.environ["INPUT_PATH"], train=True, download=True, transform=transform
+    )
     dataset2 = datasets.MNIST(os.environ["INPUT_PATH"], train=False, transform=transform)
     train_loader = torch.utils.data.DataLoader(dataset1, **train_kwargs)
     test_loader = torch.utils.data.DataLoader(dataset2, **test_kwargs)
@@ -180,11 +182,16 @@ def main():
             model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
         train(args, model, device, train_loader, optimizer, epoch)
-        precision = test(model, device, test_loader)
         scheduler.step()
 
         # Save checkpoint
         torch.save({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
+
+        # Load the server weights again before the validation process
+        if epoch != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
+            model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
+
+        precision = test(model, device, test_loader)
 
         # Save information that the server needs to know
         output_dict = {}
