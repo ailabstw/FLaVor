@@ -2,8 +2,6 @@
 import argparse
 import os
 
-from flavor.cook.servicer import EdgeAppServicer, serve
-
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 
@@ -15,6 +13,12 @@ def main():
     )
     parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
     args, unparsed = parser.parse_known_args()
+
+    os.environ["SCHEMA_PATH"] = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "../schema/FLresult.json"
+    )
+
+    from flavor.cook.servicer import EdgeAppServicer, serve
 
     app_service = EdgeAppServicer(mainProcess=args.main, preProcess=args.preprocess)
     serve(app_service, stype="client")

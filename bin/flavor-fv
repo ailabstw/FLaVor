@@ -2,8 +2,6 @@
 import argparse
 import os
 
-from flavor.taste.servicer import EdgeEvalServicer
-
 os.environ["PYTHONWARNINGS"] = "ignore"
 
 
@@ -15,6 +13,12 @@ def main():
     )
     parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
     args, unparsed = parser.parse_known_args()
+
+    os.environ["SCHEMA_PATH"] = os.path.join(
+        os.path.dirname(os.path.realpath(__file__)), "../schema/FVresult.json"
+    )
+
+    from flavor.taste.servicer import EdgeEvalServicer
 
     eval_service = EdgeEvalServicer(mainProcess=args.main, preProcess=args.preprocess)
     eval_service.start()

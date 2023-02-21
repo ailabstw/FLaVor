@@ -27,6 +27,7 @@ def WaitEvent(event: str):
     while not os.path.exists(os.path.join(os.environ["OUTPUT_PATH"], event)):
         time.sleep(1)
         if IsSetEvent("Error"):
+            raise Exception
             os._exit(os.EX_OK)
     os.remove(os.path.join(os.environ["OUTPUT_PATH"], event))
 
