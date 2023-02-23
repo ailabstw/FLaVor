@@ -1,9 +1,9 @@
 ### Step 1: Get your aggregator code ready (for users who want to apply a custom aggregator)
- 1. All required paths are stored in the `$OUTPUT_PATH` folder. Users can fetch them through `GetPaths`.
-	 - `localModels`: All checkpoint paths sent from edges.
-	 - `localInfos`: All info.json paths returned from edges. (Servicer has already dealt with them, users can ignore)
-	 - `globalModel`: The path where the result of the aggregator needs to be saved.
-	 - `globalInfo`: The path where the merged global info.json needs to be saved. Note that dataset size for all edges are appended into a list and metrics are averaged. (Servicer has already dealt with it, users can ignore)
+ 1. All required paths are stored in the `$OUTPUT_PATH` folder. Users can fetch them through `flavor.cook.utils.GetPaths`.
+	 - `localModels`: All checkpoint paths sent from edges. (list, length=n_client)
+	 - `localInfos`: All info.json paths returned from edges. (Servicer has already dealt with them, users can ignore)(list, length=n_client)
+	 - `globalModel`: The path where the result of the aggregator needs to be saved.(list, length=1)
+	 - `globalInfo`: The path where the merged global info.json needs to be saved. Note that dataset size for all edges are appended into a list and metrics are averaged. (Servicer has already dealt with it, users can ignore) (list, length=1)
  2. Users can choose to **re-initialize aggregator every round** or **only initialize at the beginning**, depending on how they implement. If choosing to initialize only at the beginning, two events, `AggregateStarted` and `AggregateFinished`, must be added to control the process.
 
 #### Code Example - Aggregator
@@ -57,11 +57,11 @@ def main():
 ### (Optional) Step 2:  Check implementation
 Run `check-agg` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker. To run `check-agg`, besides the code for the aggregator, the user also needs to prepare the training code for the client.
 ```bash
-check-agg -m AGGREGATOR_PROCESS_CMD[required] -cm CLIENT_MAIN_CMD[required] -cp CLIENT_PREPROCESS_CMD[optional]
+check-agg -m AGGREGATOR_PROCESS_CMD -cm CLIENT_MAIN_CMD -cp CLIENT_PREPROCESS_CMD(optional) -e NUM_OF_EPOCH(optional) #Initialize every round.
 ```
 or
 ```bash
-check-agg --init-once -m AGGREGATOR_PROCESS_CMD[required] -cm CLIENT_MAIN_CMD[required] -cp CLIENT_PREPROCESS_CMD[optional]
+check-agg --init-once -m AGGREGATOR_PROCESS_CMD -cm CLIENT_MAIN_CMD -cp CLIENT_PREPROCESS_CMD(optional) -e NUM_OF_EPOCH(optional) #Initialize once.
 ```
 
 ### Step 3: Set Dockerfile CMD

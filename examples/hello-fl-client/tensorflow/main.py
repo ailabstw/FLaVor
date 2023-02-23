@@ -81,19 +81,7 @@ def main():
                 weights = pickle.load(F)
             model.set_weights(list(weights["state_dict"].values()))
 
-        model.fit(ds_train, epochs=1)
-
-        # Save checkpoint
-        weights = {"state_dict": {str(key): value for key, value in enumerate(model.get_weights())}}
-        with open(os.environ["LOCAL_MODEL_PATH"], "wb") as F:
-            pickle.dump(weights, F, protocol=pickle.HIGHEST_PROTOCOL)
-
-        # Load the server weights again before the validation process
-        if epoch != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
-            with open(os.environ["GLOBAL_MODEL_PATH"], "rb") as F:
-                weights = pickle.load(F)
-            model.set_weights(list(weights["state_dict"].values()))
-
+        # Verify the performance of the global model before training
         loss, accuracy = model.evaluate(ds_test)
 
         # Save information that the server needs to know
@@ -111,6 +99,13 @@ def main():
             "basic/confusion_tn": -1,
         }
         SaveInfoJson(output_dict)
+
+        model.fit(ds_train, epochs=1)
+
+        # Save checkpoint
+        weights = {"state_dict": {str(key): value for key, value in enumerate(model.get_weights())}}
+        with open(os.environ["LOCAL_MODEL_PATH"], "wb") as F:
+            pickle.dump(weights, F, protocol=pickle.HIGHEST_PROTOCOL)
 
         # Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
