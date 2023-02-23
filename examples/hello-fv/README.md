@@ -3,6 +3,9 @@ Load data from from the environment variable `$INPUT_PATH` (folder) and model fr
 
 ### Step 2: Export Results
 Export the validation results to `{$OUTPUT_PATH}/result.json`. The file must contain two items, `metadata` and `results`, where `metadata` is the basic information of the edge, and `results` shows results and how users expect to present.
+
+**Reminder**: When running on the AI Labs framework, all the necessary path environment variables mentioned above will be provided, so users do not need to set them in the docker file. Moreover, it is highly recommended that users access these paths through environment variables rather than hard-coding the paths.
+
 #### Format
  * metadata
 	* datasetSize: integer
@@ -88,7 +91,7 @@ Export the validation results to `{$OUTPUT_PATH}/result.json`. The file must con
 ### (Optional) Step 3:  Check implementation
 Users may run `check-fv` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker.
 ```bash
-check-fv -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+check-fv -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
 
 ### Step 4: Set Dockerfile CMD

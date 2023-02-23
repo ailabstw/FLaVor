@@ -162,11 +162,6 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
 
     def DataValidate(self, request, context):
 
-        CleanAllEvent()
-        CleanInfoJson()
-        if os.path.exists(os.environ["LOCAL_MODEL_PATH"]):
-            os.remove(os.environ["LOCAL_MODEL_PATH"])
-
         resp = service_pb2.Empty()
         logger.info(f"[IsDataValidated] Sending response: {resp}")
         return resp
@@ -178,6 +173,11 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
             logger.info("[TrainInit] Process already exists.")
             logger.info(f"[TrainInit] Sending response: {resp}")
             return resp
+
+        CleanAllEvent()
+        CleanInfoJson()
+        if os.path.exists(os.environ["LOCAL_MODEL_PATH"]):
+            os.remove(os.environ["LOCAL_MODEL_PATH"])
 
         if self.preProcess:
             logger.info("[TrainInit] Start data preprocessing.")

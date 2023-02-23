@@ -181,16 +181,7 @@ def main():
         if epoch != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
             model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
-        train(args, model, device, train_loader, optimizer, epoch)
-        scheduler.step()
-
-        # Save checkpoint
-        torch.save({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
-
-        # Load the server weights again before the validation process
-        if epoch != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
-            model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
-
+        # Verify the performance of the global model before training
         precision = test(model, device, test_loader)
 
         # Save information that the server needs to know
@@ -204,6 +195,12 @@ def main():
             "basic/confusion_tn": -1,
         }
         SaveInfoJson(output_dict)
+
+        train(args, model, device, train_loader, optimizer, epoch)
+        scheduler.step()
+
+        # Save checkpoint
+        torch.save({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
 
         # Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")

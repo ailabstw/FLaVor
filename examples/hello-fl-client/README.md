@@ -9,6 +9,7 @@
 5. Export client information to `info.json` and save it in the same directory as the local model via `SaveInfoJson`. Please refer to the example below for the format.
 - **Reminder**
   - If there are any log files, they can be saved to `$LOG_PATH` (folder); additional files can be put to`$OUTPUT_PATH` (folder).
+  - When running on the AI Labs framework, all the necessary path environment variables mentioned above will be provided, so users do not need to set them in the docker file. Moreover, it is highly recommended that users access these paths through environment variables rather than hard-coding the paths.
   - If the training code is not implemented in Python, the user needs to implement several function imported from [`flavor.cook.utils`](../../flavor/cook/utils.py) in the example.
 
 #### Code Example
@@ -35,14 +36,7 @@ def main():
         # Load checkpoint sent from the server (exclude epoch 0 if no pre-trained weight)
         model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
-        train()
-
-        # Save checkpoint
-        save_checkpoint({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
-
-        # To evaluate the global model, load again before the validation process (exclude epoch 0 if no pre-trained weight)
-        model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
-
+        # Verify the performance of the global model before training
         metrics = val() # Example: metrics = {"precision":0.8, "f1":0.7}
 
         # Save client information
@@ -52,6 +46,14 @@ def main():
                               "importance": importance
         output_dict["metrics"] = metrics
         SaveInfoJson(output_dict)
+
+        train()
+
+        # Save checkpoint
+        save_checkpoint({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
+
+        # Verify the performance of the local model if needed
+        # metrics = val()
 
         # (Handle Events) Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
@@ -83,17 +85,17 @@ def main():
 ### (Optional) Step 2:  Check implementation
 Run `check-fl` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker.
 ```bash
-check-fl -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+check-fl -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
 If users are going to use their aggregator instead of the default one provided by AILabs, use `--ignore-ckpt` to skip the checkpoint checking step.
 ```bash
-check-fl --ignore-ckpt -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+check-fl --ignore-ckpt -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
 
 ### Step 3: Set Dockerfile CMD
 Run federated learning through the following command:
 ```bash
-flavor-fl -m MAIN_PROCESS_CMD[required] -p PREPROCESS_CMD[optional]
+flavor-fl -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
 Bundle the code into the [Docker](pytorch/Dockerfile) image and set `flavor-fl` as `CMD`.
 ```dockerfile
