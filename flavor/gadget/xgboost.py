@@ -1,4 +1,6 @@
 import json
+import os
+import uuid
 
 
 def load_update_xgbmodel(bst, updateModelPath):
@@ -32,6 +34,10 @@ def load_update_xgbmodel(bst, updateModelPath):
 
 
 def save_update_xgbmodel(bst, saveModelPath):
-    if not saveModelPath.lower().endswith(".json"):
-        raise ValueError("Save path should be a json file. Got {}.".format(saveModelPath))
-    bst[bst.num_boosted_rounds() - 1 : bst.num_boosted_rounds()].save_model(saveModelPath)
+    # if not saveModelPath.lower().endswith(".json"):
+    #    raise ValueError("Save path should be a json file. Got {}.".format(saveModelPath))
+    # bst[bst.num_boosted_rounds() - 1 : bst.num_boosted_rounds()].save_model(saveModelPath)
+
+    _save_path = os.path.join(os.path.dirname(saveModelPath), str(uuid.uuid4()) + ".json")
+    bst[bst.num_boosted_rounds() - 1 : bst.num_boosted_rounds()].save_model(_save_path)
+    os.rename(_save_path, saveModelPath)
