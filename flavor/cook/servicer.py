@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import subprocess
+import time
 from concurrent import futures
 from multiprocessing import Event, Process
 from platform import python_version
@@ -22,6 +23,9 @@ from .utils import (
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "1"
+
+APPLICATION_URI = os.getenv("APPLICATION_URI", "0.0.0.0:7878")
+OPERATOR_URI = os.getenv("OPERATOR_URI", "127.0.0.1:8787")
 
 log_format = logging.Formatter(
     fmt="%(asctime)s %(levelname)-8s %(filename)s:%(lineno)d] %(message)s",
@@ -54,9 +58,10 @@ class BaseServicer:
 
         super().__init__()
 
-        self.OPERATOR_URI = os.getenv("OPERATOR_URI", "127.0.0.1:8787")
         self.stub = None
         self.channel = None
+        self.GRPC_RETRY_NUM = 5
+        self.GRPC_RETRY_INTERVAL = 5
 
         self.preProcess = preProcess
         self.mainProcess = mainProcess
@@ -68,16 +73,25 @@ class BaseServicer:
 
     def sendLog(self, level, message):
 
+        message = str(message)
+
         if not self.debugMode:
             logger.info(f"[sendLog] Send grpc log level: {level} message: {message}")
-            try:
-                message = service_pb2.Log(level=level, message=message)
-                response = self.stub.LogMessage(message)  # noqa F841
-                logger.info(f"[sendLog] Log sending succeeds, response: {response}")
-            except grpc.RpcError as rpc_error:
-                logger.error(f"[sendLog] RpcError: {rpc_error}")
-            except Exception as err:
-                logger.error(f"[sendLog] Exception: {err}")
+
+            cnt = 0
+            while cnt < self.GRPC_RETRY_NUM:
+                try:
+                    message_pkg = service_pb2.Log(level=level, message=message)
+                    response = self.stub.LogMessage(message_pkg)  # noqa F841
+                    logger.info(f"[sendLog] Log sending succeeds, response: {response}")
+                    break
+                except grpc.RpcError as rpc_error:
+                    logger.error(f"[sendLog] RpcError: {rpc_error}")
+                except Exception as err:
+                    logger.error(f"[sendLog] Exception: {err}")
+                time.sleep(self.GRPC_RETRY_INTERVAL)
+                cnt += 1
+                logger.info(f"[sendLog] GRPC retry {cnt}")
 
         if level == "ERROR":
             logger.info("[sendLog] Set edge alive event")
@@ -87,22 +101,33 @@ class BaseServicer:
 
     def sendprocessLog(self, level, message):
 
+        message = str(message)
+
         if not self.debugMode:
             process_logger.info(f"[sendprocessLog] Send grpc log level: {level} message: {message}")
-            channel = grpc.insecure_channel(self.OPERATOR_URI)
+            channel = grpc.insecure_channel(OPERATOR_URI)
             process_logger.info("[sendprocessLog] grpc.insecure_channel for multiprocess Done.")
             stub = getattr(service_pb2_grpc, self.stub.__class__.__name__)(channel)
             process_logger.info(
                 f"[sendprocessLog] service_pb2_grpc.{self.stub.__class__.__name__} for multiprocess Done."
             )
-            try:
-                message = service_pb2.Log(level=level, message=message)
-                response = stub.LogMessage(message)  # noqa F841
-                process_logger.info(f"[sendprocessLog] Log sending succeeds, response: {response}")
-            except grpc.RpcError as rpc_error:
-                process_logger.error(f"[sendprocessLog] RpcError: {rpc_error}")
-            except Exception as err:
-                process_logger.error(f"[sendprocessLog] Exception: {err}")
+
+            cnt = 0
+            while cnt < self.GRPC_RETRY_NUM:
+                try:
+                    message_pkg = service_pb2.Log(level=level, message=message)
+                    response = stub.LogMessage(message_pkg)  # noqa F841
+                    process_logger.info(
+                        f"[sendprocessLog] Log sending succeeds, response: {response}"
+                    )
+                    break
+                except grpc.RpcError as rpc_error:
+                    process_logger.error(f"[sendprocessLog] RpcError: {rpc_error}")
+                except Exception as err:
+                    process_logger.error(f"[sendprocessLog] Exception: {err}")
+                time.sleep(self.GRPC_RETRY_INTERVAL)
+                cnt += 1
+                logger.info(f"[sendprocessLog] GRPC retry {cnt}")
 
             process_logger.info("[sendprocessLog] Close multiprocess grpc channel.")
             channel.close()
@@ -118,7 +143,7 @@ class BaseServicer:
         _, stderr = process.communicate()
         if stderr:
             process_logger.error(f"[subprocessLog] Exception: {stderr}")
-            self.sendprocessLog("ERROR", str(stderr))
+            self.sendprocessLog("ERROR", stderr)
 
     def close_service(self):
 
@@ -152,8 +177,8 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
 
         super().__init__(mainProcess=mainProcess, preProcess=preProcess, debugMode=debugMode)
 
-        self.channel = grpc.insecure_channel(self.OPERATOR_URI)
-        logger.info(f"[init] grpc.insecure_channel: {self.OPERATOR_URI} Done.")
+        self.channel = grpc.insecure_channel(OPERATOR_URI)
+        logger.info(f"[init] grpc.insecure_channel: {OPERATOR_URI} Done.")
         self.stub = service_pb2_grpc.EdgeOperatorStub(self.channel)
         logger.info("[init] service_pb2_grpc.EdgeOperatorStub Done.")
 
@@ -175,22 +200,23 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
 
         if isinstance(self.mainProcess, subprocess.Popen):
             resp = service_pb2.Empty()
-            logger.info("[TrainInit] Process already exists.")
+            logger.warning("[TrainInit] Process already exists.")
             logger.info(f"[TrainInit] Sending response: {resp}")
             return resp
 
         if self.preProcess:
             logger.info("[TrainInit] Start data preprocessing.")
             logger.info("[TrainInit] {}.".format(self.preProcess))
-            try:
-                subprocess.check_output(
-                    [ele for ele in self.preProcess.split(" ") if ele.strip()],
-                    stderr=subprocess.STDOUT,
-                )
-            except subprocess.CalledProcessError as e:
-                err = e.output.decode("utf-8")
-                logger.error(f"[TrainInit] CalledProcessError: {err}")
-                self.sendLog("ERROR", err)
+            process = subprocess.Popen(
+                [ele for ele in self.preProcess.split(" ") if ele.strip()],
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            process.wait()
+            _, stderr = process.communicate()
+            if stderr:
+                logger.error(f"[TrainInit] CalledProcessError: {stderr}")
+                self.sendLog("ERROR", stderr)
 
         logger.info("[TrainInit] Start training process.")
         logger.info("[TrainInit] {}.".format(self.mainProcess))
@@ -202,7 +228,7 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
             )
         except Exception as err:
             logger.error(f"[TrainInit] Exception: {err}")
-            self.sendLog("ERROR", str(err))
+            self.sendLog("ERROR", err)
 
         logger.info("[TrainInit] Start monitor process.")
         try:
@@ -212,7 +238,7 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
             self.monitorProcess.start()
         except Exception as err:
             logger.error(f"[TrainInit] Exception: {err}")
-            self.sendLog("ERROR", str(err))
+            self.sendLog("ERROR", err)
 
         logger.info("[TrainInit] Wait for TrainInitDone.")
         WaitEvent("TrainInitDone")
@@ -222,6 +248,10 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
         return resp
 
     def LocalTrain(self, request, context):
+
+        if self.mainProcess.poll() is not None:
+            logger.error("[LocalTrain] Training process has been terminated.")
+            self.sendLog("ERROR", "Training process has been terminated")
 
         logger.info("[LocalTrain] Trainer has been called to start training.")
         SetEvent("TrainStarted")
@@ -237,7 +267,7 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
                 info = json.load(openfile)
         except Exception as err:
             logger.error(f"[LocalTrain] Exception: {err}")
-            self.sendLog("ERROR", str(err))
+            self.sendLog("ERROR", err)
 
         try:
             validate(instance=info, schema=self.schema)
@@ -249,17 +279,25 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
         logger.info("[LocalTrain] model metrics: {}".format(info["metrics"]))
 
         if not self.debugMode:
-            try:
-                result = service_pb2.LocalTrainResult(
-                    error=0, metadata=info["metadata"], metrics=info["metrics"]
-                )
-                response = self.stub.LocalTrainFinish(result, timeout=30)  # noqa F841
-            except grpc.RpcError as rpc_error:
-                logger.error(f"[LocalTrain] RpcError: {rpc_error}")
-                self.sendLog("ERROR", str(rpc_error))
-            except Exception as err:
-                logger.error(f"[LocalTrain] Exception: {err}")
-                self.sendLog("ERROR", str(err))
+            cnt = 0
+            while cnt < self.GRPC_RETRY_NUM:
+                try:
+                    result = service_pb2.LocalTrainResult(
+                        error=0, metadata=info["metadata"], metrics=info["metrics"]
+                    )
+                    response = self.stub.LocalTrainFinish(result, timeout=30)  # noqa F841
+                    break
+                except grpc.RpcError as rpc_error:
+                    logger.error(f"[LocalTrain] RpcError: {rpc_error}")
+                    if cnt == self.GRPC_RETRY_NUM - 1:
+                        self.sendLog("ERROR", rpc_error)
+                except Exception as err:
+                    logger.error(f"[LocalTrain] Exception: {err}")
+                    self.sendLog("ERROR", err)
+                    break
+                time.sleep(self.GRPC_RETRY_INTERVAL)
+                cnt += 1
+                logger.info(f"[LocalTrain] GRPC retry {cnt}")
 
         resp = service_pb2.Empty()
         logger.info(f"[LocalTrain] Sending response: {resp}")
@@ -283,8 +321,8 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
         super().__init__(mainProcess=mainProcess, debugMode=debugMode)
 
         self.init_once = init_once
-        self.channel = grpc.insecure_channel(self.OPERATOR_URI)
-        logger.info(f"[init] grpc.insecure_channel: {self.OPERATOR_URI} Done.")
+        self.channel = grpc.insecure_channel(OPERATOR_URI)
+        logger.info(f"[init] grpc.insecure_channel: {OPERATOR_URI} Done.")
         self.stub = service_pb2_grpc.AggregateServerOperatorStub(self.channel)
         logger.info("[init] service_pb2_grpc.AggregateServerOperatorStub Done.")
 
@@ -342,15 +380,17 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
         if not self.init_once:
             logger.info("[Aggregate] Start aggregator process.")
             logger.info("[Aggregate] {}.".format(self.mainProcess))
-            try:
-                subprocess.check_output(
-                    [ele for ele in self.mainProcess.split(" ") if ele.strip()],
-                    stderr=subprocess.STDOUT,
-                )
-            except subprocess.CalledProcessError as e:
-                err = e.output.decode("utf-8")
-                logger.error(f"[Aggregate] CalledProcessError: {err}")
-                self.sendLog("ERROR", err)
+
+            process = subprocess.Popen(
+                [ele for ele in self.mainProcess.split(" ") if ele.strip()],
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            process.wait()
+            _, stderr = process.communicate()
+            if stderr:
+                logger.error(f"[Aggregate] CalledProcessError: {stderr}")
+                self.sendLog("ERROR", stderr)
 
         elif not isinstance(self.mainProcess, subprocess.Popen):
             logger.info("[Aggregate] Start aggregator process.")
@@ -363,7 +403,7 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
                 )
             except Exception as err:
                 logger.error(f"[Aggregate] Exception: {err}")
-                self.sendLog("ERROR", str(err))
+                self.sendLog("ERROR", err)
 
             logger.info("[Aggregate] Start monitor process.")
             try:
@@ -373,9 +413,14 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
                 self.monitorProcess.start()
             except Exception as err:
                 logger.error(f"[Aggregate] Exception: {err}")
-                self.sendLog("ERROR", str(err))
+                self.sendLog("ERROR", err)
 
         if self.init_once:
+
+            if self.mainProcess.poll() is not None:
+                logger.error("[Aggregate] Aggregator process has been terminated.")
+                self.sendLog("ERROR", "Aggregator process has been terminated")
+
             logger.info("[Aggregate] Aggregator has been called to start aggregating.")
             SetEvent("AggregateStarted")
 
@@ -386,15 +431,23 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
         self.sendLog("INFO", f"Aggregation succeeds. epoch {epoch}")
 
         if not self.debugMode:
-            try:
-                result = service_pb2.AggregateResult(error=0)
-                response = self.stub.AggregateFinish(result)  # noqa F841
-            except grpc.RpcError as rpc_error:
-                logger.error(f"[Aggregate] RpcError: {rpc_error}")
-                self.sendLog("ERROR", str(rpc_error))
-            except Exception as err:
-                logger.error(f"[Aggregate] Exception: {err}")
-                self.sendLog("ERROR", str(err))
+            cnt = 0
+            while cnt < self.GRPC_RETRY_NUM:
+                try:
+                    result = service_pb2.AggregateResult(error=0)
+                    response = self.stub.AggregateFinish(result)  # noqa F841
+                    break
+                except grpc.RpcError as rpc_error:
+                    logger.error(f"[Aggregate] RpcError: {rpc_error}")
+                    if cnt == self.GRPC_RETRY_NUM - 1:
+                        self.sendLog("ERROR", rpc_error)
+                except Exception as err:
+                    logger.error(f"[Aggregate] Exception: {err}")
+                    self.sendLog("ERROR", err)
+                    break
+                time.sleep(self.GRPC_RETRY_INTERVAL)
+                cnt += 1
+                logger.info(f"[Aggregate] GRPC retry {cnt}")
 
         resp = service_pb2.Empty()
         logging.info(f"[AggregateServerServicer] Aggregate sending response: {resp}")
@@ -420,7 +473,6 @@ def serve(servicer, stype):
             logger.error(f"[serve] Unsupport type of servicer: {stype}")
             raise ValueError(f"Unsupport type of servicer: {stype}")
 
-        APPLICATION_URI = os.getenv("APPLICATION_URI", "0.0.0.0:7878")
         logger.info(f"[serve] Start {stype} server... {APPLICATION_URI}")
 
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))

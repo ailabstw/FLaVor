@@ -32,7 +32,8 @@ class EdgeEvalServicer(object):
             json.dump(data, jsonFile, indent=2)
 
     def terminate(self, message):
-        logging.error(message)
+        message = str(message)
+        logging.error("Error occurs. See exception message.")
         with open(self.__log_filename, "w") as F:
             F.write(message)
         raise Exception(message)
@@ -51,28 +52,32 @@ class EdgeEvalServicer(object):
         # 2. preprocessing
         self.update_progress("preprocessing", 50)
         if self.preProcess:
-            try:
-                logging.info("Start data preprocessing.")
-                subprocess.check_output(
-                    [ele for ele in self.preProcess.split(" ") if ele.strip()],
-                    stderr=subprocess.STDOUT,
-                )
-            except subprocess.CalledProcessError as e:
-                self.terminate(e.output.decode("utf-8"))
+            logging.info("Start data preprocessing.")
+            process = subprocess.Popen(
+                [ele for ele in self.preProcess.split(" ") if ele.strip()],
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+            )
+            process.wait()
+            _, stderr = process.communicate()
+            if stderr:
+                self.terminate(stderr)
             logging.info("Complete preprocessing.")
         else:
             logging.info("Skip data preprocessing.")
 
         # 3. validating
         self.update_progress("validating", 75)
-        try:
-            logging.info("Start validation.")
-            subprocess.check_output(
-                [ele for ele in self.mainProcess.split(" ") if ele.strip()],
-                stderr=subprocess.STDOUT,
-            )
-        except subprocess.CalledProcessError as e:
-            self.terminate(e.output.decode("utf-8"))
+        logging.info("Start validation.")
+        process = subprocess.Popen(
+            [ele for ele in self.mainProcess.split(" ") if ele.strip()],
+            stderr=subprocess.PIPE,
+            universal_newlines=True,
+        )
+        process.wait()
+        _, stderr = process.communicate()
+        if stderr:
+            self.terminate(stderr)
 
         if not os.path.exists(self.__result_file):
             self.terminate(
@@ -85,7 +90,7 @@ class EdgeEvalServicer(object):
             with open(os.environ["SCHEMA_PATH"], "r") as openfile:
                 schema = json.load(openfile)
         except Exception as e:
-            self.terminate(str(e))
+            self.terminate(e)
 
         try:
             validate(instance=instance, schema=schema)
