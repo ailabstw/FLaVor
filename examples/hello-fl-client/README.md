@@ -12,7 +12,7 @@
   - When running on the AI Labs framework, all the necessary path environment variables mentioned above will be provided, so users do not need to set them in the docker file. Moreover, it is highly recommended that users access these paths through environment variables rather than hard-coding the paths.
   - If the training code is not implemented in Python, the user needs to implement several function imported from [`flavor.cook.utils`](../../flavor/cook/utils.py) in the example.
 
-#### Code Example
+#### Code Example (pytorch)
 ```python
 import os
 import torch #Use PyTorch as an example
@@ -87,7 +87,7 @@ Run `check-fl` to preliminarily check whether the implementation is correct on t
 ```bash
 check-fl -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
-If users are going to use their aggregator instead of the default one provided by AILabs, use `--ignore-ckpt` to skip the checkpoint checking step.
+If users are going to use their aggregator instead of the default one provided by AILabs or any conventional machine learning approaches (e.g., XGBoost, Random Forest), use `--ignore-ckpt` to skip the checkpoint checking step.
 ```bash
 check-fl --ignore-ckpt -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
 ```
