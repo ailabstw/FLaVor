@@ -98,6 +98,8 @@ class BaseServicer:
             self.close_service()
             if self.debugMode:
                 SetEvent("Error")
+            else:
+                WaitEvent("Error")
 
     def sendprocessLog(self, level, message):
 
@@ -137,6 +139,8 @@ class BaseServicer:
             self.close_service()
             if self.debugMode:
                 SetEvent("Error")
+            else:
+                WaitEvent("Error")
 
     def subprocessLog(self, process):
 
@@ -485,6 +489,7 @@ def serve(servicer, stype):
         server.start()
 
         servicer.AliveEvent.wait()
+        time.sleep(10)
 
         server.stop(None)
 
