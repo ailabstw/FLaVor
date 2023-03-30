@@ -52,7 +52,7 @@ def transfer_data_to_tensor(batch):
 def load_checkpoint(path):
     try:
         return torch.load(path)
-    except RuntimeError:
+    except Exception:
         import pickle
 
         with open(path, "rb") as f:
