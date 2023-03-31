@@ -13,7 +13,9 @@ from jsonschema import validate
 from . import service_pb2, service_pb2_grpc
 from .utils import (
     CleanAllEvent,
+    CleanEvent,
     CleanInfoJson,
+    IsSetEvent,
     SaveGlobalInfoJson,
     SetEvent,
     SetPaths,
@@ -146,9 +148,10 @@ class BaseServicer:
     def subprocessLog(self, process):
 
         _, stderr = process.communicate()
-        if stderr:
+        if stderr and not IsSetEvent("ProcessFinished"):
             process_logger.error(f"[subprocessLog] Exception: {stderr}")
             self.sendprocessLog("ERROR", stderr)
+        CleanEvent("ProcessFinished")
 
     def close_service(self):
 
@@ -219,9 +222,10 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
             )
             process.wait()
             _, stderr = process.communicate()
-            if stderr:
+            if stderr and not IsSetEvent("ProcessFinished"):
                 logger.error(f"[TrainInit] CalledProcessError: {stderr}")
                 self.sendLog("ERROR", stderr)
+            CleanEvent("ProcessFinished")
 
         logger.info("[TrainInit] Start training process.")
         logger.info("[TrainInit] {}.".format(self.mainProcess))
@@ -445,9 +449,10 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
             )
             process.wait()
             _, stderr = process.communicate()
-            if stderr:
+            if stderr and not IsSetEvent("ProcessFinished"):
                 logger.error(f"[Aggregate] CalledProcessError: {stderr}")
                 self.sendLog("ERROR", stderr)
+            CleanEvent("ProcessFinished")
         else:
             logger.info("[Aggregate] Aggregator has been called to start aggregating.")
             SetEvent("AggregateStarted")

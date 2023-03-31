@@ -10,6 +10,7 @@ EventSet = {
     "TrainFinished",
     "AggregateStarted",
     "AggregateFinished",
+    "ProcessFinished",
     "Error",
 }
 PathSet = {"localModels", "localInfos", "globalModel", "globalInfo"}
@@ -30,6 +31,11 @@ def WaitEvent(event: str):
             raise Exception
             os._exit(os.EX_OK)
     os.remove(os.path.join(os.environ["OUTPUT_PATH"], event))
+
+
+def CleanEvent(event: str):
+    if event in EventSet and os.path.exists(os.path.join(os.environ["OUTPUT_PATH"], event)):
+        os.remove(os.path.join(os.environ["OUTPUT_PATH"], event))
 
 
 def CleanAllEvent():

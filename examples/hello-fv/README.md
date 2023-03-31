@@ -6,7 +6,7 @@ Export the validation results to `{$OUTPUT_PATH}/result.json`. The file must con
 
 - **Reminder**
   - When running on the AI Labs framework, all the necessary path environment variables mentioned above will be provided, so users do not need to set them in the docker file. Moreover, it is highly recommended that users access these paths through environment variables rather than hard-coding the paths.
-  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user.
+  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user. Or you can just add `SetEvent("ProcessFinished")` (refer to [`flavor.cook.utils`](../../flavor/cook/utils.py)) at the end of the code.
 
 #### Format
  * metadata
