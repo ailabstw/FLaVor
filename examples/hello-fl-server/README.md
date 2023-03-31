@@ -6,6 +6,10 @@
 	 - `globalInfo`: The path where the merged global info.json needs to be saved. Note that dataset size for all edges are appended into a list and metrics are averaged. (Servicer has already dealt with it, users can ignore) (list, length=1)
  2. Users can choose to **re-initialize aggregator every round** or **only initialize at the beginning**, depending on how they implement. If choosing to initialize only at the beginning, two events, `AggregateStarted` and `AggregateFinished`, must be added to control the process.
 
+- **Reminder**
+  - If the training code is not implemented in Python, the user needs to implement several function imported from [`flavor.cook.utils`](../../flavor/cook/utils.py) in the example.
+  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user.
+
 #### Code Example - Aggregator
 ```python
 import json

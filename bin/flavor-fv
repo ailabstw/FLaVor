@@ -3,6 +3,7 @@ import argparse
 import os
 
 os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["LOGLEVEL"] = "ERROR"
 
 
 def main():

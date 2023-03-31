@@ -7,10 +7,13 @@
 3. Load the global model from the environment variable `$GLOBAL_MODEL_PATH` (file) before each round of training starts. This step should be skipped in the first round if no pre-trained weights are provided.
 4. Save the local model to `$LOCAL_MODEL_PATH` (file) after each round of training. If the default aggregator provided by AILabs is used, please save the weight in the format of `torch.Tensor` or `ndarray` to the ckpt/pickle file with dictionary key `state_dict`.
 5. Export client information to `info.json` and save it in the same directory as the local model via `SaveInfoJson`. Please refer to the example below for the format.
+
 - **Reminder**
   - If there are any log files, they can be saved to `$LOG_PATH` (folder); additional files can be put to`$OUTPUT_PATH` (folder).
   - When running on the AI Labs framework, all the necessary path environment variables mentioned above will be provided, so users do not need to set them in the docker file. Moreover, it is highly recommended that users access these paths through environment variables rather than hard-coding the paths.
   - If the training code is not implemented in Python, the user needs to implement several function imported from [`flavor.cook.utils`](../../flavor/cook/utils.py) in the example.
+  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user.
+  - The epoch in `info.json` refers to the current round number of FL, not necessarily equal to the local epoch number.
 
 #### Code Example (pytorch)
 ```python
