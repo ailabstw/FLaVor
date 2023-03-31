@@ -7,6 +7,7 @@ from flavor.cook.service_pb2 import AggregateParams
 from flavor.cook.utils import IsSetEvent
 
 os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["LOGLEVEL"] = "ERROR"
 
 
 def parse_list(values, message):
@@ -103,13 +104,17 @@ def main():
             raise Exception
             os._exit(os.EX_OK)
 
-    for epoch in range(args.epochs):
+    for epoch in range(args.epochs + 1):
 
         for state in ["LocalTrain"]:
             getattr(edge_service, state)({}, {})
             if IsSetEvent("Error"):
                 raise Exception
                 os._exit(os.EX_OK)
+
+        if epoch == args.epochs:
+            break
+
         shutil.move(
             os.environ["LOCAL_MODEL_PATH"], os.path.join(os.environ["REPO_ROOT"], "weights.ckpt")
         )

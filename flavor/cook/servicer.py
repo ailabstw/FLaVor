@@ -22,6 +22,7 @@ from .utils import (
 )
 
 os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["LOGLEVEL"] = "ERROR"
 os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "1"
 
 APPLICATION_URI = os.getenv("APPLICATION_URI", "0.0.0.0:7878")
@@ -257,6 +258,28 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
             logger.error("[LocalTrain] Training process has been terminated.")
             self.sendLog("ERROR", "Training process has been terminated")
 
+        p = Process(target=self.__func_local_train)
+        p.start()
+        if self.debugMode:
+            p.join()
+
+        resp = service_pb2.Empty()
+        logger.info(f"[LocalTrain] Sending response: {resp}")
+        return resp
+
+    def TrainInterrupt(self, request, context):
+        # Not Implemented
+        logger.info("[TrainInterrupt] TrainInterrupt")
+        self.close_service()
+        return service_pb2.Empty()
+
+    def TrainFinish(self, _request, _context):
+        logger.info("[TrainFinish] TrainFinish")
+        self.close_service()
+        return service_pb2.Empty()
+
+    def __func_local_train(self):
+
         logger.info("[LocalTrain] Trainer has been called to start training.")
         SetEvent("TrainStarted")
 
@@ -302,21 +325,6 @@ class EdgeAppServicer(BaseServicer, service_pb2_grpc.EdgeAppServicer):
                 time.sleep(self.GRPC_RETRY_INTERVAL)
                 cnt += 1
                 logger.info(f"[LocalTrain] GRPC retry {cnt}")
-
-        resp = service_pb2.Empty()
-        logger.info(f"[LocalTrain] Sending response: {resp}")
-        return resp
-
-    def TrainInterrupt(self, request, context):
-        # Not Implemented
-        logger.info("[TrainInterrupt] TrainInterrupt")
-        self.close_service()
-        return service_pb2.Empty()
-
-    def TrainFinish(self, _request, _context):
-        logger.info("[TrainFinish] TrainFinish")
-        self.close_service()
-        return service_pb2.Empty()
 
 
 class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerAppServicer):
@@ -381,6 +389,51 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
         logger.info(f"[Aggregate] Before aggregation. epoch: {epoch}")
         self.sendLog("INFO", f"Before aggregation. epoch: {epoch}")
 
+        if self.init_once:
+
+            if not isinstance(self.mainProcess, subprocess.Popen):
+                logger.info("[Aggregate] Start aggregator process.")
+                logger.info("[Aggregate] {}.".format(self.mainProcess))
+                try:
+                    self.mainProcess = subprocess.Popen(
+                        [ele for ele in self.mainProcess.split(" ") if ele.strip()],
+                        stderr=subprocess.PIPE,
+                        universal_newlines=True,
+                    )
+                except Exception as err:
+                    logger.error(f"[Aggregate] Exception: {err}")
+                    self.sendLog("ERROR", err)
+
+                logger.info("[Aggregate] Start monitor process.")
+                try:
+                    self.monitorProcess = Process(
+                        target=self.subprocessLog, kwargs={"process": self.mainProcess}
+                    )
+                    self.monitorProcess.start()
+                except Exception as err:
+                    logger.error(f"[Aggregate] Exception: {err}")
+                    self.sendLog("ERROR", err)
+
+            if self.mainProcess.poll() is not None:
+                logger.error("[Aggregate] Aggregator process has been terminated.")
+                self.sendLog("ERROR", "Aggregator process has been terminated")
+
+        p = Process(target=self.__func_aggregate)
+        p.start()
+        if self.debugMode:
+            p.join()
+
+        resp = service_pb2.Empty()
+        logging.info(f"[AggregateServerServicer] Aggregate sending response: {resp}")
+        return resp
+
+    def TrainFinish(self, request, context):
+        logging.info("[AggregateServerServicer] received TrainFinish message")
+        self.close_service()
+        return service_pb2.Empty()
+
+    def __func_aggregate(self):
+
         if not self.init_once:
             logger.info("[Aggregate] Start aggregator process.")
             logger.info("[Aggregate] {}.".format(self.mainProcess))
@@ -395,44 +448,15 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
             if stderr:
                 logger.error(f"[Aggregate] CalledProcessError: {stderr}")
                 self.sendLog("ERROR", stderr)
-
-        elif not isinstance(self.mainProcess, subprocess.Popen):
-            logger.info("[Aggregate] Start aggregator process.")
-            logger.info("[Aggregate] {}.".format(self.mainProcess))
-            try:
-                self.mainProcess = subprocess.Popen(
-                    [ele for ele in self.mainProcess.split(" ") if ele.strip()],
-                    stderr=subprocess.PIPE,
-                    universal_newlines=True,
-                )
-            except Exception as err:
-                logger.error(f"[Aggregate] Exception: {err}")
-                self.sendLog("ERROR", err)
-
-            logger.info("[Aggregate] Start monitor process.")
-            try:
-                self.monitorProcess = Process(
-                    target=self.subprocessLog, kwargs={"process": self.mainProcess}
-                )
-                self.monitorProcess.start()
-            except Exception as err:
-                logger.error(f"[Aggregate] Exception: {err}")
-                self.sendLog("ERROR", err)
-
-        if self.init_once:
-
-            if self.mainProcess.poll() is not None:
-                logger.error("[Aggregate] Aggregator process has been terminated.")
-                self.sendLog("ERROR", "Aggregator process has been terminated")
-
+        else:
             logger.info("[Aggregate] Aggregator has been called to start aggregating.")
             SetEvent("AggregateStarted")
 
             logger.info("[Aggregate] Wait until the aggregation has done.")
             WaitEvent("AggregateFinished")
 
-        logger.info(f"[Aggregate] Aggregation succeeds. epoch {epoch}")
-        self.sendLog("INFO", f"Aggregation succeeds. epoch {epoch}")
+        logger.info("[Aggregate] Aggregation succeeds.")
+        self.sendLog("INFO", "Aggregation succeeds.")
 
         if not self.debugMode:
             cnt = 0
@@ -452,15 +476,6 @@ class AggregateServerAppServicer(BaseServicer, service_pb2_grpc.AggregateServerA
                 time.sleep(self.GRPC_RETRY_INTERVAL)
                 cnt += 1
                 logger.info(f"[Aggregate] GRPC retry {cnt}")
-
-        resp = service_pb2.Empty()
-        logging.info(f"[AggregateServerServicer] Aggregate sending response: {resp}")
-        return resp
-
-    def TrainFinish(self, request, context):
-        logging.info("[AggregateServerServicer] received TrainFinish message")
-        self.close_service()
-        return service_pb2.Empty()
 
 
 def serve(servicer, stype):

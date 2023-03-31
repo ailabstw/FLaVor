@@ -7,6 +7,7 @@ import sys
 from jsonschema import validate
 
 os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["LOGLEVEL"] = "ERROR"
 
 
 class EdgeEvalServicer(object):
