@@ -6,6 +6,8 @@ import sys
 
 from jsonschema import validate
 
+from flavor.cook.utils import CleanEvent, IsSetEvent
+
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
 
@@ -50,6 +52,8 @@ class EdgeEvalServicer(object):
         if os.path.exists(self.__result_file):
             os.remove(self.__result_file)
 
+        CleanEvent("ProcessFinished")
+
         # 2. preprocessing
         self.update_progress("preprocessing", 50)
         if self.preProcess:
@@ -61,9 +65,10 @@ class EdgeEvalServicer(object):
             )
             process.wait()
             _, stderr = process.communicate()
-            if stderr:
+            if stderr and not IsSetEvent("ProcessFinished"):
                 self.terminate(stderr)
             logging.info("Complete preprocessing.")
+            CleanEvent("ProcessFinished")
         else:
             logging.info("Skip data preprocessing.")
 
@@ -77,8 +82,10 @@ class EdgeEvalServicer(object):
         )
         process.wait()
         _, stderr = process.communicate()
-        if stderr:
+        if stderr and not IsSetEvent("ProcessFinished"):
             self.terminate(stderr)
+
+        CleanEvent("ProcessFinished")
 
         if not os.path.exists(self.__result_file):
             self.terminate(

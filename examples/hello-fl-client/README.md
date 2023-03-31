@@ -12,7 +12,7 @@
   - If there are any log files, they can be saved to `$LOG_PATH` (folder); additional files can be put to`$OUTPUT_PATH` (folder).
   - When running on the AI Labs framework, all the necessary path environment variables mentioned above will be provided, so users do not need to set them in the docker file. Moreover, it is highly recommended that users access these paths through environment variables rather than hard-coding the paths.
   - If the training code is not implemented in Python, the user needs to implement several function imported from [`flavor.cook.utils`](../../flavor/cook/utils.py) in the example.
-  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user.
+  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user. Or you can just add `SetEvent("ProcessFinished")` at the end of the code.
   - The epoch in `info.json` refers to the current round number of FL, not necessarily equal to the local epoch number.
 
 #### Code Example (pytorch)
@@ -60,6 +60,9 @@ def main():
 
         # (Handle Events) Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
+
+    # (Optional) Add if not disable warning message
+    SetEvent("ProcessFinished")
 ```
 
 #### Json Example

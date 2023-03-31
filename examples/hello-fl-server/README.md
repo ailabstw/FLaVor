@@ -8,7 +8,7 @@
 
 - **Reminder**
   - If the training code is not implemented in Python, the user needs to implement several function imported from [`flavor.cook.utils`](../../flavor/cook/utils.py) in the example.
-  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user.
+  - Disable all warnings. In Flavor, the environment variable `PYTHONWARNINGS` is already set to `ignore`, and `LOGLEVEL` (set to `ERROR`) is provided to the user. Or you can just add `SetEvent("ProcessFinished")` at the end of the code.
 
 #### Code Example - Aggregator
 ```python
