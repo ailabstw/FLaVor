@@ -25,6 +25,7 @@ from .utils import (
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
+os.environ["FLAVOR"] = "true"
 os.environ["GRPC_ENABLE_FORK_SUPPORT"] = "1"
 
 APPLICATION_URI = os.getenv("APPLICATION_URI", "0.0.0.0:7878")

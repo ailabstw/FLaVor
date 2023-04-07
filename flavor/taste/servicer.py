@@ -10,6 +10,7 @@ from flavor.cook.utils import CleanEvent, IsSetEvent
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
+os.environ["FLAVOR"] = "true"
 
 
 class EdgeEvalServicer(object):
