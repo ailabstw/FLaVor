@@ -8,6 +8,7 @@ from flavor.cook.utils import IsSetEvent
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
+os.environ["FLAVOR"] = "true"
 
 
 def parse_list(values, message):

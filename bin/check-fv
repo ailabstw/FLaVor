@@ -4,6 +4,7 @@ import os
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
+os.environ["FLAVOR"] = "true"
 
 
 def main():
