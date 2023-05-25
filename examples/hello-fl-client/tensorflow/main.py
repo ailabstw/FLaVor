@@ -3,14 +3,12 @@ import os
 import pickle
 
 import tensorflow as tf
-import tensorflow_datasets as tfds
 
 from flavor.cook.utils import SaveInfoJson, SetEvent, WaitEvent
 
-
-def normalize_img(image, label):
-    """Normalizes images: `uint8` -> `float32`."""
-    return tf.cast(image, tf.float32) / 255.0, label
+gpus = tf.config.experimental.list_physical_devices(device_type="GPU")
+for gpu in gpus:
+    tf.config.experimental.set_memory_growth(gpu, True)
 
 
 def main():
@@ -24,35 +22,21 @@ def main():
         help="input batch size for training (default: 32)",
     )
     parser.add_argument(
-        "--epochs",
+        "--epochs-per-round",
         type=int,
-        default=300,
+        default=1,
         metavar="N",
-        help="number of epochs to train (default: 300)",
+        help="number of epochs per round (default: 1)",
     )
     parser.add_argument(
         "--lr", type=float, default=0.001, metavar="LR", help="learning rate (default: 0.001)"
     )
     args = parser.parse_args()
 
-    (ds_train, ds_test), ds_info = tfds.load(
-        "mnist",
-        split=["train", "test"],
-        shuffle_files=True,
-        as_supervised=True,
-        with_info=True,
-    )
+    (x_train, y_train), (x_test, y_test) = tf.keras.datasets.mnist.load_data()
 
-    ds_train = ds_train.map(normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
-    ds_train = ds_train.cache()
-    ds_train = ds_train.shuffle(ds_info.splits["train"].num_examples)
-    ds_train = ds_train.batch(args.batch_size)
-    ds_train = ds_train.prefetch(tf.data.AUTOTUNE)
-
-    ds_test = ds_test.map(normalize_img, num_parallel_calls=tf.data.AUTOTUNE)
-    ds_test = ds_test.batch(args.batch_size)
-    ds_test = ds_test.cache()
-    ds_test = ds_test.prefetch(tf.data.AUTOTUNE)
+    x_train = x_train.reshape(60000, 28, 28) / 255
+    x_test = x_test.reshape(10000, 28, 28) / 255
 
     model = tf.keras.models.Sequential(
         [
@@ -70,25 +54,28 @@ def main():
     # Tell the server that all preparations for training have been completed.
     SetEvent("TrainInitDone")
 
-    for epoch in range(args.epochs):
+    # Round index
+    round_idx = 0
+
+    while True:
 
         # Wait for the server
         WaitEvent("TrainStarted")
 
         # Load checkpoint sent from the server
-        if epoch != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
+        if round_idx != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
             with open(os.environ["GLOBAL_MODEL_PATH"], "rb") as F:
                 weights = pickle.load(F)
             model.set_weights(list(weights["state_dict"].values()))
 
         # Verify the performance of the global model before training
-        loss, accuracy = model.evaluate(ds_test)
+        loss, accuracy = model.evaluate(x_test, y_test)
 
         # Save information that the server needs to know
         output_dict = {}
         output_dict["metadata"] = {
-            "epoch": epoch,
-            "datasetSize": ds_info.splits["train"].num_examples,
+            "epoch": round_idx,
+            "datasetSize": x_train.shape[0],
             "importance": 1.0,
         }
         output_dict["metrics"] = {
@@ -100,7 +87,7 @@ def main():
         }
         SaveInfoJson(output_dict)
 
-        model.fit(ds_train, epochs=1)
+        model.fit(x_train, y_train, batch_size=args.batch_size, epochs=args.epochs_per_round)
 
         # Save checkpoint
         weights = {"state_dict": {str(key): value for key, value in enumerate(model.get_weights())}}
@@ -109,6 +96,8 @@ def main():
 
         # Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
+
+        round_idx += 1
 
 
 if __name__ == "__main__":

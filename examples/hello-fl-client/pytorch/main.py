@@ -103,11 +103,11 @@ def main():
         help="input batch size for testing (default: 1000)",
     )
     parser.add_argument(
-        "--epochs",
+        "--epochs-per-round",
         type=int,
-        default=300,
+        default=1,
         metavar="N",
-        help="number of epochs to train (default: 300)",
+        help="number of epochs per round (default: 1)",
     )
     parser.add_argument(
         "--lr", type=float, default=1.0, metavar="LR", help="learning rate (default: 1.0)"
@@ -172,13 +172,16 @@ def main():
     # Tell the server that all preparations for training have been completed.
     SetEvent("TrainInitDone")
 
-    for epoch in range(args.epochs):
+    # Round index
+    round_idx = 0
+
+    while True:
 
         # Wait for the server
         WaitEvent("TrainStarted")
 
         # Load checkpoint sent from the server
-        if epoch != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
+        if round_idx != 0 or os.path.exists(os.environ["GLOBAL_MODEL_PATH"]):
             model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
         # Verify the performance of the global model before training
@@ -186,7 +189,11 @@ def main():
 
         # Save information that the server needs to know
         output_dict = {}
-        output_dict["metadata"] = {"epoch": epoch, "datasetSize": len(dataset1), "importance": 1.0}
+        output_dict["metadata"] = {
+            "epoch": round_idx,
+            "datasetSize": len(dataset1),
+            "importance": 1.0,
+        }
         output_dict["metrics"] = {
             "precision": precision,
             "basic/confusion_tp": -1,  # If N/A or you don't want to track, fill in -1.
@@ -196,14 +203,24 @@ def main():
         }
         SaveInfoJson(output_dict)
 
-        train(args, model, device, train_loader, optimizer, epoch)
-        scheduler.step()
+        for epoch_idx in range(args.epochs_per_round):
+            train(
+                args,
+                model,
+                device,
+                train_loader,
+                optimizer,
+                epoch=args.epochs_per_round * round_idx + epoch_idx,
+            )
+            scheduler.step()
 
         # Save checkpoint
         torch.save({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
 
         # Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
+
+        round_idx += 1
 
 
 if __name__ == "__main__":
