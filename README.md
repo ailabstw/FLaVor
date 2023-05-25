@@ -1,5 +1,5 @@
 # AILabs FLaVor
-![Python Version](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8%20%7C%203.9-blue)
+![Python Version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)
 
 AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows multiple parties to collaboratively build and evaluate AI models without compromising data privacy. **FLaVor** also provides a python package for users to join us, even if your code is implemented in other programming languages. It enables users to make modifications to their program codes by simply adding certain signals and importing/exporting the necessary files, as demonstrated in the examples.
 
@@ -26,6 +26,9 @@ pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
  - [Federated Learning Server](examples/hello-fl-server)
  - [Federated Validation](examples/hello-fv)
 
+#### Note
+1. FLaVor calls the user's code through subprocess, so it allows environment conflicts with the user's training code, such as different versions of Python or conflicting packages. In addition, FLaVor also supports running programs other than Python.
+2. The main purpose of the sample code is to guide users to use FLaVor and deploy pre-existing training code on AILabs framework. It is important to note that the intent is not to provide guidance on using the deep learning framework itself. Therefore, direct modification of the sample code is not recommended.
 
 
 ## Asking for help

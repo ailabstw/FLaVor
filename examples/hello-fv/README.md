@@ -76,8 +76,8 @@ Export the validation results to `{$OUTPUT_PATH}/result.json`. The file must con
               "labels":["class 1"],
               "x-values":[[0, 0.2, 0.4, 0.8]],
               "y-values":[[0,0.25,0.43,0.83]],
-              "x-axis":"True Positive rate",
-              "y-axis":"False Positive rate"
+              "x-axis":"False Positive rate",
+              "y-axis":"True Positive rate"
            }
         ],
         "images":[
@@ -93,7 +93,7 @@ Export the validation results to `{$OUTPUT_PATH}/result.json`. The file must con
 ### (Optional) Step 3:  Check implementation
 Users may run `check-fv` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker.
 ```bash
-check-fv -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
+check-fv -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional) -y(optional; automatic Enter to prompts)
 ```
 
 ### Step 4: Set Dockerfile CMD

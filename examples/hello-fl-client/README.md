@@ -31,7 +31,10 @@ def main():
     # (Handle Events) Tell the server that all preparations for training have been completed.
     SetEvent("TrainInitDone")
 
-    for epoch in range(epochs):
+    # Round index
+    round_idx = 0
+
+    while True:
 
         # (Handle Events) Wait for the server
         WaitEvent("TrainStarted")
@@ -44,13 +47,14 @@ def main():
 
         # Save client information
         output = {}
-        output["metadata"] = {"epoch": epoch,
+        output["metadata"] = {"epoch": round_idx,
                               "datasetSize": len(dataset["train"])}
                               "importance": importance
         output_dict["metrics"] = metrics
         SaveInfoJson(output_dict)
 
-        train()
+        for epoch_idx in range(epochs_per_round):
+            train(epoch = epochs_per_round * round_idx + epoch_idx)
 
         # Save checkpoint
         save_checkpoint({"state_dict": model.state_dict()}, os.environ["LOCAL_MODEL_PATH"])
@@ -61,6 +65,8 @@ def main():
         # (Handle Events) Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
 
+        round_idx += 1
+
     # (Optional) Add if not disable warning message
     SetEvent("ProcessFinished")
 ```
@@ -69,20 +75,22 @@ def main():
 ```json
   {
      "metadata":{
-        # (Required, int)
+        //(Required, int)
+        //epoch in info.json refers to round of FL and will be rename in the future.
         "epoch":36,
         "datasetSize":100,
-        # (Required, float) Importance factor for aggregator. If not using, just fill in a number.
+        //(Required, float) Assign as aggregation weight if choosing self-defined as factor in aggregator.
+        //If not using, just fill in a number.
         "importance":1.0
      },
      "metrics":{
-        # (Required) If N/A or you don't want to track, fill in -1.
+        //(Required) If N/A or you don't want to track, fill in -1.
         "basic/confusion_tp":-1,
         "basic/confusion_fp":-1,
         "basic/confusion_fn":-1,
         "basic/confusion_tn":-1,
 
-        # (Optional) Other metrics users expect to tracked.
+        //(Optional) Other metrics users expect to tracked.
         "mIOU":0.8500
      }
   }
@@ -91,11 +99,11 @@ def main():
 ### (Optional) Step 2:  Check implementation
 Run `check-fl` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker.
 ```bash
-check-fl -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
+check-fl -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional) -y(optional; automatic Enter to prompts)
 ```
 If users are going to use their aggregator instead of the default one provided by AILabs or any conventional machine learning approaches (e.g., XGBoost, Random Forest), use `--ignore-ckpt` to skip the checkpoint checking step.
 ```bash
-check-fl --ignore-ckpt -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional)
+check-fl --ignore-ckpt -m MAIN_PROCESS_CMD -p PREPROCESS_CMD(optional) -y(optional; automatic Enter to prompts)
 ```
 
 ### Step 3: Set Dockerfile CMD
