@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$ref": "#/definitions/AiCOCOFormat",
+  "definitions": {
+    "AiCOCOFormat": {
+      "additionalProperties": false,
+      "properties": {
+        "images": {
+          "items": {
+            "$ref": "#/definitions/AiImage"
+          },
+          "type": "array"
+        },
+        "annotations": {
+          "items": {
+            "$ref": "#/definitions/AiAnnotation"
+          },
+          "type": "array"
+        },
+        "categories": {
+          "items": {
+            "$ref": "#/definitions/AiCategory"
+          },
+          "type": "array"
+        },
+        "objects": {
+          "items": {
+            "$ref": "#/definitions/AiObject"
+          },
+          "type": "array"
+        },
+        "meta": {
+          "$ref": "#/definitions/AiMeta"
+        }
+      },
+      "required": [
+        "images",
+        "annotations",
+        "categories",
+        "objects",
+        "meta"
+      ],
+      "type": "object"
+    },
+    "AiImage": {
+      "properties": {
+        "category_ids": {
+          "items": {
+            "type": "string"
+          }
+        },
+        "file_name": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "index": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "file_name",
+        "id"
+      ],
+      "type": "object"
+    },
+    "AiAnnotation": {
+      "properties": {
+        "bbox": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "maxItems": 4,
+                "minItems": 4,
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "image_id": {
+          "type": "string"
+        },
+        "iscrowd": {
+          "enum": [
+            0,
+            1
+          ],
+          "type": "number"
+        },
+        "object_id": {
+          "type": "string"
+        },
+        "segmentation": {
+          "anyOf": [
+            {
+              "items": {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "bbox",
+        "id",
+        "image_id",
+        "iscrowd",
+        "object_id",
+        "segmentation"
+      ],
+      "type": "object"
+    },
+    "AiCategory": {
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "supercategory_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "supercategory_id"
+      ],
+      "type": "object"
+    },
+    "AiObject": {
+      "properties": {
+        "category_ids": {
+          "items": {
+            "type": "string"
+          }
+        },
+        "centroid": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 2,
+          "minItems": 2,
+          "type": "array"
+        },
+        "confidence": {
+          "type": "number"
+        },
+        "id": {
+          "type": "string"
+        },
+        "regression_value": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "category_ids"
+      ],
+      "type": "object"
+    },
+    "AiMeta": {
+      "properties": {
+        "category_ids": {
+          "items": {
+            "type": "string"
+          }
+        },
+        "task_type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  }
+}
