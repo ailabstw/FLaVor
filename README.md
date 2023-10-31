@@ -1,3 +1,4 @@
+
 # AILabs FLaVor
 ![Python Version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)
 
@@ -7,17 +8,19 @@ AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows mu
 
 ## Installation
 
-#### Install stable versions
-
+#### Install stable versions (install flavor without other dependencies)
 
 ```bash
 pip install https://github.com/ailabstw/flavor/archive/refs/heads/release/stable.zip -U
 ```
 
-#### Install bleeding-edge (no guarantees)
+#### Then install additional requirements based on your needs.
 
 ```bash
-pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
+pip install flavor[all]   #install all requirements
+pip install flavor[fl]    #install fl requirements only
+pip install flavor[fv]    #install fv requirements only
+pip install flavor[infer] #install infer requirements only
 ```
 
 ## Getting Started
@@ -25,6 +28,7 @@ pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
  - [Federated Learning Client](examples/hello-fl-client)
  - [Federated Learning Server](examples/hello-fl-server)
  - [Federated Validation](examples/hello-fv)
+ - [Inference Model Deployment](examples/hello-inference)
 
 #### Note
 1. FLaVor calls the user's code through subprocess, so it allows environment conflicts with the user's training code, such as different versions of Python or conflicting packages. In addition, FLaVor also supports running programs other than Python.

@@ -3,51 +3,55 @@
 
 #### Code Example (pytorch)
 ```python
-from flavor.serve.api import InferAPIApp
-import EXAMPLE_MODEL
+from flavor.serve.apps import InferAPP
 
-app = InferAPIApp(callback=EXAMPLE_MODEL)
+# Toy infer function
+def infer(**kwargs):
+    return kwargs.get("images")
 
-app.run(port=int(os.getenv("PORT", 9000)))
+app = InferAPP(infer_function=infer,input_strategy=AiCOCOInputStrategy, output_strategy=AiCOCOutputStrategy)
+app.run(port=9000)
 ```
 
-#### Input Format
+#### Input Format (AiCOCOInputStrategy)
 ```json
 {
-	"input_path": ["<tmp_filename1>.<ext1>", "<tmp_filename2>.<ext2>"],
-	"aicoco": {
-		"images": [
-	    {
-	      // Required fields
-	      "id": "uuidv4",
-	      "file_name": "<filename>.<ext>",
-	      // Optional fields
-	      "index": 1,
-	      // For time sequence images like US
-	      "category_ids": [
-	        "uuidv4",
-	        "uuidv4"
-	      ],
-	      ...
-	    }
-		  ]
-	}
+    "images": [
+        {
+            // Required fields
+            "id": "nanoid",
+            "file_name": "<filename>.<ext>",
+            "physical_file_name": "<physical_filename>.<ext>",
+            // Optional fields
+            "index": 1,
+            // For time sequence images like US
+            "category_ids": [
+              "nanoid",
+              "nanoid"
+            ],
+            ...
+        }
+    ]
 }
 ```
-#### Output Format ([schema/ai-coco-v2.json](../../schema/ai-coco-v2.json))
+#### Output Format (AiCOCOutputStrategy)
+
+Output Tensor, AiCOCOutputStrategy converts the tensor to [aicoco](../../schema/ai-coco-v2.json). If output_strategy=None, your infer function must return aicoco directly.
+
+##### AICOCO
 ```json
 {
   "images": [
     {
       // Required fields
-      "id": "uuidv4",
+      "id": "nanoid",
       "file_name": "<filename>.<ext>",
       // Optional fields
       "index": 1,
       // For time sequence images like US
       "category_ids": [
-        "uuidv4",
-        "uuidv4"
+        "nanoid",
+        "nanoid"
       ],
       ...
     }
@@ -55,9 +59,9 @@ app.run(port=int(os.getenv("PORT", 9000)))
   "annotations": [
     {
       // Required fields
-      "id": "uuidv4",
-      "image_id": "uuidv4",
-      "object_id": "uuidv4",
+      "id": "nanoid",
+      "image_id": "nanoid",
+      "object_id": "nanoid",
       "iscrowd": 0,
       // 1 for RLE mask, 0 otherwise
       "bbox": [
@@ -94,9 +98,9 @@ app.run(port=int(os.getenv("PORT", 9000)))
   "categories": [
     {
       // Required fields
-      "id": "uuidv4",
+      "id": "nanoid",
       "name": "Brain",
-      "supercategory_id": "uuidv4"
+      "supercategory_id": "nanoid"
       or
       null,
       // Optional fields
@@ -107,10 +111,10 @@ app.run(port=int(os.getenv("PORT", 9000)))
   "objects": [
     {
       // Required fields
-      "id": "uuidv4",
+      "id": "nanoid",
       "category_ids": [
-        "uuidv4",
-        "uuidv4"
+        "nanoid",
+        "nanoid"
       ],
       // Optional fields
       "centroid": [
@@ -125,16 +129,12 @@ app.run(port=int(os.getenv("PORT", 9000)))
   "meta": {
     // Optional fields
     "task_type":  "binary" or "multiclass" or "multilabel",
-    "category_ids": ["uuidv4"]  // for whole series label
+    "category_ids": ["nanoid"]  // for whole series label
   }
 }
 ```
 
-### (Optional) Step 2:  Check implementation
-Run `jsonschema.validate` on `schema/ai-coco-v2.json`
-
-
-### Step 3: Set Dockerfile CMD
+### Step 2: Set Dockerfile CMD
 Bundle the code into the Docker image and set `CMD`.
 ```dockerfile
 CMD python main.py

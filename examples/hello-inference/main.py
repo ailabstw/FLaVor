@@ -1,9 +1,12 @@
 import os
 
-import EXAMPLE_MODEL
+from flavor.serve.apps import InferAPP
+from flavor.serve.strategies import AiCOCOInputStrategy
 
-from flavor.serve.api import InferAPIApp
 
-app = InferAPIApp(callback=EXAMPLE_MODEL)
+def infer(**kwargs):
+    return kwargs.get("images")
 
+
+app = InferAPP(infer_function=infer, input_strategy=AiCOCOInputStrategy, output_strategy=None)
 app.run(port=int(os.getenv("PORT", 9000)))
