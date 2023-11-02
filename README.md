@@ -8,19 +8,19 @@ AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows mu
 
 ## Installation
 
-#### Install stable versions will FL/FV requirements only.
+#### Install stable versions with FL/FV requirements only.
 
 ```bash
 pip install https://github.com/ailabstw/flavor/archive/refs/heads/release/stable.zip -U && pip install "flavor[fl]"
 ```
 
-#### Install stable versions will Inference requirements only.
+#### Install stable versions with Inference requirements only.
 
 ```bash
 pip install https://github.com/ailabstw/flavor/archive/refs/heads/release/stable.zip -U && pip install "flavor[infer]"
 ```
 
-#### Install stable versions will All requirements
+#### Install stable versions with All requirements
 
 ```bash
 pip install https://github.com/ailabstw/flavor/archive/refs/heads/release/stable.zip -U && pip install "flavor[all]"
