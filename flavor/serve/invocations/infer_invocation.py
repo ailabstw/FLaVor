@@ -63,7 +63,7 @@ class InferInvocationAPP(BaseInvocationAPP):
                 result = self.infer_function(**kwargs)
 
                 if self.output_strategy:
-                    response = await self.output_strategy.apply(result)
+                    response = await self.output_strategy.apply(**result)
                 else:
                     response = result
 
