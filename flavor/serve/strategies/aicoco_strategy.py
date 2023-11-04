@@ -19,7 +19,7 @@ class AiCOCOInputStrategy(BaseStrategy):
 
         ta = TypeAdapter(List[AiImage])
         try:
-            images = json.loads(form_data.get("images").replace("'", '"'))
+            images = json.loads(form_data.get("images"))
         except TypeError as e:
             raise JSONDecodeError(doc="", msg=str(e), pos=-1)
 
@@ -34,7 +34,8 @@ class AiCOCOInputStrategy(BaseStrategy):
 
 
 class AiCOCOOutputStrategy(BaseStrategy):
-    async def apply(self, **result: Dict[str, Any]) -> Dict[str, Any]:
+
+    async def apply(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
@@ -46,11 +47,11 @@ class AiCOCOOutputStrategy(BaseStrategy):
         """
         ta = TypeAdapter(AiCOCOFormat)
 
-        result = self.model_to_aicoco(**result)
+        response = self.model_to_aicoco(**result)
 
-        ta.validate_python(result)
+        ta.validate_python(response)
 
-        return result
+        return response
 
     def model_to_aicoco(
         self,
@@ -58,6 +59,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
         images_id_table: Dict[int, str],
         class_id_table: Dict[int, str],
         input_json: Dict[str, Any],
+        **kwargs
     ) -> Dict[str, Any]:
         """
         Reformat model output to AICOCO compatible format.
