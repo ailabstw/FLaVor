@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from abc import ABC
-from ..middlewares import QueueMiddleware, TransformFileToFilenameMiddleware
+from ..middlewares import QueueMiddleware
 
 
 class BaseInvocationAPP(ABC):
@@ -8,4 +8,3 @@ class BaseInvocationAPP(ABC):
         self.app = FastAPI()
 
         self.app.add_middleware(QueueMiddleware)
-        self.app.add_middleware(TransformFileToFilenameMiddleware)

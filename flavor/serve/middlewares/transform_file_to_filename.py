@@ -1,4 +1,3 @@
-import typing
 from collections.abc import Callable
 from tempfile import TemporaryDirectory, NamedTemporaryFile
 
@@ -86,6 +85,7 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next: Callable):
         form_data = await request.form()
         json_body = {}
+
         for k in form_data:
             if isinstance(form_data[k], UploadFile):
                 filenames = []
@@ -100,7 +100,9 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
             else:
                 json_body[k] = form_data[k]
 
-        request.state.transformed_body = json_body
+        request.state.transformed_json = json_body
+        request.state.original_form = form_data
+
         response = await call_next(request)
         self.cleanup()
         return response
