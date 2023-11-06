@@ -1,19 +1,18 @@
 from collections.abc import Callable
-from tempfile import TemporaryDirectory, NamedTemporaryFile
+from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import aiofile
-from starlette.datastructures import UploadFile
 from fastapi import FastAPI, Request
-
+from starlette.datastructures import UploadFile
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import ClientDisconnect
-from starlette.types import Receive, Scope, Send, Message
+from starlette.types import Message, Receive, Scope, Send
 
 
 class _CachedRequest(Request):
     """
-        Warning: Modification of this class is not recommended.
-        It serves as a temporary workaround for versions of Starlette prior to 0.28.0.
+    Warning: Modification of this class is not recommended.
+    It serves as a temporary workaround for versions of Starlette prior to 0.28.0.
     """
 
     def __init__(self, scope: Scope, receive: Receive):

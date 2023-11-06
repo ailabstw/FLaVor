@@ -2,16 +2,14 @@ import json
 from json import JSONDecodeError
 from typing import Any, Dict, List, Union
 
+import cv2
+import numpy as np
+from nanoid import generate
 from pydantic import TypeAdapter
 from starlette.datastructures import FormData
 
-from ..models import AiImage, AiCOCOFormat
+from ..models import AiCOCOFormat, AiImage
 from .base_strategy import BaseStrategy
-
-from skimage.measure import label
-from nanoid import generate
-import cv2
-import numpy as np
 
 
 class AiCOCOInputStrategy(BaseStrategy):
@@ -34,7 +32,6 @@ class AiCOCOInputStrategy(BaseStrategy):
 
 
 class AiCOCOOutputStrategy(BaseStrategy):
-
     async def apply(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
@@ -59,7 +56,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
         images_id_table: Dict[int, str],
         class_id_table: Dict[int, str],
         input_json: Dict[str, Any],
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Reformat model output to AICOCO compatible format.
@@ -76,12 +73,14 @@ class AiCOCOOutputStrategy(BaseStrategy):
         annot = self.generate_annotations_objects(model_out, images_id_table, class_id_table)
         return {**annot, **input_json}
 
-    def generate_annotations_objects(self, volumn_4D, images_id_table, class_id_table) -> Dict[str, Any]:
+    def generate_annotations_objects(
+        self, volumn_4D, images_id_table, class_id_table
+    ) -> Dict[str, Any]:
         """
         Generate annotations and objects in AICOCO compatible format.
 
         Args:
-            volumn_4D (np.ndarray): 4D grouped volumetric data. 
+            volumn_4D (np.ndarray): 4D grouped volumetric data.
                 The data should be precessed in connected regions with label index.
             images_id_table (Dict[int, str]): Dictionary mapping slice numbers to nanoid.
             class_id_table (Dict[int, str]): Dictionary mapping class indices to nanoid.

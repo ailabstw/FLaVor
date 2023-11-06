@@ -4,16 +4,16 @@ from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
-from .base_invocation import BaseInvocationAPP
 from ..middlewares import TransformFileToFilenameMiddleware
+from .base_invocation import BaseInvocationAPP
 
 
 class InferInvocationAPP(BaseInvocationAPP):
     def __init__(
-            self,
-            infer_function: Callable,
-            input_strategy: Optional[Type[Any]] = None,
-            output_strategy: Optional[Type[Any]] = None,
+        self,
+        infer_function: Callable,
+        input_strategy: Optional[Type[Any]] = None,
+        output_strategy: Optional[Type[Any]] = None,
     ):
 
         super().__init__()
