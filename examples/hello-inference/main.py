@@ -1,8 +1,5 @@
-import os
-
 from flavor.serve.apps import InferAPP
 from flavor.serve.strategies import AiCOCOInputStrategy
-import time
 
 
 def infer(images):

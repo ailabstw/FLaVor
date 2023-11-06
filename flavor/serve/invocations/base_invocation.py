@@ -1,5 +1,7 @@
-from fastapi import FastAPI
 from abc import ABC
+
+from fastapi import FastAPI
+
 from ..middlewares import QueueMiddleware
 
 
