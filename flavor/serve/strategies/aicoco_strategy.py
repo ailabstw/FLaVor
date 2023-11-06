@@ -72,24 +72,15 @@ class AiCOCOOutputStrategy(BaseStrategy):
             Dict[str, Any]: Result in AICOCO compatible format.
         """
         annot = self.generate_annotations_objects(model_out, images_id_table, class_id_table)
-        result = self.generate_output_json(annot, input_json)
-        return result
+        return {**annot, **input_json}
 
-    def generate_output_json(self, annot, input_json) -> Dict[str, Any]:
-        """Generate the output JSON dictionary"""
-        output_json = dict()
-
-        output_json.update(annot)
-        output_json.update(input_json)
-
-        return output_json
-
-    def generate_annotations_objects(self, volumn_4D, images_id_table, class_id_table, back_ground_idx=0) -> Dict[str, Any]:
+    def generate_annotations_objects(self, volumn_4D, images_id_table, class_id_table) -> Dict[str, Any]:
         """
-        Generate annotations and objects by grouping and contouring in AICOCO compatible format.
+        Generate annotations and objects in AICOCO compatible format.
 
         Args:
-            volumn_4D (np.ndarray): 4D volume data.
+            volumn_4D (np.ndarray): 4D grouped volumetric data. 
+                The data should be precessed in connected regions with label index.
             images_id_table (Dict[int, str]): Dictionary mapping slice numbers to nanoid.
             class_id_table (Dict[int, str]): Dictionary mapping class indices to nanoid.
             back_ground_idx (int, optional): Index of the background class. Defaults to 0.
@@ -107,21 +98,21 @@ class AiCOCOOutputStrategy(BaseStrategy):
 
         # traverse classes
         for cls_idx in range(classes):
-            if cls_idx == back_ground_idx:
+            if cls_idx not in class_id_table:
                 continue
 
             nid_cls = class_id_table[cls_idx]
 
             cls_volumn = volumn_4D[cls_idx]
-            label_volumn, label_num = label(cls_volumn, connectivity=2, return_num=True)
+            label_num = np.unique(cls_volumn)[1:]  # ignore index 0
 
             # traverse slices
             for slice_idx in range(slices):
-                label_slice = np.array(label_volumn[slice_idx])
+                label_slice = np.array(cls_volumn[slice_idx])
                 nid_slice = images_id_table[slice_idx]
 
                 # travser 1~label
-                for label_idx in range(1, label_num + 1):
+                for label_idx in label_num:
                     the_label_slice = np.array(label_slice == label_idx, dtype=np.uint8)
                     if the_label_slice.sum() == 0:
                         continue
