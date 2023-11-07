@@ -25,8 +25,8 @@ class AiCOCOInputStrategy(BaseStrategy):
 
         files = form_data.get("files")
 
-        for image, file in zip(images, files):
-            image["physical_file_name"] = file
+        for image in images:
+            image["file_name"] = next(file for file in files if image["file_name"] in file)
 
         return {"images": images}
 
