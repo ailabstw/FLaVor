@@ -42,6 +42,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
         Returns:
             Dict[str, Any]: Result in AICOCO compatible format.
         """
+
         ta = TypeAdapter(AiCOCOFormat)
 
         response = self.model_to_aicoco(**result)
@@ -52,10 +53,11 @@ class AiCOCOOutputStrategy(BaseStrategy):
 
     def model_to_aicoco(
         self,
-        model_out: np.ndarray,
-        images_id_table: Dict[int, str],
-        class_id_table: Dict[int, str],
         input_json: Dict[str, Any],
+        model_out: np.ndarray,
+        images_id_table: Union[Dict[int, str], List[str]],
+        category_map: Dict[int, Any],
+        meta: Dict[str, Any] = {},
         **kwargs,
     ) -> Dict[str, Any]:
         """
@@ -63,15 +65,45 @@ class AiCOCOOutputStrategy(BaseStrategy):
 
         Args:
             model_out (np.ndarray): Model output as a NumPy array.
-            images_id_table (Dict[int, str]): Dictionary mapping slice numbers to nanoid.
-            class_id_table (Dict[int, str]): Dictionary mapping class indices to nanoid.
+            images_id_table (Dict[int, str],  List[str]): Dictionary/List mapping slice numbers to nanoid.
+            category_map (Dict[int, str]): Dictionary mapping class indices to its info.
             input_json (Dict[str, Any]): Input JSON decoupled from the request.
 
         Returns:
             Dict[str, Any]: Result in AICOCO compatible format.
         """
-        annot = self.generate_annotations_objects(model_out, images_id_table, class_id_table)
-        return {**annot, **input_json}
+
+        categories = self.generate_categories(category_map)
+
+        class_id_table = {
+            category.pop("class_id"): category["id"] for category in categories["categories"]
+        }
+
+        annot_obj = self.generate_annotations_objects(model_out, images_id_table, class_id_table)
+
+        meta = {"meta": meta}
+
+        return {**categories, **annot_obj, **input_json, **meta}
+
+    def generate_categories(self, category_map: Dict[int, str]) -> Dict[str, Any]:
+
+        res = dict()
+        res["categories"] = list()
+        supercategory_id_table = dict()
+
+        for class_id, category in category_map.items():
+            if "supercategory_id" in category:
+                if category["supercategory_id"] not in supercategory_id_table:
+                    supercategory_id_table[category["supercategory_id"]] = generate()
+            category["id"] = generate()
+            category["class_id"] = class_id
+            category["supercategory_id"] = supercategory_id_table.get(
+                category["supercategory_id"], None
+            )
+
+            res["categories"].append(category)
+
+        return res
 
     def generate_annotations_objects(
         self, volumn_4D, images_id_table, class_id_table
@@ -82,7 +114,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
         Args:
             volumn_4D (np.ndarray): 4D grouped volumetric data.
                 The data should be precessed in connected regions with label index.
-            images_id_table (Dict[int, str]): Dictionary mapping slice numbers to nanoid.
+            images_id_table (Dict[int, str], List[str]): Dictionary/List mapping slice numbers to nanoid.
             class_id_table (Dict[int, str]): Dictionary mapping class indices to nanoid.
             back_ground_idx (int, optional): Index of the background class. Defaults to 0.
 

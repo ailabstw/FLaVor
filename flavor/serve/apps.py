@@ -1,10 +1,11 @@
-from typing import Any, Callable, Optional, Type
+from typing import Callable, Optional
 
 import uvicorn
 from fastapi import FastAPI, Response
 from fastapi.middleware.gzip import GZipMiddleware
 
 from .invocations import InferInvocationAPP
+from .strategies import BaseStrategy
 
 
 class BaseAPP(object):
@@ -32,8 +33,8 @@ class InferAPP(BaseAPP):
     def __init__(
         self,
         infer_function: Callable,
-        input_strategy: Optional[Type[Any]] = None,
-        output_strategy: Optional[Type[Any]] = None,
+        input_strategy: Optional[BaseStrategy] = None,
+        output_strategy: Optional[BaseStrategy] = None,
     ):
 
         super().__init__()

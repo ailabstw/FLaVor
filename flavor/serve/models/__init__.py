@@ -1,1 +1,1 @@
-from .aicoco_model import AiCOCOFormat, AiImage
+from .aicoco_model import AiCategory, AiCOCOFormat, AiImage

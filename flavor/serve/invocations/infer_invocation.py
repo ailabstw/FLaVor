@@ -1,10 +1,11 @@
-from typing import Any, Callable, Optional, Type
+from typing import Callable, Optional
 
 from fastapi import Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from ..middlewares import TransformFileToFilenameMiddleware
+from ..strategies import BaseStrategy
 from .base_invocation import BaseInvocationAPP
 
 
@@ -12,8 +13,8 @@ class InferInvocationAPP(BaseInvocationAPP):
     def __init__(
         self,
         infer_function: Callable,
-        input_strategy: Optional[Type[Any]] = None,
-        output_strategy: Optional[Type[Any]] = None,
+        input_strategy: Optional[BaseStrategy] = None,
+        output_strategy: Optional[BaseStrategy] = None,
     ):
 
         super().__init__()
@@ -26,8 +27,8 @@ class InferInvocationAPP(BaseInvocationAPP):
         self.app.add_middleware(TransformFileToFilenameMiddleware)
 
         self.infer_function = infer_function
-        self.input_strategy = input_strategy() if input_strategy else None
-        self.output_strategy = output_strategy() if output_strategy else None
+        self.input_strategy = input_strategy
+        self.output_strategy = output_strategy
 
     async def invocations(self, request: Request):
         body = request.state.transformed_json
