@@ -53,10 +53,9 @@ class AiCOCOOutputStrategy(BaseStrategy):
 
     def model_to_aicoco(
         self,
-        input_json: Dict[str, Any],
+        sorted_images: List[Any],
+        categories: Dict[int, Any],
         seg_model_out: np.ndarray,
-        images_id_table: Union[Dict[int, str], List[str]],
-        category_map: Dict[int, Any],
         meta: Dict[str, Any] = {},
         **kwargs,
     ) -> Dict[str, Any]:
@@ -64,17 +63,20 @@ class AiCOCOOutputStrategy(BaseStrategy):
         Reformat model output to AICOCO compatible format.
 
         Args:
+            sorted_images (List[Any]): sort images in AICOCO
+            categories (Dict[int, str]): Dictionary mapping class indices to its info.
             seg_model_out (np.ndarray): Segmentation output as a NumPy array.
-            images_id_table (Dict[int, str],  List[str]): Dictionary/List mapping slice numbers to nanoid.
-            category_map (Dict[int, str]): Dictionary mapping class indices to its info.
-            input_json (Dict[str, Any]): Input JSON decoupled from the request.
             meta (Dict[str, Any]): Meta info for AICOCO.
 
         Returns:
             Dict[str, Any]: Result in AICOCO compatible format.
         """
 
-        categories = self.generate_categories(category_map)
+        images = {"images": sorted_images}
+
+        images_id_table = {idx: image["id"] for idx, image in enumerate(sorted_images)}
+
+        categories = self.generate_categories(categories)
 
         class_id_table = {
             category.pop("class_id"): category["id"] for category in categories["categories"]
@@ -86,15 +88,15 @@ class AiCOCOOutputStrategy(BaseStrategy):
 
         meta = {"meta": meta}
 
-        return {**categories, **annot_obj, **input_json, **meta}
+        return {**images, **categories, **annot_obj, **meta}
 
-    def generate_categories(self, category_map: Dict[int, str]) -> Dict[str, Any]:
+    def generate_categories(self, categories: Dict[int, str]) -> Dict[str, Any]:
 
         res = dict()
         res["categories"] = list()
         supercategory_id_table = dict()
 
-        for class_id, category in category_map.items():
+        for class_id, category in categories.items():
             if "supercategory_id" in category:
                 if category["supercategory_id"] not in supercategory_id_table:
                     supercategory_id_table[category["supercategory_id"]] = generate()
