@@ -54,7 +54,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
     def model_to_aicoco(
         self,
         input_json: Dict[str, Any],
-        model_out: np.ndarray,
+        seg_model_out: np.ndarray,
         images_id_table: Union[Dict[int, str], List[str]],
         category_map: Dict[int, Any],
         meta: Dict[str, Any] = {},
@@ -64,10 +64,11 @@ class AiCOCOOutputStrategy(BaseStrategy):
         Reformat model output to AICOCO compatible format.
 
         Args:
-            model_out (np.ndarray): Model output as a NumPy array.
+            seg_model_out (np.ndarray): Segmentation output as a NumPy array.
             images_id_table (Dict[int, str],  List[str]): Dictionary/List mapping slice numbers to nanoid.
             category_map (Dict[int, str]): Dictionary mapping class indices to its info.
             input_json (Dict[str, Any]): Input JSON decoupled from the request.
+            meta (Dict[str, Any]): Meta info for AICOCO.
 
         Returns:
             Dict[str, Any]: Result in AICOCO compatible format.
@@ -79,7 +80,9 @@ class AiCOCOOutputStrategy(BaseStrategy):
             category.pop("class_id"): category["id"] for category in categories["categories"]
         }
 
-        annot_obj = self.generate_annotations_objects(model_out, images_id_table, class_id_table)
+        annot_obj = self.generate_annotations_objects(
+            seg_model_out, images_id_table, class_id_table
+        )
 
         meta = {"meta": meta}
 
@@ -116,7 +119,6 @@ class AiCOCOOutputStrategy(BaseStrategy):
                 The data should be precessed in connected regions with label index.
             images_id_table (Dict[int, str], List[str]): Dictionary/List mapping slice numbers to nanoid.
             class_id_table (Dict[int, str]): Dictionary mapping class indices to nanoid.
-            back_ground_idx (int, optional): Index of the background class. Defaults to 0.
 
         Returns:
             Dict[str, Any]: A dictionary containing annotations and objects in AICOCO compatible format.
