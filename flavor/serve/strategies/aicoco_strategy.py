@@ -144,17 +144,19 @@ class AiCOCOOutputStrategy(BaseStrategy):
             unique_labels = np.unique(cls_volume)[1:]  # Ignore index 0
             label_nano_ids = {label_idx: generate() for label_idx in unique_labels}
 
-            # Traverse slices
-            for slice_idx in range(slices):
-                label_slice = np.array(cls_volume[slice_idx])
-                image_nano_id = images_id_table[slice_idx]
+            # Traverse 1~label
+            for label_idx in unique_labels:
 
-                # Traverse 1~label
-                for label_idx in unique_labels:
+                label_nano_id = label_nano_ids[label_idx]
+
+                # Traverse slices
+                for slice_idx in range(slices):
+                    label_slice = np.array(cls_volume[slice_idx])
+                    image_nano_id = images_id_table[slice_idx]
+
                     the_label_slice = np.array(label_slice == label_idx, dtype=np.uint8)
                     if the_label_slice.sum() == 0:
                         continue
-                    label_nano_id = label_nano_ids[label_idx]
 
                     contours, _ = cv2.findContours(
                         the_label_slice,
@@ -178,6 +180,6 @@ class AiCOCOOutputStrategy(BaseStrategy):
                             "segmentation": segmentation,
                         }
                     )
-                    res["objects"].append({"id": label_nano_id, "category_ids": [class_nano_id]})
+                res["objects"].append({"id": label_nano_id, "category_ids": [class_nano_id]})
 
         return res
