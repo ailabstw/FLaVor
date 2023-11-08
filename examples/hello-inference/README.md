@@ -13,8 +13,18 @@ from flavor.serve.strategies import AiCOCOInputStrategy, AiCOCOutputStrategy
 
 # Define your model's infer function
 def infer(**kwargs):
-    # Your inference logic here
-    return ...
+
+    # Your model & inference code
+    ...
+
+    # please return your output as defined in Readme
+    result = {
+    "sorted_images": [...]
+    "categories": {2: {"name": "Tumor", "supercategory_id": null}},
+    "seg_model_out": 4d ndarray with segmentation predictions
+    }
+
+    return result
 
 # Wrap the infer function with input and optional output strategies
 app = InferAPP(infer_function=infer,
@@ -36,12 +46,18 @@ This strategy parses the incoming data into a structured format that the inferen
 ```json
 {
     "images": [
+        // may be without order
         {
             "id": "nanoid",
             "file_name": "<filename>.<ext>",
             ...
         },
-        ,,,
+        {
+	        "id": "nanoid",
+	        "file_name": "<filename>.<ext>",
+	        ...
+	    },
+        ...
     ]
 }
 ```
@@ -60,6 +76,10 @@ If  you  use  `AiCOCOutputStrategy`,  the  expected  output  should  be  a  dict
 
 - `seg_model_out`: A 4D NumPy ndarray `(c, z, y, x)`, which represents the segmentation results. For semantic segmentation, the values are binary (0 or 1) and indicate the presence of a class. For instance segmentation, the array contains instance IDs as positive integers that indicate different instances.
 
+- `det_model_out`: for bbox (To Do)
+
+- `cls_model_out`: for classification (To Do)
+
 ```json
 {
 	"sorted_images": [
@@ -70,7 +90,12 @@ If  you  use  `AiCOCOutputStrategy`,  the  expected  output  should  be  a  dict
 	        ...
 	    },
 	    // z=1
-	    ,,,
+        {
+	        "id": "nanoid",
+	        "file_name": "<filename>.<ext>",
+	        ...
+	    },
+	    ...
 	]
 	"categories": {
 		2: {"name": "Tumor", "supercategory_id": null},
