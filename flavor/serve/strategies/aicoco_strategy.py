@@ -111,15 +111,15 @@ class AiCOCOOutputStrategy(BaseStrategy):
         return res
 
     def generate_annotations_objects(
-        self, volumn_4D, images_id_table, class_id_table
+        self, volumn_4D: np.ndarray, images_id_table: Dict[int, str], class_id_table: Dict[int, str]
     ) -> Dict[str, Any]:
         """
         Generate annotations and objects in AICOCO compatible format.
 
         Args:
             volumn_4D (np.ndarray): 4D grouped volumetric data.
-                The data should be precessed in connected regions with label index.
-            images_id_table (Dict[int, str], List[str]): Dictionary/List mapping slice numbers to nanoid.
+                The data should be preprocessed in connected regions with label index.
+            images_id_table (Dict[int, str]): Dictionary mapping slice numbers to nanoid.
             class_id_table (Dict[int, str]): Dictionary mapping class indices to nanoid.
 
         Returns:
@@ -127,56 +127,57 @@ class AiCOCOOutputStrategy(BaseStrategy):
         """
 
         assert volumn_4D.ndim == 4, f"shape {volumn_4D.shape} is not 4D"  # class, z, x, y
-        classes, slices, h, w = volumn_4D.shape
+        classes, slices, _, _ = volumn_4D.shape
 
         res = dict()
         res["annotations"] = list()
         res["objects"] = list()
 
-        # traverse classes
+        # Traverse classes
         for cls_idx in range(classes):
             if cls_idx not in class_id_table:
                 continue
 
-            nid_cls = class_id_table[cls_idx]
+            class_nano_id = class_id_table[cls_idx]
 
-            cls_volumn = volumn_4D[cls_idx]
-            label_num = np.unique(cls_volumn)[1:]  # ignore index 0
+            cls_volume = volumn_4D[cls_idx]
+            unique_labels = np.unique(cls_volume)[1:]  # Ignore index 0
+            label_nano_ids = {label_idx: generate() for label_idx in unique_labels}
 
-            # traverse slices
+            # Traverse slices
             for slice_idx in range(slices):
-                label_slice = np.array(cls_volumn[slice_idx])
-                nid_slice = images_id_table[slice_idx]
+                label_slice = np.array(cls_volume[slice_idx])
+                image_nano_id = images_id_table[slice_idx]
 
-                # travser 1~label
-                for label_idx in label_num:
+                # Traverse 1~label
+                for label_idx in unique_labels:
                     the_label_slice = np.array(label_slice == label_idx, dtype=np.uint8)
                     if the_label_slice.sum() == 0:
                         continue
-                    nid_label = generate()
+                    label_nano_id = label_nano_ids[label_idx]
 
                     contours, _ = cv2.findContours(
                         the_label_slice,
                         cv2.RETR_TREE,
-                        cv2.CHAIN_APPROX_NONE,  # no approx
+                        cv2.CHAIN_APPROX_NONE,  # No approximation
                     )
 
-                    # traverse contours
+                    # Traverse contours
                     segmentation = list()
-                    for idx, contour in enumerate(contours):
+                    for _, contour in enumerate(contours):
                         _contour = contour.reshape(-1)
                         _contour = _contour.tolist()
                         segmentation.append(_contour)
                     res["annotations"].append(
                         {
                             "id": generate(),
-                            "image_id": nid_slice,
-                            "object_id": nid_label,
+                            "image_id": image_nano_id,
+                            "object_id": label_nano_id,
                             "iscrowd": 0,
                             "bbox": None,
                             "segmentation": segmentation,
                         }
                     )
-                    res["objects"].append({"id": nid_label, "category_ids": [nid_cls]})
+                    res["objects"].append({"id": label_nano_id, "category_ids": [class_nano_id]})
 
         return res
