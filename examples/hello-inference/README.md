@@ -1,11 +1,11 @@
-## Getting Started
+# Getting Started
 `InferAPIApp` rationalizes the use of inference models by encapsulating the inference functions in a user-friendly framework. It provides easy-to-configure input and output strategies tailored to the processing and production of AiCOCO-formatted data, ensuring seamless integration and standardization.
 
-### Step 1: Wrap Your Callback Function
+## Step 1: Wrap Your Callback Function
 
 Wrap the inference function of your model with the class `InferAPP`. Define the input strategy that converts the API input into the desired format, and optionally an output strategy that converts the model output into AiCOCO format.
 
-#### Code Example (PyTorch)
+### Code Example (PyTorch)
 
 ```python
 from flavor.serve.apps import InferAPP
@@ -43,20 +43,15 @@ This strategy parses the incoming data into a structured format that the inferen
 
 ##### Input Format Example
 
-```json
+```python
 {
     "images": [
-        // may be without order
+        # may be without order
         {
             "id": "nanoid",
             "file_name": "<filename>.<ext>",
             ...
         },
-        {
-	        "id": "nanoid",
-	        "file_name": "<filename>.<ext>",
-	        ...
-	    },
         ...
     ]
 }
@@ -66,8 +61,32 @@ This strategy parses the incoming data into a structured format that the inferen
 
 The `AiCOCOutputStrategy` is an optional component that can be used to format the output of the inference model into the AiCOCO format, providing a standardized method for serializing the results. If `output_strategy=None` is specified, the `infer_function` must return the AiCOCO format directly.
 
-##### Expected Model Output Structure for AiCOCOutputStrategy
+#### Expected Model Output Structure for AiCOCOutputStrategy
+```python
+{
+	"sorted_images": [
+	    # z=0
+	    {
+	        "id": "nanoid",
+	        "file_name": "<filename>.<ext>",
+	        ...
+	    },
+	    # z=1
+            {
+	        "id": "nanoid",
+	        "file_name": "<filename>.<ext>",
+	        ...
+	    },
+	    ...
+	]
+	"categories": {
+            2: {"name": "Tumor", "supercategory_id": null},
+	    5: ...
+	},
 
+	"seg_model_out": 4d ndarray with segmentation predictions}
+}
+```
 If  you  use  `AiCOCOutputStrategy`,  the  expected  output  should  be  a  dictionary  containing  the  following  keys:
 
  -  `sorted_images`:  A  list  of  images (see Input Format) sorted by  a certain criterion  (e.g.  by  Z-axis  or  temporal order) to  correlate  with  `seg_model_out`.
@@ -80,83 +99,58 @@ If  you  use  `AiCOCOutputStrategy`,  the  expected  output  should  be  a  dict
 
 - `cls_model_out`: for classification (To Do)
 
-```json
-{
-	"sorted_images": [
-	    // z=0
-	    {
-	        "id": "nanoid",
-	        "file_name": "<filename>.<ext>",
-	        ...
-	    },
-	    // z=1
-        {
-	        "id": "nanoid",
-	        "file_name": "<filename>.<ext>",
-	        ...
-	    },
-	    ...
-	]
-	"categories": {
-		2: {"name": "Tumor", "supercategory_id": null},
-		5: ... },
-
-	"seg_model_out": 4d ndarray with segmentation predictions}
-}
-```
-
 ##### AiCOCO Format
 
 The AiCOCO format is described in detail below and contains the [schema](../../schema/ai-coco-v2.json)  for structured output, including required and optional fields for `images`, `annotations`, `categories`, and `objects`.
 
-```json
+```python
 {
   "images": [
     {
-      // Required fields
+      # Required fields
       "id": "nanoid",
       "file_name": "<filename>.<ext>",
-      // Optional fields
+      # Optional fields
       "index": 1,
-      // For time sequence images like US
+      # For time sequence images like US
       "category_ids": ["nanoid","nanoid"],
       ...
     }
   ],
   "annotations": [
     {
-      // Required fields
+      # Required fields
       "id": "nanoid",
       "image_id": "nanoid",
       "object_id": "nanoid",
       "iscrowd": 0,
-      // 1 for RLE mask, 0 otherwise
-      "bbox": [[x1,y1,x2,y2],...] or null,
-      "segmentation": [[x1,y1,x2,y2,x3,y3,...,xn,yn],...] or null,
-      // Optional fields
+      # 1 for RLE mask, 0 otherwise
+      "bbox": [[x1, y1, x2, y2],...] or null,
+      "segmentation": [[x1, y1, x2, y2, x3, y3, ..., xn, yn],...] or null,
+      # Optional fields
       ...
     }
   ],
   "categories": [
     {
-      // Required fields
+      # Required fields
       "id": "nanoid",
       "name": "Brain",
       "supercategory_id": "nanoid" or null,
-      // Optional fields
+      # Optional fields
       "color": "#FFFFFF",
       ...
     }
   ],
   "objects": [
     {
-      // Required fields
+      # Required fields
       "id": "nanoid",
       "category_ids": [
         "nanoid",
         "nanoid"
       ],
-      // Optional fields
+      # Optional fields
       "centroid": [
         x,
         y
@@ -167,9 +161,9 @@ The AiCOCO format is described in detail below and contains the [schema](../../s
     }
   ],
   "meta": {
-    // Optional fields
-    "task_type":  "binary" or "multiclass" or "multilabel",
-    "category_ids": ["nanoid"]  // for whole series label
+    # Optional fields
+    "task_type":  "binary" # or "multiclass" or "multilabel",
+    "category_ids": ["nanoid", ...]  # for whole series label
   }
 }
 ```
