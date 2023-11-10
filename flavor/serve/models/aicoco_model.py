@@ -8,7 +8,7 @@ class AiImage(BaseModel):
     category_ids: Optional[List[str]] = None
     file_name: str
     id: str
-    index: Optional[int] = None
+    index: int
 
 
 class Iscrowd(Enum):

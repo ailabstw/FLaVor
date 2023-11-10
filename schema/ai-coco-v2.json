@@ -60,8 +60,9 @@
         }
       },
       "required": [
+        "id",
         "file_name",
-        "id"
+        "index"
       ],
       "type": "object"
     },
