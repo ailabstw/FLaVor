@@ -82,7 +82,9 @@ class AiCOCOOutputStrategy(BaseStrategy):
         categories = self.generate_categories(categories)
 
         class_id_table = {
-            category.pop("class_id"): category["id"] for category in categories["categories"]
+            category.pop("class_id"): category["id"]
+            for category in categories["categories"]
+            if "class_id" in category
         }
 
         annot_obj = self.generate_annotations_objects(
@@ -100,16 +102,19 @@ class AiCOCOOutputStrategy(BaseStrategy):
         supercategory_id_table = dict()
 
         for class_id, category in categories.items():
-            if "supercategory_id" in category:
-                if category["supercategory_id"] not in supercategory_id_table:
-                    supercategory_id_table[category["supercategory_id"]] = generate()
+            if category.get("supercategory_name", None):
+                if category["supercategory_name"] not in supercategory_id_table:
+                    supercategory_id_table[category["supercategory_name"]] = generate()
             category["id"] = generate()
             category["class_id"] = class_id
             category["supercategory_id"] = supercategory_id_table.get(
-                category["supercategory_id"], None
+                category.pop("supercategory_name", None), None
             )
 
             res["categories"].append(category)
+
+        for sup_class_name, n_id in supercategory_id_table.items():
+            res["categories"].append({"id": n_id, "name": sup_class_name, "supercategory_id": None})
 
         return res
 

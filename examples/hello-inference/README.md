@@ -20,7 +20,7 @@ def infer(**kwargs):
     # please return your output as defined in Readme
     result = {
     "sorted_images": [...]
-    "categories": {2: {"name": "Tumor", "supercategory_id": null}},
+    "categories": {2: {"name": "Tumor", "supercategory_name": null}},
     "seg_model_out": 4d ndarray with segmentation predictions
     }
 
@@ -80,7 +80,7 @@ The `AiCOCOutputStrategy` is an optional component that can be used to format th
 	    ...
 	]
 	"categories": {
-            2: {"name": "Tumor", "supercategory_id": null},
+            2: {"name": "Tumor", "supercategory_name": null},
 	    5: ...
 	},
 
@@ -91,7 +91,7 @@ If  you  use  `AiCOCOutputStrategy`,  the  expected  output  should  be  a  dict
 
  -  `sorted_images`:  A  list  of  images (see Input Format) sorted by  a certain criterion  (e.g.  by  Z-axis  or  temporal order) to  correlate  with  `seg_model_out`.
 
-- `categories`: A dictionary where each key is a class ID that you want to include in the output. The corresponding value is a dictionary with category information that must be filled with all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
+- `categories`: A dictionary where each key is a class ID that you want to include in the output. The corresponding value is a dictionary with category information that must be filled with `supercategory_name` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
 
 - `seg_model_out`: A 4D NumPy ndarray `(c, z, y, x)`, which represents the segmentation results. For semantic segmentation, the values are binary (0 or 1) and indicate the presence of a class. For instance segmentation, the array contains instance IDs as positive integers that indicate different instances.
 
