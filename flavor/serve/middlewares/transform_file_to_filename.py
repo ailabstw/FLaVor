@@ -74,14 +74,17 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
             return
 
         self._cached_request = _CachedRequest(scope, receive)
-
         await super().__call__(scope, receive, send)
+
+    def prepare(self):
+        self._tempdir = TemporaryDirectory()
 
     def cleanup(self):
         self._tempdir.cleanup()
-        self._tempdir = TemporaryDirectory()
 
     async def dispatch(self, request: Request, call_next: Callable):
+        self.prepare()
+
         form_data = await request.form()
         json_body = {}
 
@@ -103,5 +106,6 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
         request.state.original_form = form_data
 
         response = await call_next(request)
+        
         self.cleanup()
         return response
