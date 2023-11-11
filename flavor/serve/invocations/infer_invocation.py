@@ -11,10 +11,10 @@ from .base_invocation import BaseInvocationAPP
 
 class InferInvocationAPP(BaseInvocationAPP):
     def __init__(
-        self,
-        infer_function: Callable,
-        input_strategy: Optional[BaseStrategy] = None,
-        output_strategy: Optional[BaseStrategy] = None,
+            self,
+            infer_function: Callable,
+            input_strategy: Optional[BaseStrategy] = None,
+            output_strategy: Optional[BaseStrategy] = None,
     ):
 
         super().__init__()
@@ -46,6 +46,6 @@ class InferInvocationAPP(BaseInvocationAPP):
                 response = result
 
         except Exception as e:
-            response = {"error": str(e)}
+            return JSONResponse(content=jsonable_encoder(e), status_code=500)
 
-        return JSONResponse(content=jsonable_encoder(response))
+        return JSONResponse(content=jsonable_encoder(response), status_code=200)
