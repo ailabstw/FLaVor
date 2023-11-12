@@ -2,7 +2,7 @@ from collections.abc import Callable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
 import aiofile
-from fastapi import FastAPI, Request
+from fastapi import Request
 from starlette.datastructures import UploadFile
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import ClientDisconnect
@@ -63,10 +63,6 @@ class _CachedRequest(Request):
 
 
 class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app: FastAPI):
-        super().__init__(app)
-
-        self._tempdir: TemporaryDirectory = TemporaryDirectory()
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -76,14 +72,8 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
         self._cached_request = _CachedRequest(scope, receive)
         await super().__call__(scope, receive, send)
 
-    def prepare(self):
-        self._tempdir = TemporaryDirectory()
-
-    def cleanup(self):
-        self._tempdir.cleanup()
-
     async def dispatch(self, request: Request, call_next: Callable):
-        self.prepare()
+        tempdir: TemporaryDirectory = TemporaryDirectory()
 
         form_data = await request.form()
         json_body = {}
@@ -93,7 +83,7 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
                 filenames = []
                 for file_ in form_data.getlist(k):
                     temp_file = NamedTemporaryFile(
-                        delete=False, dir=self._tempdir.name, suffix=f"{file_.filename}"
+                        delete=False, dir=tempdir.name, suffix=f"{file_.filename}"
                     )
                     async with aiofile.async_open(temp_file.name, "wb") as f:
                         await f.write(await file_.read())
@@ -105,7 +95,9 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
         request.state.transformed_json = json_body
         request.state.original_form = form_data
 
-        response = await call_next(request)
-        
-        self.cleanup()
+        try:
+            response = await call_next(request)
+        finally:
+            tempdir.cleanup()
+
         return response
