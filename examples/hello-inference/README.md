@@ -28,8 +28,8 @@ def infer(**kwargs):
 
 # Wrap the infer function with input and optional output strategies
 app = InferAPP(infer_function=infer,
-               input_strategy=AiCOCOInputStrategy(),
-               output_strategy=AiCOCOutputStrategy())
+               input_strategy=AiCOCOInputStrategy,
+               output_strategy=AiCOCOutputStrategy()
 
 # Run the application
 app.run(port=9000)
