@@ -19,7 +19,7 @@ def infer(**kwargs):
 
     # please return your output as defined in Readme
     result = {
-    "sorted_images": [...]
+    "sorted_images": [...],
     "categories": {0: {"name": "Tumor", "supercategory_name": null, "display": False}},
     "seg_model_out": 4d ndarray with segmentation predictions
     }
@@ -80,7 +80,7 @@ The `AiCOCOutputStrategy` is an optional component that can be used to format th
 	    ...
 	]
 	"categories": {
-        0: {"name": "Tumor", "supercategory_name": null, "display": False},
+	    0: {"name": "Tumor", "supercategory_name": null, "display": False},
 	    1: ...
 	},
 
