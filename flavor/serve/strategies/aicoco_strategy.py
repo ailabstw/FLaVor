@@ -81,11 +81,12 @@ class AiCOCOOutputStrategy(BaseStrategy):
 
         categories = self.generate_categories(categories)
 
-        class_id_table = {
-            category.pop("class_id"): category["id"]
-            for category in categories["categories"]
-            if "class_id" in category
-        }
+        class_id_table = {}
+        for category in categories["categories"]:
+            class_id = category.pop("class_id", None)
+            display = category.pop("display", True)
+            if display and class_id is not None:
+                class_id_table[class_id] = category["id"]
 
         annot_obj = self.generate_annotations_objects(
             seg_model_out, images_id_table, class_id_table

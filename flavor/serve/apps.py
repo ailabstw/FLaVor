@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Type
 
 import uvicorn
 from fastapi import FastAPI, Response
@@ -33,8 +33,8 @@ class InferAPP(BaseAPP):
     def __init__(
         self,
         infer_function: Callable,
-        input_strategy: Optional[BaseStrategy] = None,
-        output_strategy: Optional[BaseStrategy] = None,
+        input_strategy: Optional[Type[BaseStrategy]] = None,
+        output_strategy: Optional[Type[BaseStrategy]] = None,
     ):
 
         super().__init__()

@@ -9,6 +9,6 @@ def infer(images):
     return images  # demo code only, please return your output as defined in Readme
 
 
-app = InferAPP(infer_function=infer, input_strategy=AiCOCOInputStrategy(), output_strategy=None)
+app = InferAPP(infer_function=infer, input_strategy=AiCOCOInputStrategy, output_strategy=None)
 
 app.run()
