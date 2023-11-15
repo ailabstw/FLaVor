@@ -1,4 +1,5 @@
 import json
+import random
 from json import JSONDecodeError
 from typing import Any, Dict, List, Union
 
@@ -15,21 +16,27 @@ from .base_strategy import BaseStrategy
 class AiCOCOInputStrategy(BaseStrategy):
     async def apply(self, form_data: Union[FormData, Dict[str, Any]]):
 
-        ta = TypeAdapter(List[AiImage])
-        try:
-            images = json.loads(form_data.get("images"))
-        except TypeError as e:
-            raise JSONDecodeError(doc="", msg=str(e), pos=-1)
-
-        ta.validate_python(images)
-
         files = form_data.get("files")
 
-        for image in images:
+        if "images" not in form_data:
+            images = [
+                {"id": generate(), "file_name": file, "index": idx}
+                for idx, file in enumerate(files)
+            ]
+        else:
+            ta = TypeAdapter(List[AiImage])
             try:
-                image["file_name"] = next(file for file in files if image["file_name"] in file)
-            except StopIteration:
-                raise Exception("filename not match")
+                images = json.loads(form_data.get("images"))
+            except TypeError as e:
+                raise JSONDecodeError(doc="", msg=str(e), pos=-1)
+
+            ta.validate_python(images)
+
+            for image in images:
+                try:
+                    image["file_name"] = next(file for file in files if image["file_name"] in file)
+                except StopIteration:
+                    raise Exception("filename not match")
 
         return {"images": images}
 
@@ -192,3 +199,48 @@ class AiCOCOOutputStrategy(BaseStrategy):
                 res["objects"].append({"id": label_nano_id, "category_ids": [class_nano_id]})
 
         return res
+
+
+class AiCOCOGradioStrategy(BaseStrategy):
+    async def apply(self, result: Dict[str, Any]) -> List:
+        data = np.transpose(result["data"], (1, 2, 3, 0))
+
+        data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
+
+        imgs = [cv2.cvtColor(img, cv2.COLOR_GRAY2RGB) if img.shape[2] == 1 else img for img in data]
+
+        classes, slices, _, _ = result["seg_model_out"].shape
+
+        # Traverse classes
+        for cls_idx in range(classes):
+            if not result["categories"][cls_idx]["display"]:
+                continue
+
+                hex_color = result["categories"][cls_idx].get(
+                    "color", "#{:06x}".format(random.randint(0, 0xFFFFFF))
+                )
+                rgb_tuple = tuple(int(hex_color[i : i + 2], 16) for i in (1, 3, 5))
+
+            cls_volume = result["seg_model_out"][cls_idx]
+            unique_labels = np.unique(cls_volume)[1:]  # Ignore index 0
+
+            # Traverse 1~label
+            for label_idx in unique_labels:
+
+                # Traverse slices
+                for slice_idx in range(slices):
+                    label_slice = np.array(cls_volume[slice_idx])
+
+                    the_label_slice = np.array(label_slice == label_idx, dtype=np.uint8)
+                    if the_label_slice.sum() == 0:
+                        continue
+
+                    contours, _ = cv2.findContours(
+                        the_label_slice,
+                        cv2.RETR_TREE,
+                        cv2.CHAIN_APPROX_NONE,  # No approximation
+                    )
+
+                    cv2.drawContours(imgs[slice_idx], contours, -1, rgb_tuple, 3)
+
+        return imgs, None, "success"
