@@ -99,7 +99,7 @@ class GradioInferAPP(object):
 
         except Exception as e:
 
-            return None, None, f"error: {e}"
+            return None, None, None, f"error: {e}"
 
         return response
 
@@ -109,7 +109,8 @@ class GradioInferAPP(object):
             fn=self.invocations,
             inputs=gr.File(label="DICOM files", file_count="multiple"),
             outputs=[
-                gr.Gallery(label="Visualization"),
+                gr.Gallery(label="Image"),
+                gr.Gallery(label="Prediction"),
                 gr.Label(label="Label"),
                 gr.Textbox(label="Status"),
             ],
