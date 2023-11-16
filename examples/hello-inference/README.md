@@ -3,13 +3,13 @@
 
 ## Step 1: Wrap Your Callback Function
 
-Wrap the inference function of your model with the class `InferAPP`. Define the input strategy that converts the API input into the desired format, and optionally an output strategy that converts the model output into AiCOCO format.
+Wrap the inference function of your model with the class `InferAPP` and specify the input and output strategy functions optionally. The input strategy function converts the API input into the desired format. For the default input strategy function, please see `AiCOCOInputStrategy`. The output strategy function converts the model output into AiCOCO compatible format. Depending on the tasks, there are four default output strategy functions to be chosen, `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`. 
 
-### Code Example (PyTorch)
+### Segmentation task example (PyTorch)
 
 ```python
 from flavor.serve.apps import InferAPP
-from flavor.serve.strategies import AiCOCOInputStrategy, AiCOCOutputStrategy
+from flavor.serve.strategies import AiCOCOInputStrategy, AiCOCOSegmentationOutputStrategy
 
 # Define your model's infer function
 def infer(**kwargs):
@@ -17,11 +17,20 @@ def infer(**kwargs):
     # Your model & inference code
     ...
 
-    # please return your output as defined in Readme
+    # please return your output as defined in README
     result = {
-    "sorted_images": [...],
-    "categories": {0: {"name": "Tumor", "supercategory_name": null, "display": False}},
-    "seg_model_out": 4d ndarray with segmentation predictions
+        "sorted_images": [
+            {"id": "TZsN5Td8LunFEdL8o8334", "file_name": "slice0.dcm", "index": 0, ...}, 
+            {"id": "tF410qthYoQ5t7qnK2RcR", "file_name": "slice1.dcm", "index": 1, ...}, 
+            ...
+        ],
+        "categories": {
+            0: {"name": "Background", "supercategory_name": "Tumor", "display": False}, 
+            1: {"name": "Lesion", "supercategory_name": "Tumor", "display": True},
+            ...
+        },
+        "regressions": {},
+        "model_out": model_out,
     }
 
     return result
@@ -29,15 +38,15 @@ def infer(**kwargs):
 # Wrap the infer function with input and optional output strategies
 app = InferAPP(infer_function=infer,
                input_strategy=AiCOCOInputStrategy,
-               output_strategy=AiCOCOutputStrategy)
+               output_strategy=AiCOCOSegmentationOutputStrategy)
 
 # Run the application
 app.run(port=9000)
 ```
 
-### Input and Output Structures
+### Input Structures
 
-#### AiCOCOInputStrategy
+`AiCOCOInputStrategy`
 
 This strategy parses the incoming data into a structured format that the inference function can interpret.
 
@@ -50,6 +59,7 @@ This strategy parses the incoming data into a structured format that the inferen
         {
             "id": "nanoid",
             "file_name": "<filename>.<ext>",
+            "index": index,
             ...
         },
         ...
@@ -57,76 +67,116 @@ This strategy parses the incoming data into a structured format that the inferen
 }
 ```
 
-#### AiCOCOOutputStrategy
+### Output Structures
 
-The `AiCOCOutputStrategy` is an optional component that can be used to format the output of the inference model into the AiCOCO format, providing a standardized method for serializing the results. If `output_strategy=None` is specified, the `infer_function` must return the AiCOCO format directly.
+The output strategy is an optional component that can be used to format the output of the inference model into the AiCOCO format, providing a standardized method for serializing the results. If `output_strategy=None` is specified, the `infer_function` must return the AiCOCO format directly.
 
-#### Expected Model Output Structure for AiCOCOutputStrategy
+The providing default output strategy can be chosen depending on the task, classification, detection, regression or segmentation. Each requires different input format defined in `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`. 
+
+* **classification task** -  `AiCOCOClassificationOutputStrategy`:
 ```python
-{
-	"sorted_images": [
-	    # z=0
-	    {
-	        "id": "nanoid",
-	        "file_name": "<filename>.<ext>",
-	        ...
-	    },
-	    # z=1
-            {
-	        "id": "nanoid",
-	        "file_name": "<filename>.<ext>",
-	        ...
-	    },
-	    ...
-	]
-	"categories": {
-	    0: {"name": "Tumor", "supercategory_name": null, "display": False},
-	    1: ...
-	},
-
-	"seg_model_out": 4d ndarray with segmentation predictions}
+output = {
+    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
+    "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
+    "regressions": {},
+    "model_out": model_out # 2d NumPy array with classification predictions
 }
 ```
-If  you  use  `AiCOCOutputStrategy`,  the  expected  output  should  be  a  dictionary  containing  the  following  keys:
+* **detection task** - `AiCOCODetectionOutputStrategy`: 
+```python
+output = {
+    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
+    "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
+    "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
+    "model_out": {
+        "bbox_pred": bbox_pred, # list of bbox prediction as [[x_min, y_min, x_max, y_max, cls], ...]
+        "confidence_score": confidence_score, # optional, list of confidence score of each bbox
+        "regression_value": regression_value, # optional, list of regression value of each bbox if there is regression prediction
+    }
+}
+```
+* **regression task** - `AiCOCORegressionOutputStrategy`: 
+```python
+output = {
+    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
+    "categories": {},
+    "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
+    "model_out": model_out # 2d NumPy array with regression predictions
+}
+```
+* **segmentation task** - `AiCOCOSegmentationOutputStrategy`: 
+```python
+output = {
+    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
+    "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
+    "regressions": {},
+    "model_out": model_out # 4d NumPy array with grouped segmentation predictions
+}
+```
 
- -  `sorted_images`:  A  list  of  images (see Input Format) sorted by  a certain criterion  (e.g.  by  Z-axis  or  temporal order) to  correlate  with  `seg_model_out`.
+The general pattern of expected output should be a dictionary containing the following keys:
 
-- `categories`: A dictionary where each key is the class ID. The corresponding value is a dictionary with category information that must be filled with `supercategory_name`, `display` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
+- `sorted_images`: a list of AiCOCO compatible images (see Input Format) attribute sorted by a certain criterion (e.g. by Z-axis or temporal order) to  correlate  with `model_out`.
 
-- `seg_model_out`: A 4D NumPy ndarray `(c, z, y, x)`, which represents the segmentation results. For semantic segmentation, the values are binary (0 or 1) and indicate the presence of a class. For instance segmentation, the array contains instance IDs as positive integers that indicate different instances.
+- `categories`: a dictionary where each key is the class ID. The corresponding value is a dictionary with category information that must be filled with `supercategory_name`, `display` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
 
-- `det_model_out`: for bbox (To Do)
+- `regressions`: a dictionary where each key is the regression ID. The corresponding value is a dictionary with regression information that must be filled with `superregression_name` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
 
-- `cls_model_out`: for classification (To Do)
+- `model_out`: 
+  * classification: classification results in a 2D NumPy with shape of `(c, 1)` for 2D input or `(c, 1)` and `(c, z)` for 3D input. 
+  * detection: detection results packed in a dictionary containing key-value pairs of `"bbox_pred"`, `"confidence_score"` and `"regression_value"`.
+    * `"bbox_pred"`: a list of bbox prediction. For example, ```[[x_min, y_min, x_max, y_max, cls], ...]```
+    * `"confidence_score"`: (optional) a list of confidence score of each bbox.
+    * `"regression_value"`: (optional) a list of regression value of each bbox
+  * regression: regression results in a 2D NumPy with shape of `(c, 1)` for 2D input or `(c, 1)` and `(c, z)` for 3D input. 
+  * segmentation: segmentation results in a 4D NumPy array with shape of `(c, z, y, x)`. For semantic segmentation, the values are binary (0 or 1) and indicate the presence of a class. For instance segmentation, the array contains instance IDs as positive integers that indicate different instances.
 
-##### AiCOCO Format
+### AiCOCO Format
 
-The AiCOCO format is described in detail below and contains the [schema](../../schema/ai-coco-v2.json)  for structured output, including required and optional fields for `images`, `annotations`, `categories`, and `objects`.
+The AiCOCO format is described in detail below and contains the [schema](../../schema/aicoco.json)  for structured output, including required and optional fields for `images`, `annotations`, `categories`, `regression` and `objects`.
 
 ```python
 {
   "images": [
     {
       # Required fields
-      "id": "nanoid",
+      "id": "nanoid(21)",
       "file_name": "<filename>.<ext>",
-      # Optional fields
+      # For order purpose
       "index": 1,
-      # For time sequence images like US
-      "category_ids": ["nanoid","nanoid"],
+      "category_ids": [
+        "nanoid(21)", ...
+      ] or null,
+      "regressions": [
+        {
+          "regression_id": "nanoid(21)",
+          "value": 130
+        }
+        , ...
+      ] or null,
+      #  Optional fields
       ...
     }
   ],
   "annotations": [
     {
       # Required fields
-      "id": "nanoid",
-      "image_id": "nanoid",
-      "object_id": "nanoid",
-      "iscrowd": 0,
-      # 1 for RLE mask, 0 otherwise
-      "bbox": [[x1, y1, x2, y2],...] or null,
-      "segmentation": [[x1, y1, x2, y2, x3, y3, ..., xn, yn],...] or null,
+      "id": "nanoid(21)",
+      "image_id": "nanoid(21)",
+      "object_id": "nanoid(21)",
+      "iscrowd": 0, # 1 for RLE mask, 0 otherwise
+      "bbox": [
+        [
+          x1, y1, x2, y2
+        ],
+        ...
+      ] or null,
+      "segmentation": [
+        [
+          x1, y1, x2, y2, x3, y3, ..., xn, yn
+        ],
+        ...
+      ] or null,
       # Optional fields
       ...
     }
@@ -134,47 +184,71 @@ The AiCOCO format is described in detail below and contains the [schema](../../s
   "categories": [
     {
       # Required fields
-      "id": "nanoid",
+      "id": "nanoid(21)",
       "name": "Brain",
-      "supercategory_id": "nanoid" or null,
+      "supercategory_id": "nanoid(21)" or null,
       # Optional fields
       "color": "#FFFFFF",
+      ...
+    }
+  ],
+  "regressions": [
+    {
+      # Required fields
+      "id": "nanoid(21)",
+      "name": "SBP",
+      "superregression_id": "nanoid(21)" or null,
+      # Optional fields
+      "unit": "mmHg",
+      "threshold": "140",
       ...
     }
   ],
   "objects": [
     {
       # Required fields
-      "id": "nanoid",
+      "id": "nanoid(21)",
       "category_ids": [
-        "nanoid",
-        "nanoid"
-      ],
+        "nanoid(21)", ...
+      ] or null,
+      "regressions": [
+        {
+          "regression_id": "nanoid(21)",
+          "value": 130
+        }
+        , ...
+      ] or null,
       # Optional fields
-      "centroid": [
-        x,
-        y
-      ],
       "confidence": 0.5,
-      "regression_value": 50,
       ...
     }
   ],
   "meta": {
+    # Required
+    # For whole series label
+    "category_ids": ["nanoid(21)", ...] or null,
+    "regressions": [
+        {
+          "regression_id": "nanoid(21)",
+          "value": 130
+        }
+        , ...
+      ] or null,
     # Optional fields
-    "task_type":  "binary" # or "multiclass" or "multilabel",
-    "category_ids": ["nanoid", ...]  # for whole series label
+    "task_type":  "binary" or "multiclass" or "multilabel",
+    ...
   }
 }
+
 ```
 
 Replace all placeholders with actual values, e.g.  `<filename>.<ext>`, `nanoid`, and details under each JSON key.
 
-### Step 2: Configure the Dockerfile Command
+## Step 2: Configure the Dockerfile Command
 
 Package your code in a Docker image and set the `CMD` directive to run your application.
 
-#### Dockerfile Example
+### Dockerfile Example
 
 ```dockerfile
 CMD ["python", "main.py"]

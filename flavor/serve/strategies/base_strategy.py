@@ -1,9 +1,8 @@
+from typing import Any, Dict
 from abc import ABC, abstractmethod
-
-from starlette.formparsers import FormData
 
 
 class BaseStrategy(ABC):
     @abstractmethod
-    def apply(self, form_data: FormData):
+    def apply(self, form_data: Dict[str, Any]):
         pass

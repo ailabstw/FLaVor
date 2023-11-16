@@ -23,6 +23,12 @@
           },
           "type": "array"
         },
+        "regressions": {
+          "items": {
+            "$ref": "#/definitions/AiRegression"
+          },
+          "type": "array"
+        },
         "objects": {
           "items": {
             "$ref": "#/definitions/AiObject"
@@ -37,6 +43,7 @@
         "images",
         "annotations",
         "categories",
+        "regressions",
         "objects",
         "meta"
       ],
@@ -45,9 +52,17 @@
     "AiImage": {
       "properties": {
         "category_ids": {
-          "items": {
-            "type": "string"
-          }
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "file_name": {
           "type": "string"
@@ -57,13 +72,22 @@
         },
         "index": {
           "type": "number"
+        },
+        "regressions": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/definitions/AiRegressionItem"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "required": [
-        "id",
-        "file_name",
-        "index"
-      ],
+      "required": ["category_ids", "file_name", "id", "index", "regressions"],
       "type": "object"
     },
     "AiAnnotation": {
@@ -93,10 +117,7 @@
           "type": "string"
         },
         "iscrowd": {
-          "enum": [
-            0,
-            1
-          ],
+          "enum": [0, 1],
           "type": "number"
         },
         "object_id": {
@@ -141,33 +162,57 @@
           "type": "string"
         },
         "supercategory_id": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": ["string", "null"]
         }
       },
-      "required": [
-        "id",
-        "name",
-        "supercategory_id"
-      ],
+      "required": ["id", "name", "supercategory_id"],
+      "type": "object"
+    },
+    "AiRegression": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "superregression_id": {
+          "type": ["string", "null"]
+        },
+        "unit": {
+          "type": "string"
+        }
+      },
+      "required": ["id", "superregression_id", "name"],
+      "type": "object"
+    },
+    "AiRegressionItem": {
+      "additionalProperties": false,
+      "properties": {
+        "regression_id": {
+          "type": "string"
+        },
+        "value": {
+          "type": "number"
+        }
+      },
+      "required": ["regression_id", "value"],
       "type": "object"
     },
     "AiObject": {
       "properties": {
         "category_ids": {
-          "items": {
-            "type": "string"
-          }
-        },
-        "centroid": {
-          "items": {
-            "type": "number"
-          },
-          "maxItems": 2,
-          "minItems": 2,
-          "type": "array"
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "confidence": {
           "type": "number"
@@ -175,27 +220,57 @@
         "id": {
           "type": "string"
         },
-        "regression_value": {
-          "type": "number"
+        "regressions": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/definitions/AiRegressionItem"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
-      "required": [
-        "id",
-        "category_ids"
-      ],
+      "required": ["id", "category_ids", "regressions"],
       "type": "object"
     },
     "AiMeta": {
       "properties": {
         "category_ids": {
-          "items": {
-            "type": "string"
-          }
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "regressions": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/definitions/AiRegressionItem"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "task_type": {
+          "enum": ["binary", "multilabel", "multiclass"],
           "type": "string"
         }
       },
+      "required": ["category_ids", "regressions"],
       "type": "object"
     }
   }
