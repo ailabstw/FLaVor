@@ -1,3 +1,4 @@
+import copy
 import json
 import random
 from json import JSONDecodeError
@@ -86,7 +87,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
 
         images_id_table = {idx: image["id"] for idx, image in enumerate(sorted_images)}
 
-        categories = self.generate_categories(categories)
+        categories = self.generate_categories(copy.deepcopy(categories))
 
         class_id_table = {}
         for category in categories["categories"]:
@@ -99,7 +100,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
             seg_model_out, images_id_table, class_id_table
         )
 
-        meta = {"meta": meta}
+        meta = {"meta": copy.deepcopy(meta)}
 
         return {**images, **categories, **annot_obj, **meta}
 
