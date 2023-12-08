@@ -35,7 +35,9 @@ class AiCOCOInputStrategy(BaseStrategy):
 
             for image in images:
                 try:
-                    image["file_name"] = next(file for file in files if image["file_name"] in file)
+                    image["physical_file_name"] = next(
+                        file for file in files if image["file_name"] in file
+                    )
                 except StopIteration:
                     raise Exception("filename not match")
 
@@ -83,7 +85,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
             Dict[str, Any]: Result in AICOCO compatible format.
         """
 
-        images = {"images": sorted_images}
+        images = {"images": self.generate_images(copy.deepcopy(sorted_images))}
 
         images_id_table = {idx: image["id"] for idx, image in enumerate(sorted_images)}
 
@@ -103,6 +105,14 @@ class AiCOCOOutputStrategy(BaseStrategy):
         meta = {"meta": copy.deepcopy(meta)}
 
         return {**images, **categories, **annot_obj, **meta}
+
+    def generate_images(self, images: List[Any]) -> List[Any]:
+
+        for image in images:
+            if "physical_file_name" in image:
+                image.pop("physical_file_name", None)
+
+        return images
 
     def generate_categories(self, categories: Dict[int, str]) -> Dict[str, Any]:
 
