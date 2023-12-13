@@ -21,7 +21,7 @@ class AiCOCOInputStrategy(BaseStrategy):
 
         if "images" not in form_data:
             images = [
-                {"id": generate(), "file_name": file, "index": idx}
+                {"id": generate(), "file_name": file, "physical_file_name": file, "index": idx}
                 for idx, file in enumerate(files)
             ]
         else:
