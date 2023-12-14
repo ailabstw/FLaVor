@@ -46,6 +46,6 @@ class InferInvocationAPP(BaseInvocationAPP):
                 response = result
 
         except Exception as e:
-            return JSONResponse(content=jsonable_encoder({"error": e}), status_code=500)
+            return JSONResponse(content=jsonable_encoder({"error": str(e)}), status_code=500)
 
         return JSONResponse(content=jsonable_encoder(response), status_code=200)

@@ -1,4 +1,6 @@
+import copy
 import json
+import random
 import copy
 from json import JSONDecodeError
 from typing import Any, Dict, List, Tuple, Union
@@ -25,21 +27,29 @@ class AiCOCOInputStrategy(BaseStrategy):
         Returns:
             Dict[str, Any]: Processed data in AiCOCO compatible `images` format.
         """
-        ta = TypeAdapter(List[AiImage])
-        try:
-            images = json.loads(form_data.get("images"))
-        except TypeError as e:
-            raise JSONDecodeError(doc="", msg=str(e), pos=-1)
-
-        ta.validate_python(images)
-
         files = form_data.get("files")
 
-        for image in images:
+        if "images" not in form_data:
+            images = [
+                {"id": generate(), "file_name": file, "physical_file_name": file, "index": idx}
+                for idx, file in enumerate(files)
+            ]
+        else:
+            ta = TypeAdapter(List[AiImage])
             try:
-                image["file_name"] = next(file for file in files if image["file_name"] in file)
-            except StopIteration:
-                raise Exception("filename not match")
+                images = json.loads(form_data.get("images"))
+            except TypeError as e:
+                raise JSONDecodeError(doc="", msg=str(e), pos=-1)
+
+            ta.validate_python(images)
+
+            for image in images:
+                try:
+                    image["physical_file_name"] = next(
+                        file for file in files if image["file_name"] in file
+                    )
+                except StopIteration:
+                    raise Exception("filename not match")
 
         return {"images": images}
 
@@ -72,6 +82,22 @@ class AiCOCOOutputStrategy(BaseStrategy):
         Abstract method to convert model output to AiCOCO compatible format.
         """
         raise NotImplementedError
+
+    def generate_images(self, images: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Generate `categories` in AiCOCO compatible format by removing physical_file_name.
+        
+        Args:
+            images (List[Dict[str, Any]]): List of dictionary mapping for AiCOCO image attribute.
+
+        Returns:
+            List[Dict[str, Any]]: Modified list of dictionary mapping for AiCOCO image attribute.
+        """
+        for image in images:
+            if "physical_file_name" in image:
+                image.pop("physical_file_name", None)
+
+        return images
     
     def generate_categories(self, categories: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
@@ -178,11 +204,11 @@ class AiCOCOOutputStrategy(BaseStrategy):
         Returns:
             Tuple[Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]]: Prepared AiCOCO output and model output as np.ndarray.
         """
-        aicoco_images = {"images": sorted_images}
+        aicoco_images = {"images": self.generate_images(copy.deepcopy(sorted_images))}
 
         if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
-            self.aicoco_categories = self.generate_categories(categories)
-            self.aicoco_regressions = self.generate_regressions(regressions)
+            self.aicoco_categories = self.generate_categories(copy.deepcopy(categories))
+            self.aicoco_regressions = self.generate_regressions(copy.deepcopy(regressions))
             self.set_images_class_regression_id_table(sorted_images)
 
         aicoco_categories = {"categories": self.aicoco_categories}
@@ -467,7 +493,6 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
             
         return res
 
-
 class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
     def model_to_aicoco(
         self,
@@ -558,3 +583,55 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
                         })
                 
         return images, meta
+
+
+class AiCOCOGradioStrategy(BaseStrategy):
+    async def apply(self, result: Dict[str, Any]) -> List:
+
+        data = result["data"]
+
+        data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
+
+        data = np.repeat(data, 3, axis=0) if data.shape[0] == 1 else data
+
+        mask = np.zeros_like(data)
+
+        for cls_idx in range(result["seg_model_out"].shape[0]):
+            if not result["categories"][cls_idx]["display"]:
+                continue
+
+            if "color" in result["categories"][cls_idx]:
+                rgb_tuple = tuple(
+                    int(result["categories"][cls_idx]["color"][i : i + 2], 16) for i in (1, 3, 5)
+                )
+            else:
+                rgb_tuple = self.generate_rgb()
+
+            cls_volume = result["seg_model_out"][cls_idx]
+
+            mask[0][cls_volume != 0] = rgb_tuple[0]
+            mask[1][cls_volume != 0] = rgb_tuple[1]
+            mask[2][cls_volume != 0] = rgb_tuple[2]
+
+        pred_vis = (data * 0.8 + mask * 0.2).astype(np.uint8)
+
+        data = np.transpose(data, (1, 2, 3, 0))
+        pred_vis = np.transpose(pred_vis, (1, 2, 3, 0))
+
+        return [img for img in data], [img for img in pred_vis], None, "success"
+
+    def generate_rgb(self):
+        components = ["r", "g", "b"]
+        random.shuffle(components)
+
+        rgb = {}
+        for component in components:
+            if component == components[0]:
+                rgb[component] = random.randint(0, 255)
+            elif component == components[1]:
+                rgb[component] = random.randint(158, 255)
+            else:
+                rgb[component] = random.randint(0, 98)
+
+        return rgb["r"], rgb["g"], rgb["b"]
+
