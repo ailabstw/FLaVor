@@ -17,12 +17,12 @@ from .base_strategy import BaseStrategy
 
 
 class AiCOCOInputStrategy(BaseStrategy):
-    async def apply(self, form_data: Union[FormData, Dict[str, Any]]):
+    async def apply(self, form_data: Union[FormData, Dict[str, Union[List[str], str]]]):
         """
         Apply the AiCOCO input strategy to process input data.
 
         Args:
-            form_data (Union[FormData, Dict[str, Any]]): Input data in the form of FormData or a dictionary.
+            form_data (Union[FormData, Dict[str, Union[List[str], str]]]): Input data in the form of FormData or a dictionary.
 
         Returns:
             Dict[str, Any]: Processed data in AiCOCO compatible `images` format.
@@ -66,8 +66,8 @@ class AiCOCOOutputStrategy(BaseStrategy):
             Dict[str, Any]: Result in complete AICOCO format.
         """
 
-        ta = TypeAdapter(AiCOCOFormat) 
-        
+        ta = TypeAdapter(AiCOCOFormat)
+
         aicoco_out, model_out = self.prepare_aicoco(**result)
 
         response = self.model_to_aicoco(aicoco_out, model_out)
@@ -75,7 +75,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
         ta.validate_python(response)
 
         return response
-    
+
     @abc.abstractmethod
     def model_to_aicoco(self, *args, **kwargs):
         """
@@ -86,7 +86,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
     def generate_images(self, images: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Generate `categories` in AiCOCO compatible format by removing physical_file_name.
-        
+
         Args:
             images (List[Dict[str, Any]]): List of dictionary mapping for AiCOCO image attribute.
 
@@ -98,7 +98,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
                 image.pop("physical_file_name", None)
 
         return images
-    
+
     def generate_categories(self, categories: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Generate `categories` in AiCOCO compatible format.
@@ -128,7 +128,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
             res.append({"id": n_id, "name": sup_class_name, "supercategory_id": None})
 
         return res
-    
+
     def generate_regressions(self, regressions: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Generate `regressions` in AiCOCO compatible format.
@@ -158,10 +158,10 @@ class AiCOCOOutputStrategy(BaseStrategy):
             res.append({"id": n_id, "name": sup_regression_name, "superregression_id": None})
 
         return res
-    
+
     def set_images_class_regression_id_table(
-        self, 
-        images: List[Dict[str, Any]], 
+        self,
+        images: List[Dict[str, Any]],
     ) -> None:
         """
         Set table attributes for mapping image, class, and regression IDs.
@@ -177,11 +177,12 @@ class AiCOCOOutputStrategy(BaseStrategy):
             display = category["display"] if "display" in category else True
             if display and class_id is not None:
                 self.class_id_table[class_id] = category["id"]
-        
+
         for regression in self.aicoco_regressions:
             regression_id = regression.pop("regression_id", None)
-            self.regression_id_table[regression_id] = regression["id"]
-    
+            if regression_id is not None:
+                self.regression_id_table[regression_id] = regression["id"]
+
     def prepare_aicoco(
         self,
         model_out: np.ndarray,
@@ -214,8 +215,13 @@ class AiCOCOOutputStrategy(BaseStrategy):
         aicoco_categories = {"categories": self.aicoco_categories}
         aicoco_regressions = {"regressions": self.aicoco_regressions}
         aicoco_meta = {"meta": copy.deepcopy(meta)}
-        
-        return {**aicoco_images, **aicoco_categories, **aicoco_regressions, **aicoco_meta}, model_out
+
+        return {
+            **aicoco_images,
+            **aicoco_categories,
+            **aicoco_regressions,
+            **aicoco_meta,
+        }, model_out
 
 
 class AiCOCOSegmentationOutputStrategy(AiCOCOOutputStrategy):
@@ -310,7 +316,9 @@ class AiCOCOSegmentationOutputStrategy(AiCOCOOutputStrategy):
                             "segmentation": segmentation,
                         }
                     )
-                res["objects"].append({"id": label_nano_id, "category_ids": [class_nano_id], "regressions": None})
+                res["objects"].append(
+                    {"id": label_nano_id, "category_ids": [class_nano_id], "regressions": None}
+                )
 
         return res
 
@@ -331,14 +339,16 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
         Returns:
             Dict[str, Any]: Result in AiCOCO compatible format.
         """
-        aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(model_out, aicoco_out["images"], aicoco_out["meta"])
-        
+        aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(
+            model_out, aicoco_out["images"], aicoco_out["meta"]
+        )
+
         annot_obj = {"annotations": [], "objects": []}
 
         return {**aicoco_out, **annot_obj}
 
     def update_images_meta(
-        self, 
+        self,
         out: np.ndarray,
         images: List[Dict[str, Any]],
         meta: Dict[str, Any],
@@ -361,20 +371,20 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
         """
         assert out.ndim == 2, f"shape {out.shape} is not 2D"  # class, z
         classes, slices = out.shape
-        
+
         assert classes == len(self.class_id_table), "Number of categories is not matched."
-        
+
         for cls_idx in range(classes):
             if cls_idx not in self.class_id_table:
                 raise ValueError(f"class {cls_idx} not found. Please specify every category")
             class_nano_id = self.class_id_table[cls_idx]
             cls_pred = out[cls_idx]
-            
+
             # 2D
             if len(self.images_id_table) == 1:
-                if "category_ids" not in images[-1] or not images[-1]["regressions"]:
+                if images[-1]["category_ids"] is None:
                     images[-1]["category_ids"] = list()
-                if "category_ids" not in meta or not meta["regressions"]:
+                if meta["category_ids"] is None:
                     meta["category_ids"] = list()
                 if cls_pred:
                     images[-1]["category_ids"].append(class_nano_id)
@@ -383,22 +393,21 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
             else:
                 # whole-slice
                 if slices == 1:
-                    if "category_ids" not in meta or not meta["regressions"]:
+                    if meta["category_ids"] is None:
                         meta["category_ids"] = list()
                     if cls_pred:
                         meta["category_ids"].append(class_nano_id)
                 # slice-wise
                 else:
                     for slice_idx in range(slices):
-                        if "category_ids" not in images[slice_idx]:
+                        if images[slice_idx]["category_ids"] is None:
                             images[slice_idx]["category_ids"] = list()
                         cls_slice_pred = cls_pred[slice_idx]
-                        
                         if cls_slice_pred:
                             images[slice_idx]["category_ids"].append(class_nano_id)
-                            
+
         return images, meta
-                      
+
 
 class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
     def model_to_aicoco(
@@ -417,9 +426,9 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
             Dict[str, Any]: Result in AiCOCO compatible format.
         """
         annot_obj = self.generate_annotations_objects(model_out)
-        
+
         return {**aicoco_out, **annot_obj}
-    
+
     def generate_annotations_objects(
         self,
         out: Dict[str, Any],
@@ -444,17 +453,17 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
             - The 'segmentation' in annotations is set to None for detection tasks.
         """
         assert isinstance(out, dict), "`out` type should be dict."
-        
+
         res = dict()
         res["annotations"] = list()
         res["objects"] = list()
-        
+
         for i, bbox_pred in enumerate(out["bbox_pred"]):
             y_min, x_min, y_max, x_max, c = bbox_pred.tolist()
-            
+
             if c not in self.class_id_table:
                 continue
-            
+
             object_nano_id = generate()
             image_nano_id = self.images_id_table[0]
             annot = {
@@ -467,18 +476,20 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
             }
 
             obj = {
-                "id": object_nano_id, 
+                "id": object_nano_id,
                 "category_ids": [self.class_id_table[c]],
             }
-            
+
             if "confidence_score" in out:
                 obj["confidence"] = int(out["confidence_score"][i])
-                
+
             if "regressions" in out:
                 obj["regressions"] = list()
                 regression_value = out["regression_value"][i]
-                assert regression_value.ndim == 2 and regression_value.shape[1] == 1, "Shape of `regression_value` is wrong."
-                for i, value in enumerate(regression_value): 
+                assert (
+                    regression_value.ndim == 2 and regression_value.shape[1] == 1
+                ), "Shape of `regression_value` is wrong."
+                for i, value in enumerate(regression_value):
                     obj["regressions"].append(
                         {
                             "regression_id": self.regression_id_table[i],
@@ -487,11 +498,12 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
                     )
             else:
                 obj["regressions"] = None
-            
+
             res["annotations"].append(annot)
             res["objects"].append(obj)
-            
+
         return res
+
 
 class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
     def model_to_aicoco(
@@ -509,14 +521,16 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
         Returns:
             Dict[str, Any]: Result in AiCOCO compatible format.
         """
-        aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(model_out, aicoco_out["images"], aicoco_out["meta"])
-        
+        aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(
+            model_out, aicoco_out["images"], aicoco_out["meta"]
+        )
+
         annot_obj = {"annotations": [], "objects": []}
 
         return {**aicoco_out, **annot_obj}
 
     def update_images_meta(
-        self, 
+        self,
         out: np.ndarray,
         images: List[Dict[str, Any]],
         meta: Dict[str, Any],
@@ -538,55 +552,65 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
             For 3D output, if slices == 1, it updates only meta; otherwise, it updates each image in the images list slice-wise.
         """
         assert out.ndim == 2, f"shape {out.shape} is not 2D"
-        
+
         n_regression, slices = out.shape
-        
-        assert n_regression == len(self.regression_id_table), "Number of regressions is not matched."
-        
-        for reg_idx in range(n_regression): 
+
+        assert n_regression == len(
+            self.regression_id_table
+        ), "Number of regressions is not matched."
+
+        for reg_idx in range(n_regression):
             pred_value = out[reg_idx]
             regression_nano_id = self.regression_id_table[reg_idx]
             # 2D
             if len(self.images_id_table) == 1:
-                if "regressions" not in images[-1] or not images[-1]["regressions"]:
+                if images[-1]["regressions"] is None:
                     images[-1]["regressions"] = list()
-                if "regressions" not in meta or not meta["regressions"]:
+                if meta["regressions"] is None:
                     meta["regressions"] = list()
-                    
-                images[-1]["regressions"].append({
-                    "regression_id": regression_nano_id,
-                    "value": pred_value.item(),
-                })
-                meta["regressions"].append({
-                    "regression_id": regression_nano_id,
-                    "value": pred_value.item(),
-                })
+
+                images[-1]["regressions"].append(
+                    {
+                        "regression_id": regression_nano_id,
+                        "value": pred_value.item(),
+                    }
+                )
+                meta["regressions"].append(
+                    {
+                        "regression_id": regression_nano_id,
+                        "value": pred_value.item(),
+                    }
+                )
             # 3D
             else:
                 # whole-slice
                 if slices == 1:
-                    if "regressions" not in meta or not meta["regressions"]:
+                    if meta["regressions"] is None:
                         meta["regressions"] = list()
-                    meta["regressions"].append({
-                        "regression_id": regression_nano_id,
-                        "value": pred_value.item(),
-                    })
+                    meta["regressions"].append(
+                        {
+                            "regression_id": regression_nano_id,
+                            "value": pred_value.item(),
+                        }
+                    )
                 # slice-wise
                 else:
                     for slice_idx in range(slices):
-                        if "regressions" not in images[slice_idx] or not images[slice_idx]["regressions"]:
+                        if images[slice_idx]["regressions"] is None:
                             images[slice_idx]["regressions"] = list()
                         pred_slice_value = pred_value[slice_idx]
-                        images[slice_idx]["regressions"].append({
-                            "regression_id": regression_nano_id,
-                            "value": pred_slice_value,
-                        })
-                
+                        images[slice_idx]["regressions"].append(
+                            {
+                                "regression_id": regression_nano_id,
+                                "value": pred_slice_value,
+                            }
+                        )
+
         return images, meta
 
 
 class AiCOCOGradioStrategy(BaseStrategy):
-    async def apply(self, result: Dict[str, Any]) -> List:
+    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
 
         data = result["data"]
 
@@ -596,7 +620,7 @@ class AiCOCOGradioStrategy(BaseStrategy):
 
         mask = np.zeros_like(data)
 
-        for cls_idx in range(result["seg_model_out"].shape[0]):
+        for cls_idx in range(result["model_out"].shape[0]):
             if not result["categories"][cls_idx]["display"]:
                 continue
 
@@ -607,7 +631,7 @@ class AiCOCOGradioStrategy(BaseStrategy):
             else:
                 rgb_tuple = self.generate_rgb()
 
-            cls_volume = result["seg_model_out"][cls_idx]
+            cls_volume = result["model_out"][cls_idx]
 
             mask[0][cls_volume != 0] = rgb_tuple[0]
             mask[1][cls_volume != 0] = rgb_tuple[1]
@@ -634,4 +658,3 @@ class AiCOCOGradioStrategy(BaseStrategy):
                 rgb[component] = random.randint(0, 98)
 
         return rgb["r"], rgb["g"], rgb["b"]
-
