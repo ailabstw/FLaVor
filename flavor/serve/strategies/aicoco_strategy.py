@@ -1,11 +1,10 @@
+import abc
 import copy
 import json
 import random
-import copy
 from json import JSONDecodeError
 from typing import Any, Dict, List, Tuple, Union
 
-import abc
 import cv2  # type: ignore
 import numpy as np
 from nanoid import generate  # type: ignore
