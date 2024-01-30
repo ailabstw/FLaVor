@@ -1,5 +1,4 @@
 import traceback
-
 from typing import Callable, Optional, Type
 
 from fastapi import Request
@@ -49,10 +48,11 @@ class InferInvocationAPP(BaseInvocationAPP):
                 response = result
 
         except Exception as e:
-            return JSONResponse(content="".join(
-                traceback.format_exception(
-                    etype=type(e), value=e, tb=e.__traceback__
-                )
-            ), status_code=500)
+            return JSONResponse(
+                content="".join(
+                    traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
+                ),
+                status_code=500,
+            )
 
         return JSONResponse(content=jsonable_encoder(response), status_code=200)

@@ -1,13 +1,11 @@
 import abc
 import copy
-import cv2  # type: ignore
 import json
 import random
-import traceback
-
 from json import JSONDecodeError
 from typing import Any, Dict, List, Tuple, Union
 
+import cv2  # type: ignore
 import numpy as np
 from nanoid import generate  # type: ignore
 from pydantic import TypeAdapter
@@ -32,7 +30,14 @@ class AiCOCOInputStrategy(BaseStrategy):
 
         if "images" not in form_data:
             images = [
-                {"id": generate(), "file_name": file, "physical_file_name": file, "index": idx, "category_ids": None, "regressions": None}
+                {
+                    "id": generate(),
+                    "file_name": file,
+                    "physical_file_name": file,
+                    "index": idx,
+                    "category_ids": None,
+                    "regressions": None,
+                }
                 for idx, file in enumerate(files)
             ]
         else:
@@ -387,7 +392,7 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
                     images[-1]["category_ids"] = list()
                 if cls_pred:
                     images[-1]["category_ids"].append(class_nano_id)
-                    
+
             if meta["category_ids"] is None:
                 meta["category_ids"] = list()
             if cls_pred:
@@ -450,14 +455,14 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
             y_min, x_min, y_max, x_max = bbox_pred.tolist()
 
             image_nano_id = self.images_id_table[0]
-            
+
             # handle objects
             object_nano_id = generate()
             obj = {
                 "id": object_nano_id,
                 "category_ids": [],
             }
-            
+
             cls_pred = out["cls_pred"][i]
             for c in range(len(cls_pred)):
                 if cls_pred[c] == 0 or c not in self.class_id_table:
@@ -467,7 +472,7 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
             if not obj["category_ids"]:
                 # all the `display` flag in the predicted classes are false
                 continue
-            
+
             if "confidence_score" in out:
                 obj["confidence"] = int(out["confidence_score"][i])
 
@@ -483,9 +488,9 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
                     )
             else:
                 obj["regressions"] = None
-            
+
             res["objects"].append(obj)
-            
+
             # handle annotations
             annot = {
                 "id": generate(),
@@ -557,10 +562,12 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
 
         for reg_idx in range(n_regression):
             if reg_idx not in self.regression_id_table:
-                raise ValueError(f"class {reg_idx} not found. Please specify every regression category.")
+                raise ValueError(
+                    f"class {reg_idx} not found. Please specify every regression category."
+                )
             pred_value = out[reg_idx].item()
             regression_nano_id = self.regression_id_table[reg_idx]
-            
+
             # add tags `image` for 2D only
             if len(self.images_id_table) == 1:
                 if images[-1]["regressions"] is None:
