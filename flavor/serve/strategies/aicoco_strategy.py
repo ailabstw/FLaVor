@@ -1,12 +1,13 @@
+import abc
 import copy
+import cv2  # type: ignore
 import json
 import random
-import copy
+import traceback
+
 from json import JSONDecodeError
 from typing import Any, Dict, List, Tuple, Union
 
-import abc
-import cv2  # type: ignore
 import numpy as np
 from nanoid import generate  # type: ignore
 from pydantic import TypeAdapter
@@ -31,7 +32,7 @@ class AiCOCOInputStrategy(BaseStrategy):
 
         if "images" not in form_data:
             images = [
-                {"id": generate(), "file_name": file, "physical_file_name": file, "index": idx}
+                {"id": generate(), "file_name": file, "physical_file_name": file, "index": idx, "category_ids": None, "regressions": None}
                 for idx, file in enumerate(files)
             ]
         else:
@@ -357,7 +358,7 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
         Update `category_ids` in  `images` and `meta` based on the classification model output.
 
         Args:
-            out (np.ndarray): Model output in 2D shape, it is either (c, 1) for 2D or (c, 1) and (c, s) for 3D input.
+            out (np.ndarray): Model output in 1D shape: (n,).
             images (List[Dict[str, Any]]): List of image metadata dictionaries.
             meta (Dict[str, Any]): Meta information dictionary.
 
@@ -366,45 +367,31 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
 
         Notes:
             The function updates the 'category_ids' field in both the images and meta dictionaries based on the model output.
-            For 2D output (shape: (C, 1)), it updates both meta and the last image in the images list.
-            For 3D output, if slices == 1, it updates only meta; otherwise, it updates each image in the images list slice-wise.
+            For 2D input data, it updates both meta and the last image in the images list.
+            For 3D input data, it only updates meta.
         """
-        assert out.ndim == 2, f"shape {out.shape} is not 2D"  # class, z
-        classes, slices = out.shape
+        assert out.ndim == 1, f"shape {out.shape} is not 1D"
+        n_classes = len(out)
 
-        assert classes == len(self.class_id_table), "Number of categories is not matched."
+        assert n_classes == len(self.class_id_table), "Number of categories is not matched."
 
-        for cls_idx in range(classes):
+        for cls_idx in range(n_classes):
             if cls_idx not in self.class_id_table:
-                raise ValueError(f"class {cls_idx} not found. Please specify every category")
+                raise ValueError(f"class {cls_idx} not found. Please specify every category.")
             class_nano_id = self.class_id_table[cls_idx]
             cls_pred = out[cls_idx]
 
-            # 2D
+            # add tags `image` for 2D only
             if len(self.images_id_table) == 1:
                 if images[-1]["category_ids"] is None:
                     images[-1]["category_ids"] = list()
-                if meta["category_ids"] is None:
-                    meta["category_ids"] = list()
                 if cls_pred:
                     images[-1]["category_ids"].append(class_nano_id)
-                    meta["category_ids"].append(class_nano_id)
-            # 3D
-            else:
-                # whole-slice
-                if slices == 1:
-                    if meta["category_ids"] is None:
-                        meta["category_ids"] = list()
-                    if cls_pred:
-                        meta["category_ids"].append(class_nano_id)
-                # slice-wise
-                else:
-                    for slice_idx in range(slices):
-                        if images[slice_idx]["category_ids"] is None:
-                            images[slice_idx]["category_ids"] = list()
-                        cls_slice_pred = cls_pred[slice_idx]
-                        if cls_slice_pred:
-                            images[slice_idx]["category_ids"].append(class_nano_id)
+                    
+            if meta["category_ids"] is None:
+                meta["category_ids"] = list()
+            if cls_pred:
+                meta["category_ids"].append(class_nano_id)
 
         return images, meta
 
@@ -438,7 +425,8 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
 
         Args:
             out (Dict[str, Any]): Detection model output dictionary with keys:
-                - 'bbox_pred': List of bounding box predictions in the format [y_min, x_min, y_max, x_max, class].
+                - 'bbox_pred': List of bounding box predictions in the format [y_min, x_min, y_max, x_max].
+                - 'cls_pred': List of one-hot classification result for each bbox.
                 - 'confidence_score' (optional): List of confidence scores for each prediction.
                 - 'regression_value' (optional): List of regression values for each prediction.
 
@@ -459,36 +447,33 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
         res["objects"] = list()
 
         for i, bbox_pred in enumerate(out["bbox_pred"]):
-            y_min, x_min, y_max, x_max, c = bbox_pred.tolist()
+            y_min, x_min, y_max, x_max = bbox_pred.tolist()
 
-            if c not in self.class_id_table:
-                continue
-
-            object_nano_id = generate()
             image_nano_id = self.images_id_table[0]
-            annot = {
-                "id": generate(),
-                "image_id": image_nano_id,
-                "object_id": object_nano_id,
-                "iscrowd": 0,
-                "bbox": [[x_min, y_min, x_max, y_max]],
-                "segmentation": None,
-            }
-
+            
+            # handle objects
+            object_nano_id = generate()
             obj = {
                 "id": object_nano_id,
-                "category_ids": [self.class_id_table[c]],
+                "category_ids": [],
             }
+            
+            cls_pred = out["cls_pred"][i]
+            for c in range(len(cls_pred)):
+                if cls_pred[c] == 0 or c not in self.class_id_table:
+                    continue
+                obj["category_ids"].append(self.class_id_table[c])
 
+            if not obj["category_ids"]:
+                # all the `display` flag in the predicted classes are false
+                continue
+            
             if "confidence_score" in out:
                 obj["confidence"] = int(out["confidence_score"][i])
 
             if "regressions" in out:
                 obj["regressions"] = list()
                 regression_value = out["regression_value"][i]
-                assert (
-                    regression_value.ndim == 2 and regression_value.shape[1] == 1
-                ), "Shape of `regression_value` is wrong."
                 for i, value in enumerate(regression_value):
                     obj["regressions"].append(
                         {
@@ -498,9 +483,20 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
                     )
             else:
                 obj["regressions"] = None
+            
+            res["objects"].append(obj)
+            
+            # handle annotations
+            annot = {
+                "id": generate(),
+                "image_id": image_nano_id,
+                "object_id": object_nano_id,
+                "iscrowd": 0,
+                "bbox": [[x_min, y_min, x_max, y_max]],
+                "segmentation": None,
+            }
 
             res["annotations"].append(annot)
-            res["objects"].append(obj)
 
         return res
 
@@ -539,7 +535,7 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
         Update `regressions` in `images` and `meta` based on the regression model output.
 
         Args:
-            out (np.ndarray): Model output in 2D shape, it is either (c, 1) for 2D or (c, 1) and (c, s) for 3D input.
+            out (np.ndarray): Model output in 1D shape: (n,).
             images (List[Dict[str, Any]]): List of image metadata dictionaries.
             meta (Dict[str, Any]): Meta information dictionary.
 
@@ -548,63 +544,42 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
 
         Notes:
             The function updates the 'regressions' field in both the images and meta dictionaries based on the model output.
-            For 2D output (shape: (n, 1)), it updates both meta and the last image in the images list.
-            For 3D output, if slices == 1, it updates only meta; otherwise, it updates each image in the images list slice-wise.
+            For 2D input data, it updates both meta and the last image in the images list.
+            For 3D input data, it only updates meta.
         """
-        assert out.ndim == 2, f"shape {out.shape} is not 2D"
+        assert out.ndim == 1, f"shape {out.shape} is not 1D"
 
-        n_regression, slices = out.shape
+        n_regression = len(out)
 
         assert n_regression == len(
             self.regression_id_table
         ), "Number of regressions is not matched."
 
         for reg_idx in range(n_regression):
-            pred_value = out[reg_idx]
+            if reg_idx not in self.regression_id_table:
+                raise ValueError(f"class {reg_idx} not found. Please specify every regression category.")
+            pred_value = out[reg_idx].item()
             regression_nano_id = self.regression_id_table[reg_idx]
-            # 2D
+            
+            # add tags `image` for 2D only
             if len(self.images_id_table) == 1:
                 if images[-1]["regressions"] is None:
                     images[-1]["regressions"] = list()
-                if meta["regressions"] is None:
-                    meta["regressions"] = list()
-
                 images[-1]["regressions"].append(
                     {
                         "regression_id": regression_nano_id,
-                        "value": pred_value.item(),
+                        "value": pred_value,
                     }
                 )
-                meta["regressions"].append(
-                    {
-                        "regression_id": regression_nano_id,
-                        "value": pred_value.item(),
-                    }
-                )
-            # 3D
-            else:
-                # whole-slice
-                if slices == 1:
-                    if meta["regressions"] is None:
-                        meta["regressions"] = list()
-                    meta["regressions"].append(
-                        {
-                            "regression_id": regression_nano_id,
-                            "value": pred_value.item(),
-                        }
-                    )
-                # slice-wise
-                else:
-                    for slice_idx in range(slices):
-                        if images[slice_idx]["regressions"] is None:
-                            images[slice_idx]["regressions"] = list()
-                        pred_slice_value = pred_value[slice_idx]
-                        images[slice_idx]["regressions"].append(
-                            {
-                                "regression_id": regression_nano_id,
-                                "value": pred_slice_value,
-                            }
-                        )
+
+            if meta["regressions"] is None:
+                meta["regressions"] = list()
+            meta["regressions"].append(
+                {
+                    "regression_id": regression_nano_id,
+                    "value": pred_value,
+                }
+            )
 
         return images, meta
 

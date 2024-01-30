@@ -1,9 +1,10 @@
 # Getting Started
+
 `InferAPIApp` rationalizes the use of inference models by encapsulating the inference functions in a user-friendly framework. It provides easy-to-configure input and output strategies tailored to the processing and production of AiCOCO-formatted data, ensuring seamless integration and standardization.
 
 ## Step 1: Wrap Your Callback Function
 
-Wrap the inference function of your model with the class `InferAPP` and specify the input and output strategy functions optionally. The input strategy function converts the API input into the desired format. For the default input strategy function, please see `AiCOCOInputStrategy`. The output strategy function converts the model output into AiCOCO compatible format. Depending on the tasks, there are four default output strategy functions to be chosen, `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`. 
+Wrap the inference function of your model with the class `InferAPP` and specify the input and output strategy functions optionally. The input strategy function converts the API input into the desired format. For the default input strategy function, please see `AiCOCOInputStrategy`. The output strategy function converts the model output into AiCOCO compatible format. Depending on the tasks, there are four default output strategy functions to be chosen, `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`.
 
 ### Segmentation task example (PyTorch)
 
@@ -50,7 +51,7 @@ app.run(port=9000)
 
 This strategy parses the incoming data into a structured format that the inference function can interpret.
 
-##### Input Format Example
+#### Input Format Example
 
 ```python
 {
@@ -71,40 +72,48 @@ This strategy parses the incoming data into a structured format that the inferen
 
 The output strategy is an optional component that can be used to format the output of the inference model into the AiCOCO format, providing a standardized method for serializing the results. If `output_strategy=None` is specified, the `infer_function` must return the AiCOCO format directly.
 
-The providing default output strategy can be chosen depending on the task, classification, detection, regression or segmentation. Each requires different input format defined in `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`. 
+The providing default output strategy can be chosen depending on the task, classification, detection, regression or segmentation. Each requires different input format defined in `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`.
 
 * **classification task** -  `AiCOCOClassificationOutputStrategy`:
+
 ```python
 output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "regressions": {},
-    "model_out": model_out # 2d NumPy array with classification predictions
+    "model_out": model_out # 1d NumPy array with classification predictions
 }
 ```
-* **detection task** - `AiCOCODetectionOutputStrategy`: 
+
+* **detection task** - `AiCOCODetectionOutputStrategy`:
+
 ```python
 output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
     "model_out": {
-        "bbox_pred": bbox_pred, # list of bbox prediction as [[x_min, y_min, x_max, y_max, cls], ...]
+        "bbox_pred": bbox_pred, # list of bbox prediction as [[x_min, y_min, x_max, y_max], ...]
+        "cls_pred": cls_pred, # list of classification result of each bbox
         "confidence_score": confidence_score, # optional, list of confidence score of each bbox
         "regression_value": regression_value, # optional, list of regression value of each bbox if there is regression prediction
     }
 }
 ```
-* **regression task** - `AiCOCORegressionOutputStrategy`: 
+
+* **regression task** - `AiCOCORegressionOutputStrategy`:
+
 ```python
 output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {},
     "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
-    "model_out": model_out # 2d NumPy array with regression predictions
+    "model_out": model_out # 1d NumPy array with regression predictions
 }
 ```
-* **segmentation task** - `AiCOCOSegmentationOutputStrategy`: 
+
+* **segmentation task** - `AiCOCOSegmentationOutputStrategy`:
+  
 ```python
 output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
@@ -116,20 +125,20 @@ output = {
 
 The general pattern of expected output should be a dictionary containing the following keys:
 
-- `sorted_images`: a list of AiCOCO compatible images (see Input Format) attribute sorted by a certain criterion (e.g. by Z-axis or temporal order) to  correlate  with `model_out`.
+* `sorted_images`: a list of AiCOCO compatible images (see Input Format) attribute sorted by a certain criterion (e.g. by Z-axis or temporal order) to  correlate  with `model_out`.
 
-- `categories`: a dictionary where each key is the class ID. The corresponding value is a dictionary with category information that must be filled with `supercategory_name`, `display` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
+* `categories`: a dictionary where each key is the class ID. The corresponding value is a dictionary with category information that must be filled with `supercategory_name`, `display` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
 
-- `regressions`: a dictionary where each key is the regression ID. The corresponding value is a dictionary with regression information that must be filled with `superregression_name` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
+* `regressions`: a dictionary where each key is the regression ID. The corresponding value is a dictionary with regression information that must be filled with `superregression_name` and all necessary details as described in the AiCOCO format, except for fields related to "nanoid".
 
-- `model_out`: 
-  * classification: classification results in a 2D NumPy with shape of `(c, 1)` for 2D input or `(c, 1)` and `(c, z)` for 3D input. 
-  * detection: detection results packed in a dictionary containing key-value pairs of `"bbox_pred"`, `"confidence_score"` and `"regression_value"`.
-    * `"bbox_pred"`: a list of bbox prediction. For example, ```[[x_min, y_min, x_max, y_max, cls], ...]```
+* `model_out`:
+  * classification and regression task: classification or regression results in a 1D NumPy with shape of `(n,)`. For multi-head cases, simply concatenate outputs of each head and keep the order in `category_ids`.
+  * detection task: detection results packed in a dictionary containing key-value pairs of `"bbox_pred"`, `"confidence_score"` and `"regression_value"`.
+    * `"bbox_pred"`: a list of bbox prediction. For example, ```[[x_min, y_min, x_max, y_max], ...]```
+    * `"cls_pred"`: a list of classification result of each bbox.
     * `"confidence_score"`: (optional) a list of confidence score of each bbox.
     * `"regression_value"`: (optional) a list of regression value of each bbox
-  * regression: regression results in a 2D NumPy with shape of `(c, 1)` for 2D input or `(c, 1)` and `(c, z)` for 3D input. 
-  * segmentation: segmentation results in a 4D NumPy array with shape of `(c, z, y, x)`. For semantic segmentation, the values are binary (0 or 1) and indicate the presence of a class. For instance segmentation, the array contains instance IDs as positive integers that indicate different instances.
+  * segmentation task: segmentation results in a 4D NumPy array with shape of `(c, z, y, x)`. For semantic segmentation, the values are binary (0 or 1) and indicate the presence of a class. For instance segmentation, the array contains instance IDs as positive integers that indicate different instances.
 
 ### AiCOCO Format
 

@@ -24,10 +24,10 @@ class BaseAPP(object):
     async def ping(self):
         return Response(status_code=204)
 
-    def run(self, host="0.0.0.0", port=9000):
+    def run(self, host="0.0.0.0", port=9000, log_level="error"):
         # Run the FastAPI application using uvicorn
         print(f"listen on port {port}")
-        uvicorn.run(self.app, host=host, port=port, log_level="error")
+        uvicorn.run(self.app, host=host, port=port, log_level=log_level)
 
 
 class InferAPP(BaseAPP):
