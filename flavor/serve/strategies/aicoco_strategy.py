@@ -41,23 +41,29 @@ class AiCOCOInputStrategy(BaseStrategy):
                 for idx, file in enumerate(files)
             ]
         else:
-            ta = TypeAdapter(List[AiImage])
-            try:
-                images = json.loads(form_data.get("images"))
-            except TypeError as e:
-                raise JSONDecodeError(doc="", msg=str(e), pos=-1)
-
-            ta.validate_python(images)
-
+            images = self.load_and_validate(form_data, "images", List[AiImage])
             for image in images:
-                try:
-                    image["physical_file_name"] = next(
-                        file for file in files if image["file_name"] in file
-                    )
-                except StopIteration:
-                    raise Exception("filename not match")
+                image["physical_file_name"] = self.match_file_name(image["file_name"], files)
 
         return {"images": images}
+
+    def load_and_validate(self, form_data, key, data_model):
+
+        try:
+            data = json.loads(form_data.get(key))
+        except JSONDecodeError as e:
+            raise JSONDecodeError(doc="", msg=str(e), pos=-1)
+        ta = TypeAdapter(data_model)
+        ta.validate_python(data)
+
+        return data
+
+    def match_file_name(self, file_name, files):
+
+        try:
+            return next(file for file in files if file_name in file)
+        except StopIteration:
+            raise Exception(f"Filename {file_name} not match")
 
 
 class AiCOCOOutputStrategy(BaseStrategy):
