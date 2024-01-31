@@ -155,7 +155,7 @@ The general pattern of expected output should be a dictionary containing the fol
 
 - `model_out`:
     - Classification and regression tasks
-	    - **Output format**: The output is a 1-dimensional NumPy array with the shape `(c,)`.
+	    - **Output format**: The output is a 1-dimensional NumPy array with shape `(c,)`.
 	    - **Details**:
 	      - For tasks involving classification or regression, the result is displayed in this array.
 	      - In scenarios with multiple heads (multi-head cases), the outputs of each head should be concatenated. The concatenation order must follow the `category_ids`.
@@ -169,7 +169,7 @@ The general pattern of expected output should be a dictionary containing the fol
 	      - `"regression_value"`: (Optional) This is a list of regression values for each bounding box, structured as a list of lists similar to `cls_pred`, where each inner list refers to a bounding box.
 
     - Segmentation task
-	    - **Output format**: The output is a 4-dimensional NumPy array with the form `(c, z, y, x)`.
+	    - **Output format**: The output is a 4-dimensional NumPy array with shape `(c, z, y, x)`.
 	    - **Details**:
 	      - For semantic segmentation, the array values are binary (0 or 1) and indicate the presence or absence of a class.
 	      - For instance segmentation, the array contains positive integer values, each representing a unique instance ID to distinguish between different instances.
