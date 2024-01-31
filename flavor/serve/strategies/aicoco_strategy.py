@@ -392,17 +392,19 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
             class_nano_id = self.class_id_table[cls_idx]
             cls_pred = out[cls_idx]
 
-            # add tags `image` for 2D only
+            # For 2D case, handle `images`
             if len(self.images_id_table) == 1:
                 if images[-1]["category_ids"] is None:
                     images[-1]["category_ids"] = list()
                 if cls_pred:
                     images[-1]["category_ids"].append(class_nano_id)
 
-            if meta["category_ids"] is None:
-                meta["category_ids"] = list()
-            if cls_pred:
-                meta["category_ids"].append(class_nano_id)
+            # For 3D case, handle `meta`
+            else:
+                if meta["category_ids"] is None:
+                    meta["category_ids"] = list()
+                if cls_pred:
+                    meta["category_ids"].append(class_nano_id)
 
         return images, meta
 
@@ -574,7 +576,7 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
             pred_value = out[reg_idx].item()
             regression_nano_id = self.regression_id_table[reg_idx]
 
-            # add tags `image` for 2D only
+            # For 2D case, handle `images`
             if len(self.images_id_table) == 1:
                 if images[-1]["regressions"] is None:
                     images[-1]["regressions"] = list()
@@ -585,14 +587,16 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
                     }
                 )
 
-            if meta["regressions"] is None:
-                meta["regressions"] = list()
-            meta["regressions"].append(
-                {
-                    "regression_id": regression_nano_id,
-                    "value": pred_value,
-                }
-            )
+            # For 3D case, handle `meta`
+            else:
+                if meta["regressions"] is None:
+                    meta["regressions"] = list()
+                meta["regressions"].append(
+                    {
+                        "regression_id": regression_nano_id,
+                        "value": pred_value,
+                    }
+                )
 
         return images, meta
 
