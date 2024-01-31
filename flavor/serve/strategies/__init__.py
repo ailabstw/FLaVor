@@ -1,9 +1,9 @@
 from .aicoco_strategy import (
     AiCOCOClassificationOutputStrategy,
     AiCOCODetectionOutputStrategy,
-    AiCOCOGradioStrategy,
     AiCOCOInputStrategy,
     AiCOCORegressionOutputStrategy,
+    AiCOCOSegmentationGradioStrategy,
     AiCOCOSegmentationOutputStrategy,
 )
 from .base_strategy import BaseStrategy

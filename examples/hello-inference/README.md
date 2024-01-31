@@ -1,14 +1,11 @@
-# Getting Started
-
-`InferAPP` streamlines the use of inference models by encapsulating the inference functions in a user-friendly framework. It provides easy-to-configure input and output strategies tailored to the processing and production of AiCOCO-formatted data, ensuring seamless integration and standardization.
-
 ## Step 0: About POST `/invocations`
 
 ### Request
 
 #### Header
 
-```content-type: multipart/form-data
+```
+content-type: multipart/form-data
 ```
 
 #### Body
@@ -20,7 +17,7 @@
 
 ### InferAPP
 
-Wrap the inference function of your model with the class `InferAPP` and optionally specify the input and output strategy functions.
+`InferAPP` streamlines the use of inference models by encapsulating the inference functions in a user-friendly framework. It provides easy-to-configure input and output strategies tailored to the processing and production of AiCOCO-formatted data, ensuring seamless integration and standardization. Wrap the inference function of your model with the class `InferAPP` and optionally specify the input and output strategy functions.
 
 ### Input strategy
 
@@ -157,13 +154,26 @@ The general pattern of expected output should be a dictionary containing the fol
 - `regressions`: a dictionary in which each key is the regression ID. The corresponding value is a dictionary with regression information that must be filled with `superregression_name` and all necessary details as described in the AiCOCO format, except for the fields related to "nanoid".
 
 - `model_out`:
-  - classification and regression task: classification or regression results in a 1D NumPy with shape of `(n,)`. For multi-head cases, simply concatenate outputs of each head and keep the order in `category_ids`.
-  - detection task: detection results packed in a dictionary containing key-value pairs as following:
-    - `"bbox_pred"`: a list of bbox prediction. For example, ```[[x_min, y_min, x_max, y_max], ...]```
-    - `"cls_pred"`: a list of classification result of each bbox.
-    - `"confidence_score"`: (optional) a list of confidence score of each bbox.
-    - `"regression_value"`: (optional) a list of regression value of each bbox
-  - segmentation task: segmentation results in a 4D NumPy array with shape of `(c, z, y, x)`. For semantic segmentation, the values are binary (0 or 1) and indicate the presence of a class. For instance segmentation, the array contains instance IDs as positive integers that indicate different instances.
+    - Classification and regression tasks
+	    - **Output format**: The output is a 1-dimensional NumPy array with the shape `(c,)`.
+	    - **Details**:
+	      - For tasks involving classification or regression, the result is displayed in this array.
+	      - In scenarios with multiple heads (multi-head cases), the outputs of each head should be concatenated. The concatenation order must follow the `category_ids`.
+
+    - Detection task
+	    - **Output format**: The output for detection tasks is a dictionary with multiple key-value pairs.
+	    - **Details**:
+	      - `"bbox_pred"`: This key corresponds to a list of bounding box predictions. Each bounding box is represented as a list: `[x_min, y_min, x_max, y_max]`.
+	      - `"cls_pred"`: This key corresponds to a list of classification results for each bounding box. The structure is a list of lists, where the dimension of each inner list is `c`, which represents the category of each bounding box.
+	      - `"confidence_score"`: (Optional) This key contains a list of confidence values, one for each bounding box.
+	      - `"regression_value"`: (Optional) This is a list of regression values for each bounding box, structured as a list of lists similar to `cls_pred`, where each inner list refers to a bounding box.
+
+    - Segmentation task
+	    - **Output format**: The output is a 4-dimensional NumPy array with the form `(c, z, y, x)`.
+	    - **Details**:
+	      - For semantic segmentation, the array values are binary (0 or 1) and indicate the presence or absence of a class.
+	      - For instance segmentation, the array contains positive integer values, each representing a unique instance ID to distinguish between different instances.
+
 
 ### AiCOCO format
 

@@ -601,7 +601,7 @@ class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
         return images, meta
 
 
-class AiCOCOGradioStrategy(BaseStrategy):
+class AiCOCOSegmentationGradioStrategy(BaseStrategy):
     async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
 
         data = result["data"]
