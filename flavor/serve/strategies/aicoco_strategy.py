@@ -482,7 +482,7 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
                 continue
 
             if "confidence_score" in out:
-                obj["confidence"] = int(out["confidence_score"][i])
+                obj["confidence"] = out["confidence_score"][i].item()
 
             if "regressions" in out:
                 obj["regressions"] = list()
