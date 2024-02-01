@@ -261,9 +261,7 @@ class AiCOCOSegmentationOutputStrategy(AiCOCOOutputStrategy):
         Generate `annotations` and `objects` in AiCOCO compatible format from 4D volumetric data.
 
         Args:
-            out (np.ndarray): 4D connected regions of volumetric data.
-                Dimensions: (class, z, y, x)
-
+            out (np.ndarray): 3D or 4D predicted seg model output. This could be regular semantic seg mask or grouped instance seg mask.
         Returns:
             Dict[str, Any]: Dictionary containing annotations and objects in AiCOCO compatible format.
 
@@ -274,8 +272,12 @@ class AiCOCOSegmentationOutputStrategy(AiCOCOOutputStrategy):
             - The 'iscrowd' field in annotations is set to 0 for non-crowd objects.
         """
 
-        assert out.ndim == 4, f"shape {out.shape} is not 4D"
-        classes, slices, _, _ = out.shape
+        assert out.ndim == 3 or out.ndim == 4, f"shape {out.shape} is not in 3D or 4D"
+
+        if out.ndim == 3:
+            out = np.expand_dims(out, axis=1)
+
+        classes, slices = out.shape[:2]
 
         res = dict()
         res["annotations"] = list()
