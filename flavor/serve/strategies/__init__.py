@@ -1,5 +1,6 @@
 from .aicoco_strategy import (
     AiCOCOClassificationOutputStrategy,
+    AiCOCODetectionGradioStrategy,
     AiCOCODetectionOutputStrategy,
     AiCOCOInputStrategy,
     AiCOCORegressionOutputStrategy,

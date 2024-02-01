@@ -103,7 +103,7 @@ class GradioInferAPP(object):
 
         return response
 
-    def run(self, host="0.0.0.0", port=9000):
+    def run(self, port=9000, **kwargs):
 
         iface = gr.Interface(
             fn=self.invocations,
