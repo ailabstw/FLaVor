@@ -4,8 +4,7 @@
 
 #### Header
 
-```
-content-type: multipart/form-data
+```content-type: multipart/form-data
 ```
 
 #### Body
@@ -141,7 +140,7 @@ output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "regressions": {},
-    "model_out": model_out # 4d NumPy array with grouped segmentation predictions
+    "model_out": model_out # 3d/4d NumPy array with grouped segmentation predictions
 }
 ```
 
@@ -154,26 +153,25 @@ The general pattern of expected output should be a dictionary containing the fol
 - `regressions`: a dictionary in which each key is the regression ID. The corresponding value is a dictionary with regression information that must be filled with `superregression_name` and all necessary details as described in the AiCOCO format, except for the fields related to "nanoid".
 
 - `model_out`:
-    - Classification and regression tasks
-	    - **Output format**: The output is a 1-dimensional NumPy array with shape `(c,)`.
-	    - **Details**:
-	      - For tasks involving classification or regression, the result is displayed in this array.
-	      - In scenarios with multiple heads (multi-head cases), the outputs of each head should be concatenated. The concatenation order must follow the `category_ids`.
+  - Classification and regression tasks
+    - **Output format**: The output is a 1-dimensional NumPy array with shape `(c,)`.
+    - **Details**:
+      - For tasks involving classification or regression, the result is displayed in this array.
+      - In scenarios with multiple heads (multi-head cases), the outputs of each head should be concatenated. The concatenation order must follow the `category_ids`.
 
-    - Detection task
-	    - **Output format**: The output for detection tasks is a dictionary with multiple key-value pairs.
-	    - **Details**:
-	      - `"bbox_pred"`: This key corresponds to a list of bounding box predictions. Each bounding box is represented as a list: `[x_min, y_min, x_max, y_max]`.
-	      - `"cls_pred"`: This key corresponds to a list of classification results for each bounding box. The structure is a list of lists, where the dimension of each inner list is `c`, which represents the category of each bounding box.
-	      - `"confidence_score"`: (Optional) This key contains a list of confidence values, one for each bounding box.
-	      - `"regression_value"`: (Optional) This is a list of regression values for each bounding box, structured as a list of lists similar to `cls_pred`, where each inner list refers to a bounding box.
+  - Detection task
+    - **Output format**: The output for detection tasks is a dictionary with multiple key-value pairs.
+    - **Details**:
+      - `"bbox_pred"`: This key corresponds to a list of bounding box predictions. Each bounding box is represented as a list: `[x_min, y_min, x_max, y_max]`.
+      - `"cls_pred"`: This key corresponds to a list of classification results for each bounding box. The structure is a list of lists, where the dimension of each inner list is `c`, which represents the category of each bounding box.
+      - `"confidence_score"`: (Optional) This key contains a list of confidence values, one for each bounding box.
+      - `"regression_value"`: (Optional) This is a list of regression values for each bounding box, structured as a list of lists similar to `cls_pred`, where each inner list refers to a bounding box.
 
-    - Segmentation task
-	    - **Output format**: The output is a 4-dimensional NumPy array with shape `(c, z, y, x)`.
-	    - **Details**:
-	      - For semantic segmentation, the array values are binary (0 or 1) and indicate the presence or absence of a class.
-	      - For instance segmentation, the array contains positive integer values, each representing a unique instance ID to distinguish between different instances.
-
+  - Segmentation task
+    - **Output format**: The output is either a 3-dimensional NumPy array with shape `(c, y, x)` or 4-dimensional array with shape `(c, z, y, x)`.
+    - **Details**:
+      - For semantic segmentation, the array values are binary (0 or 1) and indicate the presence or absence of a class.
+      - For instance segmentation, the array contains positive integer values, each representing a unique instance ID to distinguish between different instances.
 
 ### AiCOCO format
 
