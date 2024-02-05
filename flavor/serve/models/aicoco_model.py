@@ -1,14 +1,7 @@
 from enum import Enum
 from typing import List, Optional
 
-from pydantic import BaseModel, Extra, Field
-
-
-class AiImage(BaseModel):
-    category_ids: Optional[List[str]] = None
-    file_name: str
-    id: str
-    index: int
+from pydantic import BaseModel, Extra
 
 
 class Iscrowd(Enum):
@@ -32,17 +25,46 @@ class AiCategory(BaseModel):
     supercategory_id: Optional[str]
 
 
+class AiRegression(BaseModel):
+    id: str
+    name: str
+    superregression_id: Optional[str]
+    unit: Optional[str] = None
+
+
+class AiRegressionItem(BaseModel):
+    class Config:
+        extra = Extra.forbid
+
+    regression_id: str
+    value: float
+
+
 class AiObject(BaseModel):
-    category_ids: List[str]
-    centroid: Optional[List[int]] = Field(None, max_items=2, min_items=2)
+    category_ids: Optional[List[str]]
     confidence: Optional[float] = None
     id: str
-    regression_value: Optional[float] = None
+    regressions: Optional[List[AiRegressionItem]]
+
+
+class TaskType(Enum):
+    binary = "binary"
+    multilabel = "multilabel"
+    multiclass = "multiclass"
 
 
 class AiMeta(BaseModel):
-    category_ids: Optional[List[str]] = None
-    task_type: Optional[str] = None
+    category_ids: Optional[List[str]]
+    regressions: Optional[List[AiRegressionItem]]
+    task_type: Optional[TaskType] = None
+
+
+class AiImage(BaseModel):
+    category_ids: Optional[List[str]]
+    file_name: str
+    id: str
+    index: int
+    regressions: Optional[List[AiRegressionItem]]
 
 
 class AiCOCOFormat(BaseModel):
@@ -52,5 +74,6 @@ class AiCOCOFormat(BaseModel):
     images: List[AiImage]
     annotations: List[AiAnnotation]
     categories: List[AiCategory]
+    regressions: List[AiRegression]
     objects: List[AiObject]
     meta: AiMeta
