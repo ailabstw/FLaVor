@@ -65,7 +65,7 @@ class AiCOCOInputStrategy(BaseStrategy):
             raise Exception(f"Filename {file_name} not match")
 
 
-class AiCOCOOutputStrategy(BaseStrategy):
+class BaseAiCOCOOutputStrategy(BaseStrategy):
     async def apply(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
@@ -235,7 +235,7 @@ class AiCOCOOutputStrategy(BaseStrategy):
         }, model_out
 
 
-class AiCOCOSegmentationOutputStrategy(AiCOCOOutputStrategy):
+class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
     def model_to_aicoco(
         self,
         aicoco_out: Dict[str, Any],
@@ -336,7 +336,7 @@ class AiCOCOSegmentationOutputStrategy(AiCOCOOutputStrategy):
         return res
 
 
-class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
+class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
     def model_to_aicoco(
         self,
         aicoco_out: Dict[str, Any],
@@ -410,7 +410,7 @@ class AiCOCOClassificationOutputStrategy(AiCOCOOutputStrategy):
         return images, meta
 
 
-class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
+class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
     def model_to_aicoco(
         self,
         aicoco_out: Dict[str, Any],
@@ -515,7 +515,7 @@ class AiCOCODetectionOutputStrategy(AiCOCOOutputStrategy):
         return res
 
 
-class AiCOCORegressionOutputStrategy(AiCOCOOutputStrategy):
+class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
     def model_to_aicoco(
         self,
         aicoco_out: Dict[str, Any],

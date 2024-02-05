@@ -29,7 +29,7 @@ class BaseGradioStrategy(BaseStrategy):
         return rgb["r"], rgb["g"], rgb["b"]
 
 
-class SegmentationGradioStrategy(BaseGradioStrategy):
+class GradioSegmentationStrategy(BaseGradioStrategy):
     async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
 
         data = result["data"]  # shape: (c, z, y, x) or (c, y, x)
@@ -65,7 +65,7 @@ class SegmentationGradioStrategy(BaseGradioStrategy):
         return [img for img in data], [img for img in pred_vis], None, "success"
 
 
-class DetectionGradioStrategy(BaseGradioStrategy):
+class GradioDetectionStrategy(BaseGradioStrategy):
     async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
 
         data = result["data"]  # shape: (c, y, x)
@@ -103,3 +103,15 @@ class DetectionGradioStrategy(BaseGradioStrategy):
         bbox_vis = np.array(img)
 
         return [data], [bbox_vis], None, "success"
+
+
+class GradioClassificationStrategy(BaseGradioStrategy):
+    # TODO
+    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+        pass
+
+
+class GradioRegressionStrategy(BaseGradioStrategy):
+    # TODO
+    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+        pass
