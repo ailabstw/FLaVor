@@ -107,7 +107,7 @@ output = {
 }
 ```
 
-- **Detection task** - `AiCOCODetectionOutputStrategy`:
+- **Detection task (support 2D only)** - `AiCOCODetectionOutputStrategy`:
 
 ```python
 output = {
