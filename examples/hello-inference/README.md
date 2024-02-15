@@ -99,7 +99,7 @@ The inputs for each task are listed as follows:
 - **Classification task** -  `AiCOCOClassificationOutputStrategy`:
 
 ```python
-output = {
+input_dict = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "regressions": {},
@@ -110,7 +110,7 @@ output = {
 - **Detection task (support 2D only)** - `AiCOCODetectionOutputStrategy`:
 
 ```python
-output = {
+input_dict = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
@@ -126,7 +126,7 @@ output = {
 - **Regression task** - `AiCOCORegressionOutputStrategy`:
 
 ```python
-output = {
+input_dict = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {},
     "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
@@ -137,7 +137,7 @@ output = {
 - **Segmentation task** - `AiCOCOSegmentationOutputStrategy`:
 
 ```python
-output = {
+input_dict = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "regressions": {},
