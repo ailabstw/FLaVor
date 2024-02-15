@@ -1,1 +1,2 @@
 lungmask==0.2.18
+flavor[infer]
