@@ -1,2 +1,3 @@
 lungmask==0.2.18
+https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip
 flavor[infer]

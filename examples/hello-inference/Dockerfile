@@ -17,7 +17,6 @@ RUN pip install torch==1.13.1+cu117 --extra-index-url https://download.pytorch.o
 
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
-RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/tags/1.1.0b3.zip -U && pip install "flavor[infer]"
 
 WORKDIR /app
 COPY *.py /app/

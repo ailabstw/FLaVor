@@ -6,7 +6,10 @@ from lungmask import LMInferer
 from reader import read_multiple_dicom
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.strategies import AiCOCOInputStrategy, AiCOCOOutputStrategy
+from flavor.serve.strategies import (
+    AiCOCOInputStrategy,
+    AiCOCOSegmentationOutputStrategy,
+)
 
 
 class Inferer:
@@ -35,7 +38,7 @@ class Inferer:
         return {
             "sorted_images": sort_images,
             "categories": self.categories,
-            "seg_model_out": model_out,
+            "model_out": model_out,
         }
 
     def infer(self, **kwargs) -> Dict:
@@ -69,6 +72,6 @@ if __name__ == "__main__":
     app = InferAPP(
         infer_function=Inferer(),
         input_strategy=AiCOCOInputStrategy,
-        output_strategy=AiCOCOOutputStrategy,
+        output_strategy=AiCOCOSegmentationOutputStrategy,
     )
     app.run(port=int(os.getenv("PORT", 9000)))
