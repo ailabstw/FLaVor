@@ -2,9 +2,30 @@
 
 ## About input structure
 
-FLaVor inference service accepts request with formdata containing images and JSON file in AiCOCO format. Following with the input strategy, `AiCOCOInputStrategy`, helps parsing the incoming JSON file allowing the interpretation of inference function. More specifically, `AiCOCOInputStrategy` adds the `physical_file_name` to the input.
+The FLaVor inference service accepts requests with form data containing input images and a JSON file describing the images in AiCOCO format. The JSON file should adhere to the structure outlined below:
 
-Processed input format example:
+```python
+{
+    "images": [
+        # can be without order
+        {
+            "id": "nanoid",
+            "index": index,
+            "file_name": "<filename>.<ext>",
+            ...
+        },
+        ...
+    ]
+}
+```
+
+It's important to note that if the JSON file is not sent along with the input images, the `AiCOCOInputStrategy` will generate one based on the input images.
+
+### `AiCOCOInputStrategy`
+
+The `AiCOCOInputStrategy` function is specifically designed to parse input data for the FLaVor inference service. This strategy function plays a crucial role in interpreting the input JSON file and preparing it for the inference model. Notably, `AiCOCOInputStrategy` augments the input JSON by adding the `physical_file_name` field, which indicates the actual location of the input images on the server.
+
+Processed input JSON example:
 
 ```python
 {
@@ -22,9 +43,11 @@ Processed input format example:
 }
 ```
 
+This processed input JSON serves as the structured input data that can be readily consumed by the inference model.
+
 ## About output structure
 
-The output strategy is an optional component that allows the output of the inference model to be easily converted to AiCOCO format and provides a standardized method for serializing the results. If `output_strategy=None` is specified, the `infer_function` must return the AiCOCO format directly.
+The output strategy is an optional component that allows the output of the inference model to be easily converted to the AiCOCO format and provides a standardized method for serializing the results. If `output_strategy=None` is specified, the `infer_function` must return the AiCOCO format directly.
 
 The given output strategy can be chosen depending on the task, classification, detection, regression or segmentation. Each requires a different input format, which is defined in `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`.
 
@@ -76,7 +99,7 @@ return_dict = {
 }
 ```
 
-The general pattern of expected output should be a dictionary containing the following keys:
+The general pattern of the expected output should be a dictionary containing the following keys:
 
 * `sorted_images`: a list of AiCOCO-compatible images (see input format) sorted by a certain criterion (e.g. by Z-axis or temporal order) to correlate with `model_out`.
 
