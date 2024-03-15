@@ -21,7 +21,7 @@ The FLaVor inference service accepts requests with form data containing input im
 
 It's important to note that if the JSON file is not sent along with the input images, the `AiCOCOInputStrategy` will generate one based on the input images.
 
-### `AiCOCOInputStrategy`
+### AiCOCOInputStrategy
 
 The `AiCOCOInputStrategy` function is specifically designed to parse input data for the FLaVor inference service. This strategy function plays a crucial role in interpreting the input JSON file and preparing it for the inference model. Notably, `AiCOCOInputStrategy` augments the input JSON by adding the `physical_file_name` field, which indicates the actual location of the input images on the server.
 
@@ -79,7 +79,7 @@ return_dict = {
 }
 ```
 
-#### Regression task - `AiCOCORegressionOutputStrategy`
+### Regression task - `AiCOCORegressionOutputStrategy`
 
 ```python
 return_dict = {
@@ -98,6 +98,8 @@ return_dict = {
     "model_out": model_out # 3d/4d NumPy array with grouped segmentation predictions
 }
 ```
+
+### Summary
 
 The general pattern of the expected output should be a dictionary containing the following keys:
 
