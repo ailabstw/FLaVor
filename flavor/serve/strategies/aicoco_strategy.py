@@ -198,8 +198,6 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         self,
         model_out: np.ndarray,
         sorted_images: List[Dict[str, Any]],
-        categories: Dict[int, Any],
-        regressions: Dict[int, Any],
         meta: Dict[str, Any] = {"category_ids": None, "regressions": None},
         **kwargs,
     ) -> Tuple[Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]]:
@@ -209,13 +207,16 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         Args:
             model_out (np.ndarray): Model output.
             sorted_images (List[Dict[str, Any]]): Sorted images.
-            categories (Dict[int, Any]): Dictionary of unprocessed categories.
-            regressions (Dict[int, Any]): Dictionary of unprocessed regressions.
             meta (Dict[str, Any]): Dictionary of meta. Default: `{"category_ids": None, "regressions": None}`.
-
+            kwargs:
+                categories (Dict[int, Any]): Dictionary of unprocessed categories.
+                regressions (Dict[int, Any]): Dictionary of unprocessed regressions.
         Returns:
             Tuple[Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]]: Prepared AiCOCO output and model output as np.ndarray.
         """
+        categories = kwargs["categories"] if "categories" in kwargs else {}
+        regressions = kwargs["regressions"] if "regressions" in kwargs else {}
+
         aicoco_images = {"images": self.generate_images(copy.deepcopy(sorted_images))}
 
         if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
@@ -461,7 +462,9 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         res["objects"] = list()
 
         for i, bbox_pred in enumerate(out["bbox_pred"]):
-            y_min, x_min, y_max, x_max = bbox_pred.tolist()
+            if isinstance(bbox_pred, np.ndarray):
+                bbox_pred = bbox_pred.tolist()
+            y_min, x_min, y_max, x_max = bbox_pred
 
             image_nano_id = self.images_id_table[0]
 
@@ -483,7 +486,8 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
                 continue
 
             if "confidence_score" in out:
-                obj["confidence"] = out["confidence_score"][i].item()
+                cs = out["confidence_score"][i]
+                obj["confidence"] = cs.item() if isinstance(cs, np.ndarray) else cs
 
             if "regressions" in out:
                 obj["regressions"] = list()
@@ -492,7 +496,7 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
                     obj["regressions"].append(
                         {
                             "regression_id": self.regression_id_table[i],
-                            "value": value.item(),
+                            "value": value.item() if isinstance(value, np.ndarray) else value,
                         }
                     )
             else:

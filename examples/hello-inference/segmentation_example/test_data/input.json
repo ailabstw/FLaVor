@@ -1,0 +1,11 @@
+{
+    "images": [
+        {
+            "id": "0",
+            "index": 0,
+            "file_name": "0.dcm",
+            "category_ids": null,
+            "regressions": null
+        }
+    ]
+}

@@ -1,15 +1,46 @@
 import os
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import numpy as np
+import SimpleITK as sitk
 from lungmask import LMInferer
-from reader import read_multiple_dicom
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.strategies import (
     AiCOCOInputStrategy,
     AiCOCOSegmentationOutputStrategy,
 )
+
+
+def read_multiple_dicom(filenames):
+    def sort_images_by_z_axis(filenames):
+
+        images = []
+        for fname in filenames:
+            dicom_reader = sitk.ImageFileReader()
+            dicom_reader.SetFileName(fname)
+            dicom_reader.ReadImageInformation()
+
+            images.append([dicom_reader, fname])
+
+        zs = [float(dr.GetMetaData(key="0020|0032").split("\\")[-1]) for dr, _ in images]
+
+        sort_inds = np.argsort(zs)[::-1]
+        images = [images[s] for s in sort_inds]
+
+        return images
+
+    images = sort_images_by_z_axis(filenames)
+
+    drs, fnames = zip(*images)
+    fnames = list(fnames)
+
+    simages = [sitk.GetArrayFromImage(dr.Execute()).squeeze() for dr in drs]
+    volume = np.stack(simages)
+
+    volume = np.expand_dims(volume, axis=0)
+
+    return volume, fnames
 
 
 class Inferer:
@@ -27,7 +58,9 @@ class Inferer:
         self.inferer = LMInferer(modelname="LTRCLobes", fillmodel="R231")
         print("Loaded successfully.")
 
-    def make_infer_res(self, model_out: np.ndarray, sorted_data_filenames: List, **kwargs) -> Dict:
+    def make_infer_result(
+        self, model_out: np.ndarray, sorted_data_filenames: List[str], **kwargs
+    ) -> Dict:
 
         images_path_table = {}
         for image in kwargs["images"]:
@@ -41,15 +74,15 @@ class Inferer:
             "model_out": model_out,
         }
 
-    def infer(self, **kwargs) -> Dict:
+    def infer(self, **kwargs) -> Dict[str, Any]:
 
-        data_filenames = []
+        data_filenames_l = []
         for elem in kwargs["images"]:
-            data_filenames.append(elem["physical_file_name"])
+            data_filenames_l.append(elem["physical_file_name"])
 
-        batch = read_multiple_dicom(data_filenames)
+        batch, data_filenames = read_multiple_dicom(data_filenames_l)
 
-        model_out = self.inferer.apply(batch["data"].squeeze(0))
+        model_out = self.inferer.apply(batch.squeeze(0))
 
         model_out = [
             np.expand_dims((model_out == i).astype(np.uint8), axis=0)
@@ -57,12 +90,12 @@ class Inferer:
         ]
         model_out = np.concatenate(model_out, axis=0)
 
-        return model_out, batch["data_filenames"]
+        return model_out, data_filenames
 
     def __call__(self, **kwargs):
 
-        batch_out, sorted_data_filenames = self.infer(**kwargs)
-        result = self.make_infer_res(batch_out, sorted_data_filenames, **kwargs)
+        model_out, sorted_data_filenames = self.infer(**kwargs)
+        result = self.make_infer_result(model_out, sorted_data_filenames, **kwargs)
 
         return result
 
