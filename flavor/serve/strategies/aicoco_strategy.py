@@ -272,7 +272,9 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
             - The 'iscrowd' field in annotations is set to 0 for non-crowd objects.
         """
 
-        assert out.ndim == 3 or out.ndim == 4, f"shape {out.shape} is not in 3D or 4D"
+        assert (
+            out.ndim == 3 or out.ndim == 4
+        ), f"dim of the inference model output {out.shape} should be in 3D or 4D."
 
         if out.ndim == 3:
             out = np.expand_dims(out, axis=1)
@@ -383,14 +385,18 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
             For 2D input data, it updates both meta and the last image in the images list.
             For 3D input data, it only updates meta.
         """
-        assert out.ndim == 1, f"shape {out.shape} is not 1D"
+        assert out.ndim == 1, f"dim of the inference model output {out.shape} should be 1D."
         n_classes = len(out)
 
-        assert n_classes == len(self.class_id_table), "Number of categories is not matched."
+        assert n_classes == len(
+            self.class_id_table
+        ), f"The number of categories is not matched with the inference model output {out.shape}."
 
         for cls_idx in range(n_classes):
             if cls_idx not in self.class_id_table:
-                raise ValueError(f"class {cls_idx} not found. Please specify every category.")
+                raise ValueError(
+                    f"Category {cls_idx} cannot be found. Please specify every category in counting numbers starting with 0."
+                )
             class_nano_id = self.class_id_table[cls_idx]
             cls_pred = out[cls_idx]
 
@@ -455,7 +461,9 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
             - The 'bbox' in annotations is in the format [[x_min, y_min, x_max, y_max]].
             - The 'segmentation' in annotations is set to None for detection tasks.
         """
-        assert isinstance(out, dict), "`out` type should be dict."
+        assert isinstance(out, dict), "The type of inference model output should be `dict`."
+        assert "bbox_pred" in out, "A key `bbox_pred` must be in inference model output."
+        assert "cls_pred" in out, "A key `cls_pred` must be in inference model output."
 
         res = dict()
         res["annotations"] = list()
@@ -476,6 +484,10 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
             }
 
             cls_pred = out["cls_pred"][i]
+            assert len(cls_pred) == len(
+                self.class_id_table
+            ), f"The number of categories is not matched with the detection output {cls_pred.shape}."
+
             for c in range(len(cls_pred)):
                 if cls_pred[c] == 0 or c not in self.class_id_table:
                     continue
@@ -565,18 +577,18 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
             For 2D input data, it updates both meta and the last image in the images list.
             For 3D input data, it only updates meta.
         """
-        assert out.ndim == 1, f"shape {out.shape} is not 1D"
+        assert out.ndim == 1, f"dim of the inference model output {out.shape} should be 1D."
 
         n_regression = len(out)
 
         assert n_regression == len(
             self.regression_id_table
-        ), "Number of regressions is not matched."
+        ), f"The number of regression values is not matched with the inference model output {out.shape}."
 
         for reg_idx in range(n_regression):
             if reg_idx not in self.regression_id_table:
                 raise ValueError(
-                    f"class {reg_idx} not found. Please specify every regression category."
+                    f"Regression {reg_idx} cannot be found. Please specify every regression value in counting numbers starting with 0."
                 )
             pred_value = out[reg_idx].item()
             regression_nano_id = self.regression_id_table[reg_idx]
