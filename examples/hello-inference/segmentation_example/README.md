@@ -31,7 +31,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
-docker build -t <your_image_name> -f examples/hello-inference/segmentation_example/Dockerfile examples/hello-inference/
+docker build -t <your_image_name> -f segmentation_example/Dockerfile .
 # run the container
 docker run -p <host_port>:<container_port> <your_image_name>
 ```

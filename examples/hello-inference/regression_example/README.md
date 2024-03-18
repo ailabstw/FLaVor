@@ -32,7 +32,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
 # build docker image
-docker build -t <your_image_name> -f classification_example/Dockerfile .
+docker build -t <your_image_name> -f regression_example/Dockerfile .
 # run the container
 docker run -p <host_port>:<container_port> <your_image_name>
 ```

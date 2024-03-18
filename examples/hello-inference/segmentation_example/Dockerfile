@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.7.0-cudnn8-runtime-ubuntu20.04
+FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
@@ -10,14 +10,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-RUN pip install torch==1.13.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
+RUN pip install torch==1.13.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117 --default-timeout=1000
 RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip -U && pip install "flavor[infer]"
 
 WORKDIR /app
 COPY segmentation_example/*.py /app
 COPY segmentation_example/requirements.txt /app
 COPY segmentation_example/test_data /app/test_data
-COPY send_request.py.py /app
+COPY send_request.py /app
 
 RUN pip install -r requirements.txt
 
