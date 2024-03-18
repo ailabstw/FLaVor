@@ -14,7 +14,7 @@ RUN pip install torch==1.13.1+cu117 --extra-index-url https://download.pytorch.o
 RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip -U && pip install "flavor[infer]"
 
 WORKDIR /app
-COPY segmentation_example/*.py /app
+COPY segmentation_example/*.py /app/
 COPY segmentation_example/requirements.txt /app
 COPY segmentation_example/test_data /app/test_data
 COPY send_request.py /app

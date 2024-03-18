@@ -34,7 +34,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 # build docker image
 docker build -t <your_image_name> -f regression_example/Dockerfile .
 # run the container
-docker run -p <host_port>:<container_port> <your_image_name>
+docker run -p -p 9999:9999 <your_image_name>
 ```
 
 ## Integration with InferAPP

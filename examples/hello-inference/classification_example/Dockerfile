@@ -15,7 +15,7 @@ RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/heads/release/st
 RUN git clone https://github.com/maxium0526/cft-chexpert.git
 
 WORKDIR /app
-COPY classification_example/*.py /app
+COPY classification_example/*.py /app/
 COPY classification_example/requirements.txt /app
 COPY classification_example/test_data /app/test_data
 COPY classification_example/cft-chexpert /app/chexpert

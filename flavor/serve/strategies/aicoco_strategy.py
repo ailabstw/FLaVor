@@ -15,34 +15,21 @@ from .base_strategy import BaseStrategy
 
 
 class AiCOCOInputStrategy(BaseStrategy):
-    async def apply(self, form_data: Union[FormData, Dict[str, Union[List[str], str]]]):
+    async def apply(self, form_data: FormData):
         """
         Apply the AiCOCO input strategy to process input data.
 
         Args:
-            form_data (Union[FormData, Dict[str, Union[List[str], str]]]): Input data in the form of FormData or a dictionary.
+            form_data (FormData): Input data in the form of FormData or a dictionary.
 
         Returns:
             Dict[str, Any]: Processed data in AiCOCO compatible `images` format.
         """
         files = form_data.get("files")
 
-        if "images" not in form_data:
-            images = [
-                {
-                    "id": generate(),
-                    "file_name": file,
-                    "physical_file_name": file,
-                    "index": idx,
-                    "category_ids": None,
-                    "regressions": None,
-                }
-                for idx, file in enumerate(files)
-            ]
-        else:
-            images = self.load_and_validate(form_data, "images", List[AiImage])
-            for image in images:
-                image["physical_file_name"] = self.match_file_name(image["file_name"], files)
+        images = self.load_and_validate(form_data, "images", List[AiImage])
+        for image in images:
+            image["physical_file_name"] = self.match_file_name(image["file_name"], files)
 
         return {"images": images}
 

@@ -17,7 +17,7 @@ RUN wget https://github.com/sevdaimany/YOLOv8-Medical-Imaging/blob/master/runs/d
 RUN wget https://github.com/sevdaimany/YOLOv8-Medical-Imaging/blob/master/DEMO_IMAGES/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg -P test_data
 
 WORKDIR /app
-COPY detection_example/*.py /app
+COPY detection_example/*.py /app/
 COPY detection_example/requirements.txt /app
 COPY detection_example/test_data /app/test_data
 COPY detection_example/best.pt /app

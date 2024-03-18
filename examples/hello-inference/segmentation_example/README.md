@@ -33,7 +33,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 # working directory: /your/path/FLaVor/examples/hello-inference
 docker build -t <your_image_name> -f segmentation_example/Dockerfile .
 # run the container
-docker run -p <host_port>:<container_port> <your_image_name>
+docker run -p 9999:9999 <your_image_name>
 ```
 
 ## Integration with InferAPP

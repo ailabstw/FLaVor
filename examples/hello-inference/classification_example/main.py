@@ -111,4 +111,4 @@ if __name__ == "__main__":
         input_strategy=AiCOCOInputStrategy,
         output_strategy=AiCOCOClassificationOutputStrategy,
     )
-    app.run(port=int(os.getenv("PORT", 9000)))
+    app.run(port=int(os.getenv("PORT", 9999)))
