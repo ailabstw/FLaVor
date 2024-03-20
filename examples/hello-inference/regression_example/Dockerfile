@@ -16,6 +16,5 @@ RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/heads/release/st
 WORKDIR /app
 COPY regression_example/*.py /app/
 COPY regression_example/test_data /app/test_data
-COPY send_request.py /app
 
 CMD ["python", "main.py"]

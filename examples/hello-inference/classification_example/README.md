@@ -18,10 +18,10 @@ You can initiate the service either locally or using Docker.
 ### Local Initiation
 
 ```bash
+# working directory: /your/path/FLaVor/examples/hello-inference/classification_example
 # install package
 pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip && pip install "flavor[infer]"
-git clone https://github.com/maxium0526/cft-chexpert.git
-mv cft-chexpert chexpert
+git clone https://github.com/maxium0526/cft-chexpert.git chexpert
 pip install -r requirements.txt
 # initiate service
 python main.py
@@ -36,7 +36,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 # build docker image
 docker build -t <your_image_name> -f classification_example/Dockerfile .
 # run the container
-docker run -p -p 9999:9999 <your_image_name>
+docker run -p 9999:9999 <your_image_name>
 ```
 
 ## Integration with InferAPP
@@ -58,7 +58,8 @@ Here, `model_out` must be prediction of each category (channel) representing by 
 Once the inference service is initiated, you can test it using the provided sample data and JSON file.
 
 ```bash
-python send_request.py -f chexpert/demo_img.jpg -d test_data/input.json
+# working directory: /your/path/FLaVor/examples/hello-inference/classification_example
+python ../send_request.py -f chexpert/demo_img.jpg -d test_data/input.json
 ```
 
 If everything runs smoothly, you should receive a response in the AiCOCO format.

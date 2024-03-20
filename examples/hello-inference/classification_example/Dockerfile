@@ -12,14 +12,13 @@ RUN apt-get update \
 
 RUN pip install torch==1.13.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
 RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip -U && pip install "flavor[infer]"
-RUN git clone https://github.com/maxium0526/cft-chexpert.git
 
 WORKDIR /app
 COPY classification_example/*.py /app/
 COPY classification_example/requirements.txt /app
 COPY classification_example/test_data /app/test_data
-COPY classification_example/cft-chexpert /app/chexpert
-COPY send_request.py /app
+
+RUN git clone https://github.com/maxium0526/cft-chexpert.git /app/chexpert
 
 RUN pip install -r requirements.txt
 

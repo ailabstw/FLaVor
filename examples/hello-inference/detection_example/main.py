@@ -26,7 +26,7 @@ class Inferer:
             2: {"name": "Platelets", "display": True},
         }
 
-        self.inferer = YOLO("best.pt")
+        self.inferer = YOLO("./best.pt")
         print("Loaded successfully.")
 
     def make_infer_result(

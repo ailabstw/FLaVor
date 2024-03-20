@@ -19,6 +19,7 @@ You can initiate the service either locally or using Docker.
 ### Local Initiation
 
 ```bash
+# working directory: /your/path/FLaVor/examples/hello-inference/regression_example
 # install package
 pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip && pip install "flavor[infer]"
 # initiate service
@@ -34,7 +35,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 # build docker image
 docker build -t <your_image_name> -f regression_example/Dockerfile .
 # run the container
-docker run -p -p 9999:9999 <your_image_name>
+docker run -p 9999:9999 <your_image_name>
 ```
 
 ## Integration with InferAPP
@@ -56,7 +57,8 @@ Here, `model_out` must be prediction of a series of regression values with `r` c
 Once the inference service is initiated, you can test it using the provided sample data and JSON file.
 
 ```bash
-python send_request.py -f test_data/test.jpeg -d test_data/input.json
+# working directory: /your/path/FLaVor/examples/hello-inference/regression_example
+python ../send_request.py -f test_data/test.jpeg -d test_data/input.json
 ```
 
 If everything runs smoothly, you should receive a response in the AiCOCO format.

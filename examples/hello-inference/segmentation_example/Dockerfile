@@ -17,7 +17,6 @@ WORKDIR /app
 COPY segmentation_example/*.py /app/
 COPY segmentation_example/requirements.txt /app
 COPY segmentation_example/test_data /app/test_data
-COPY send_request.py /app
 
 RUN pip install -r requirements.txt
 

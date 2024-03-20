@@ -1,2 +1,1 @@
 ultralytics
-opencv-python-headless<4.3
