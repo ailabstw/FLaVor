@@ -21,7 +21,7 @@ You can initiate the service either locally or using Docker.
 # working directory: /your/path/FLaVor/examples/hello-inference/segmentation_example
 # install package
 pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip && pip install "flavor[infer]"
-pip install -r requirements.txt
+pip install lungmask==0.2.18
 # initiate service
 python main.py
 ```
@@ -32,7 +32,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
-docker build -t <your_image_name> -f segmentation_example/Dockerfile .
+docker build -t <your_image_name> -f dockerfile/Dockerfile.seg .
 # run the container
 docker run -p 9999:9999 <your_image_name>
 ```
@@ -45,7 +45,7 @@ The FLaVor Inference Service integrates an open-source inference model through `
 return_dict = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
-    "model_out": model_out # 3d/4d NumPy array with grouped segmentation predictions
+    "model_out": model_out # 3d/4d NumPy array with segmentation predictions
 }
 ```
 
@@ -57,7 +57,7 @@ Once the inference service is initiated, you can test it using the provided samp
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference/segmentation_example
-python ../send_request.py -f test_data/0.dcm -d test_data/input.json
+python send_request.py -f test_data/seg/0.dcm -d test_data/seg/input.json
 ```
 
 If everything runs smoothly, you should receive a response in the AiCOCO format.

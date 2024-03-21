@@ -201,8 +201,8 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         Returns:
             Tuple[Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]]: Prepared AiCOCO output and model output as np.ndarray.
         """
-        categories = kwargs["categories"] if "categories" in kwargs else {}
-        regressions = kwargs["regressions"] if "regressions" in kwargs else {}
+        categories = kwargs.get("categories") if kwargs.get("categories") is not None else {}
+        regressions = kwargs.get("regressions") if kwargs.get("regressions") is not None else {}
 
         aicoco_images = {"images": self.generate_images(copy.deepcopy(sorted_images))}
 
@@ -484,14 +484,15 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
                 # all the `display` flag in the predicted classes are false
                 continue
 
-            if "confidence_score" in out:
-                cs = out["confidence_score"][i]
+            confidence_score = out.get("confidence_score")
+            if confidence_score:
+                cs = confidence_score[i]
                 obj["confidence"] = cs.item() if isinstance(cs, np.ndarray) else cs
 
-            if "regressions" in out:
+            regression_value = out.get("regression_value")
+            if regression_value:
                 obj["regressions"] = list()
-                regression_value = out["regression_value"][i]
-                for i, value in enumerate(regression_value):
+                for i, value in enumerate(regression_value[i]):
                     obj["regressions"].append(
                         {
                             "regression_id": self.regression_id_table[i],

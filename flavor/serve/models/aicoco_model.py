@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import List, Optional
+from typing import Optional, Sequence
 
-from pydantic import BaseModel, Extra
+from pydantic import BaseModel
 
 
 class Iscrowd(Enum):
@@ -10,12 +10,12 @@ class Iscrowd(Enum):
 
 
 class AiAnnotation(BaseModel):
-    bbox: Optional[List[List[int]]]
+    bbox: Optional[Sequence[Sequence[int]]]
     id: str
     image_id: str
     iscrowd: Iscrowd
     object_id: str
-    segmentation: Optional[List[List[int]]]
+    segmentation: Optional[Sequence[Sequence[int]]]
 
 
 class AiCategory(BaseModel):
@@ -32,19 +32,16 @@ class AiRegression(BaseModel):
     unit: Optional[str] = None
 
 
-class AiRegressionItem(BaseModel):
-    class Config:
-        extra = Extra.forbid
-
+class AiRegressionItem(BaseModel, extra="forbid"):
     regression_id: str
     value: float
 
 
 class AiObject(BaseModel):
-    category_ids: Optional[List[str]]
+    category_ids: Optional[Sequence[str]]
     confidence: Optional[float] = None
     id: str
-    regressions: Optional[List[AiRegressionItem]]
+    regressions: Optional[Sequence[AiRegressionItem]]
 
 
 class TaskType(Enum):
@@ -54,26 +51,23 @@ class TaskType(Enum):
 
 
 class AiMeta(BaseModel):
-    category_ids: Optional[List[str]]
-    regressions: Optional[List[AiRegressionItem]]
+    category_ids: Optional[Sequence[str]]
+    regressions: Optional[Sequence[AiRegressionItem]]
     task_type: Optional[TaskType] = None
 
 
 class AiImage(BaseModel):
-    category_ids: Optional[List[str]]
+    category_ids: Optional[Sequence[str]]
     file_name: str
     id: str
     index: int
-    regressions: Optional[List[AiRegressionItem]]
+    regressions: Optional[Sequence[AiRegressionItem]]
 
 
-class AiCOCOFormat(BaseModel):
-    class Config:
-        extra = Extra.forbid
-
-    images: List[AiImage]
-    annotations: List[AiAnnotation]
-    categories: List[AiCategory]
-    regressions: List[AiRegression]
-    objects: List[AiObject]
+class AiCOCOFormat(BaseModel, extra="forbid"):
+    images: Sequence[AiImage]
+    annotations: Sequence[AiAnnotation]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    objects: Sequence[AiObject]
     meta: AiMeta

@@ -93,7 +93,7 @@ return_dict = {
 return_dict = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
-    "model_out": model_out # 3d/4d NumPy array with grouped segmentation predictions
+    "model_out": model_out # 3d/4d NumPy array with segmentation predictions
 }
 ```
 
@@ -103,9 +103,9 @@ The general pattern of the expected output should be a dictionary containing the
 
 * `sorted_images`: a list of AiCOCO-compatible images (see input format) sorted by a certain criterion (e.g. by Z-axis or temporal order) to correlate with `model_out`.
 
-* `categories`: a dictionary where each key is the class ID. The corresponding value is a dictionary of category information that must be filled with `supercategory_name`, `display` and all necessary details as described in the AiCOCO format, except for the fields related to "nanoid".
+* `categories`: a dictionary where each key is the class ID in counting order starting from `0`. The corresponding value is a dictionary of category information that must be filled with `name` and optionally `supercategory_name`, `display` and all other details compatible in the AiCOCO format, except for the fields related to `nanoid`.
 
-* `regressions`: a dictionary in which each key is the regression ID. The corresponding value is a dictionary with regression information that must be filled with `superregression_name` and all necessary details as described in the AiCOCO format, except for the fields related to "nanoid".
+* `regressions`: a dictionary where each key is the regression ID in counting order starting from `0`. The corresponding value is a dictionary of regression information that must be filled with `name` and optionally `superregression_name` and all other details compatible in the AiCOCO format, except for the fields related to `nanoid".
 
 * `model_out`:
   * Classification and regression tasks

@@ -24,8 +24,20 @@ When using the FLaVor inference service, users send a POST request to the `/invo
 
 * Required:
   * files: The image for inference.
-  * images: A JSON file in AiCOCO format referring to the input image.
+  * data: A JSON file with `images` field in AiCOCO format referring to the input image.
   * metadata (optional): Any additional information related to the files.
+
+**Example**:
+
+```python
+recv = requests.post(
+    "http://0.0.0.0:9999/invocations",
+    data=data,
+    files=files,
+)
+```
+
+Please refer to [`send_request.py`](send_request.py) for more detail.
 
 ## Getting started
 

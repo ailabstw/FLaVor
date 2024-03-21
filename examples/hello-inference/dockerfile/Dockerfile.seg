@@ -12,12 +12,9 @@ RUN apt-get update \
 
 RUN pip install torch==1.13.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117 --default-timeout=1000
 RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip -U && pip install "flavor[infer]"
+RUN pip install lungmask==0.2.18
 
 WORKDIR /app
-COPY segmentation_example/*.py /app/
-COPY segmentation_example/requirements.txt /app
-COPY segmentation_example/test_data /app/test_data
-
-RUN pip install -r requirements.txt
+COPY seg_example.py /app/
 
 CMD ["python", "main.py"]

@@ -1,0 +1,1 @@
+from .base_inference_model import BaseInferenceModel
