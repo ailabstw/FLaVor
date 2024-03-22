@@ -1,2 +1,2 @@
-from .base_gradio_inference_model import base_gradio_inference_model
+from .base_gradio_inference_model import GradioInferenceModel
 from .base_inference_model import BaseInferenceModel
