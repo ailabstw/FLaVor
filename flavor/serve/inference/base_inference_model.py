@@ -1,3 +1,4 @@
+import abc
 from typing import Any, Callable, List, Sequence, Tuple
 
 import numpy as np
@@ -19,12 +20,15 @@ class BaseInferenceModel:
         self.categories = self.define_categories()
         self.regressions = self.define_regressions()
 
+    @abc.abstractmethod
     def define_inference_network(self) -> Callable:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def define_categories(self) -> InferCategories:
         raise NotImplementedError
 
+    @abc.abstractmethod
     def define_regressions(self) -> InferRegressions:
         raise NotImplementedError
 
@@ -61,6 +65,7 @@ class BaseInferenceModel:
 
         return data_filenames
 
+    @abc.abstractmethod
     def preprocess(self, data_filenames: Sequence[str]) -> Tuple[np.ndarray, List[str]]:
         """data reading and other data transformations.
         Since input to the inference model would be a dictionary, in order to retrieve input data, data reading has to be handled specifically.

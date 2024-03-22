@@ -1,9 +1,10 @@
 from typing import List, Sequence, Tuple
 
 import numpy as np
-from base_inference_model import BaseInferenceModel
 
 from flavor.serve.models import InferOutput, ModelOutput
+
+from .base_inference_model import BaseInferenceModel
 
 
 class GradioInferenceModel(BaseInferenceModel):
