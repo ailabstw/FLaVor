@@ -43,7 +43,7 @@ docker run -p 9999:9999 <your_image_name>
 The FLaVor Inference Service integrates an open-source inference model through `InferAPP`. The output of the inference model must be modified into a specific format for access by the output strategy, resulting in AiCOCO-formatted results.
 
 ```python
-return_dict = {
+infer_output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
     "model_out": model_out # 1d NumPy array with regression predictions

@@ -3,10 +3,10 @@ from typing import List, Sequence, Tuple
 
 import cv2
 import numpy as np
-from base_inference_model import BaseInferenceModel
 from chexpert.utils.wrappers import Wrapper
 
 from flavor.serve.apps import InferAPP
+from flavor.serve.inference import BaseInferenceModel
 from flavor.serve.models import InferClassificationOutput, ModelOutput
 from flavor.serve.strategies import (
     AiCOCOClassificationOutputStrategy,

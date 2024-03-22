@@ -54,7 +54,7 @@ The input format for each output strategy are listed as follows:
 ### Classification task -  `AiCOCOClassificationOutputStrategy`
 
 ```python
-return_dict = {
+infer_output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "model_out": model_out # 1d NumPy array with classification predictions
@@ -64,7 +64,7 @@ return_dict = {
 ### Detection task (support 2D only) - `AiCOCODetectionOutputStrategy`
 
 ```python
-return_dict = {
+infer_output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
@@ -80,7 +80,7 @@ return_dict = {
 ### Regression task - `AiCOCORegressionOutputStrategy`
 
 ```python
-return_dict = {
+infer_output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
     "model_out": model_out # 1d NumPy array with regression predictions
@@ -90,7 +90,7 @@ return_dict = {
 ### Segmentation task - `AiCOCOSegmentationOutputStrategy`
 
 ```python
-return_dict = {
+infer_output = {
     "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
     "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
     "model_out": model_out # 3d/4d NumPy array with segmentation predictions

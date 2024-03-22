@@ -5,16 +5,13 @@ import numpy as np
 import SimpleITK as sitk
 from lungmask import LMInferer
 
-from flavor.serve.apps import InferAPP
-from flavor.serve.inference import BaseInferenceModel
+from flavor.serve.apps import GradioInferAPP
+from flavor.serve.inference import GradioInferenceModel
 from flavor.serve.models import InferSegmentationOutput, ModelOutput
-from flavor.serve.strategies import (
-    AiCOCOInputStrategy,
-    AiCOCOSegmentationOutputStrategy,
-)
+from flavor.serve.strategies import GradioInputStrategy, GradioSegmentationStrategy
 
 
-class SegmentationInferenceModel(BaseInferenceModel):
+class SegmentationGradioInferenceModel(GradioInferenceModel):
     def __init__(self, output_data_model: InferSegmentationOutput):
         super().__init__(output_data_model=output_data_model)
 
@@ -80,14 +77,14 @@ class SegmentationInferenceModel(BaseInferenceModel):
         model_out = self.network.apply(data.squeeze(0))
         model_out = self.postprocess(model_out)
 
-        return model_out, sorted_data_filenames
+        return model_out, sorted_data_filenames, data
 
 
 if __name__ == "__main__":
 
-    app = InferAPP(
-        infer_function=SegmentationInferenceModel(output_data_model=InferSegmentationOutput),
-        input_strategy=AiCOCOInputStrategy,
-        output_strategy=AiCOCOSegmentationOutputStrategy,
+    app = GradioInferAPP(
+        infer_function=SegmentationGradioInferenceModel(output_data_model=InferSegmentationOutput),
+        input_strategy=GradioInputStrategy,
+        output_strategy=GradioSegmentationStrategy,
     )
     app.run(port=int(os.getenv("PORT", 9999)))

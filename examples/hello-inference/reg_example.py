@@ -3,11 +3,11 @@ from typing import List, Sequence, Tuple
 
 import numpy as np
 import torch.nn as nn
-from base_inference_model import BaseInferenceModel
 from PIL import Image
 from torchvision.models import ResNet18_Weights, resnet18
 
 from flavor.serve.apps import InferAPP
+from flavor.serve.inference import BaseInferenceModel
 from flavor.serve.models import InferRegressionOutput
 from flavor.serve.strategies import AiCOCOInputStrategy, AiCOCORegressionOutputStrategy
 
