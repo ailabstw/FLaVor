@@ -12,14 +12,11 @@ RUN apt-get update \
 
 RUN pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 --extra-index-url https://download.pytorch.org/whl/cu117
 RUN pip install https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip -U && pip install "flavor[infer]"
+RUN pip install ultralytics
 
 WORKDIR /app
-COPY detection_example/*.py /app/
-COPY detection_example/requirements.txt /app
-COPY detection_example/test_data /app/test_data
+COPY det_example.py /app/
 
 RUN wget https://github.com/sevdaimany/YOLOv8-Medical-Imaging/raw/master/runs/detect/train/weights/best.pt -P /app/
-
-RUN pip install -r requirements.txt
 
 CMD ["python", "main.py"]

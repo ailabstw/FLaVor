@@ -20,10 +20,10 @@ You can initiate the service either locally or using Docker.
 
 ```bash
 # install package
-# working directory: /your/path/FLaVor/examples/hello-inference/detection_example
+# working directory: /your/path/FLaVor/examples/hello-inference
 pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip && pip install "flavor[infer]"
+pip install ultralytics
 wget https://github.com/sevdaimany/YOLOv8-Medical-Imaging/raw/master/runs/detect/train/weights/best.pt
-pip install -r requirements.txt
 # initiate service
 python main.py
 ```
@@ -35,7 +35,7 @@ If you prefer Docker, you can build the environment using the provided [Dockerfi
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
 # build docker image
-docker build -t <your_image_name> -f detection_example/Dockerfile .
+docker build -t <your_image_name> -f dockerfile/Dockerfile.det .
 # run the container
 docker run -p 9999:9999 <your_image_name>
 ```
@@ -70,8 +70,8 @@ Here, `model_out` must be a dictionary with keys as following:
 Once the inference service is initiated, you can test it using the provided sample data and JSON file.
 
 ```bash
-# working directory: /your/path/FLaVor/examples/hello-inference/detection_example
-python ../send_request.py -f test_data/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg -d test_data/input.json
+# working directory: /your/path/FLaVor/examples/hello-inference
+python send_request.py -f test_data/det/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg -d test_data/det/input.json
 ```
 
 If everything runs smoothly, you should receive a response in the AiCOCO format.

@@ -71,7 +71,7 @@ class BaseInferenceModel:
 
         return model_out
 
-    def inference(self, data_filenames: Sequence[str]) -> Tuple[InferOutput, List[str]]:
+    def inference(self, data_filenames: Sequence[str]) -> Tuple[ModelOutput, List[str]]:
         """model inference function
 
         recommended steps:
@@ -83,7 +83,7 @@ class BaseInferenceModel:
             data_filenames_l (Sequence[str]): list of the directory of input files in local machine
 
         Returns:
-            Tuple[InferOutput,  List[str]]: `model_out` and `sorted_data_filenames`
+            Tuple[ModelOutput,  List[str]]: `model_out` and `sorted_data_filenames`
         """
 
         data, sorted_data_filenames = self.preprocess(data_filenames)

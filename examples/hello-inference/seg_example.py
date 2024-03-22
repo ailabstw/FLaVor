@@ -5,10 +5,9 @@ import numpy as np
 import SimpleITK as sitk
 from base_inference_model import BaseInferenceModel
 from lungmask import LMInferer
-from pydantic import BaseModel
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.models import InferSegmentationOutput
+from flavor.serve.models import InferSegmentationOutput, ModelOutput
 from flavor.serve.strategies import (
     AiCOCOInputStrategy,
     AiCOCOSegmentationOutputStrategy,
@@ -16,7 +15,7 @@ from flavor.serve.strategies import (
 
 
 class SegmentationInferenceModel(BaseInferenceModel):
-    def __init__(self, output_data_model: BaseModel):
+    def __init__(self, output_data_model: InferSegmentationOutput):
         super().__init__(output_data_model=output_data_model)
 
     def define_inference_network(self):
@@ -76,7 +75,7 @@ class SegmentationInferenceModel(BaseInferenceModel):
 
         return model_out
 
-    def inference(self, data_filenames: Sequence[str]) -> Tuple[InferSegmentationOutput, List[str]]:
+    def inference(self, data_filenames: Sequence[str]) -> Tuple[ModelOutput, List[str]]:
         data, sorted_data_filenames = self.preprocess(data_filenames)
         model_out = self.network.apply(data.squeeze(0))
         model_out = self.postprocess(model_out)

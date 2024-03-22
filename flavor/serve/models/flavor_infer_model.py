@@ -29,7 +29,7 @@ class InferRegressions(BaseModel):
     unit: Optional[str] = None
 
 
-class _ModelOut(BaseModel, arbitrary_types_allowed=True):
+class _ModelOut(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     model_out: np.ndarray
 
 

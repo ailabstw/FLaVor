@@ -18,7 +18,7 @@ You can initiate the service either locally or using Docker.
 ### Local Initiation
 
 ```bash
-# working directory: /your/path/FLaVor/examples/hello-inference/segmentation_example
+# working directory: /your/path/FLaVor/examples/hello-inference
 # install package
 pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip && pip install "flavor[infer]"
 pip install lungmask==0.2.18
@@ -56,7 +56,7 @@ Here, `model_out` must be prediction masks representing by `0` or `1` for segmen
 Once the inference service is initiated, you can test it using the provided sample data and JSON file.
 
 ```bash
-# working directory: /your/path/FLaVor/examples/hello-inference/segmentation_example
+# working directory: /your/path/FLaVor/examples/hello-inference
 python send_request.py -f test_data/seg/0.dcm -d test_data/seg/input.json
 ```
 
