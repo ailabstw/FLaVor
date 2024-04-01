@@ -1,108 +1,123 @@
-from typing import Dict, Optional, Sequence, Union
+import ast
+import json
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from pydantic import AfterValidator, BaseModel
-from typing_extensions import Annotated
+from pydantic import BaseModel, model_serializer, model_validator
 
 from . import AiImage, AiRegressionItem
 
 
+class NpArray(BaseModel, arbitrary_types_allowed=True):
+    array: np.ndarray
+    shape: Tuple[int, ...]
+    dtype: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def set_arr_attrs(cls, data):
+        array = data.get("array")
+        shape = data.get("shape")
+        dtype = data.get("dtype")
+
+        if type(array) == np.ndarray:
+            if shape is not None or dtype is not None:
+                raise ValueError("shape and dtype should be None if array is an `np.ndarray`")
+
+        elif type(array) == str:
+            if shape is None or dtype is None:
+                raise ValueError(
+                    "shape and dtype cannot be None if array is an `np.ndarray` string representation"
+                )
+            array = ast.literal_eval(array)
+            shape = tuple(ast.literal_eval(shape))
+            array = np.frombuffer(array, dtype=getattr(np, dtype)).reshape(shape)
+
+        if type(array) != np.ndarray:
+            raise TypeError(f"array must have type: np.ndarray. got {type(array)}")
+
+        data["array"] = array
+        data["shape"] = array.shape
+        data["dtype"] = array.dtype.name
+        return data
+
+    @model_serializer
+    def serialize(self) -> Dict[str, Any]:
+        return {
+            "array": str(self.array.tobytes()),
+            "shape": json.dumps(self.array.shape),
+            "dtype": self.dtype,
+        }
+
+
+class InputBody(BaseModel):
+    files: Sequence[str]
+    images: str
+
+
 class InferInputImage(BaseModel):
-    category_ids: Optional[Sequence[str]]
+    category_ids: Optional[Sequence[str]] = None
     file_name: str
     id: str
     index: int
-    regressions: Optional[Sequence[AiRegressionItem]]
+    regressions: Optional[Sequence[AiRegressionItem]] = None
     physical_file_name: str
 
 
-class InferCategories(BaseModel):
+class InferInput(BaseModel):
+    images: Sequence[InferInputImage]
+
+
+class InferCategory(BaseModel):
     name: str
     supercategory_name: Optional[str] = None
     display: Optional[bool] = True
     color: Optional[str] = None
 
 
-class InferRegressions(BaseModel):
+class InferRegression(BaseModel):
     name: str
     superregression_name: Optional[str] = None
     unit: Optional[str] = None
 
 
-class _ModelOut(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
-    model_out: np.ndarray
-
-
-class _ClsPred(BaseModel, arbitrary_types_allowed=True):
-    cls_pred: Union[np.ndarray, Sequence[np.ndarray], Sequence[int]]
-
-
-class InferDetectionModelOutput(BaseModel):
+class DetModelOutput(BaseModel):
     bbox_pred: Sequence[Sequence[int]]
-    _ClsPred
+    cls_pred: Any  # TODO add strong constraint
     confidence_score: Optional[float] = None
     regression_value: Optional[float] = None
 
 
-def check_cls_dim(v):
-    assert v.ndim == 1, f"dim of the inference model output {v.shape} should be 1D."
-    return v
-
-
-def check_det_dim(v):
-    assert isinstance(v, dict), "The type of inference model output should be `dict`."
-    assert "bbox_pred" in v, "A key `bbox_pred` must be in inference model output."
-    assert "cls_pred" in v, "A key `cls_pred` must be in inference model output."
-    return v
-
-
-def check_reg_dim(v):
-    assert v.ndim == 1, f"dim of the inference model output {v.shape} should be 1D."
-    return v
-
-
-def check_seg_dim(v):
-    assert (
-        v.ndim == 3 or v.ndim == 4
-    ), f"dim of the inference model output {v.shape} should be in 3D or 4D."
-    return v
-
-
-ClsModelOut = Annotated[_ModelOut, AfterValidator(check_cls_dim)]
-RegModelOut = Annotated[_ModelOut, AfterValidator(check_reg_dim)]
-DetModelOut = Annotated[InferDetectionModelOutput, AfterValidator(check_det_dim)]
-SegModelOut = Annotated[_ModelOut, AfterValidator(check_seg_dim)]
-
-
 class InferClassificationOutput(BaseModel):
-    sorted_images: Sequence[AiImage]
-    categories: Dict[int, InferCategories]
-    ClsModelOut
+    images: Sequence[AiImage]
+    categories: Dict[int, InferCategory]
+    model_out: Any  # TODO add strong constraint
 
 
 class InferDetectionOutput(BaseModel):
-    sorted_images: Sequence[AiImage]
-    categories: Dict[int, InferCategories]
-    regressions: Optional[Dict[int, InferRegressions]]
-    DetModelOut
+    images: Sequence[AiImage]
+    categories: Dict[int, InferCategory]
+    regressions: Optional[Dict[int, InferRegression]] = None
+    model_out: DetModelOutput
 
 
 class InferRegressionOutput(BaseModel):
-    sorted_images: Sequence[AiImage]
-    regressions: Dict[int, InferRegressions]
-    RegModelOut
+    images: Sequence[AiImage]
+    regressions: Dict[int, InferRegression]
+    model_out: Any  # TODO add strong constraint
 
 
 class InferSegmentationOutput(BaseModel):
-    sorted_images: Sequence[AiImage]
-    categories: Dict[int, InferCategories]
-    SegModelOut
+    images: Sequence[AiImage]
+    categories: Dict[int, InferCategory]
+    model_out: Any  # TODO add strong constraint
 
 
 InferOutput = Union[
     InferClassificationOutput,
-    InferDetectionModelOutput,
+    InferDetectionOutput,
     InferRegressionOutput,
     InferSegmentationOutput,
 ]
-ModelOutput = Union[ClsModelOut, RegModelOut, DetModelOut, SegModelOut]
+
+ModelOutput = Union[np.ndarray, DetModelOutput]
