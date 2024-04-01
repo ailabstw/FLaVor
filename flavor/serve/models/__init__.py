@@ -9,14 +9,16 @@ from .aicoco_model import (
     AiRegressionItem,
 )
 from .flavor_infer_model import (
-    InferCategories,
+    InferCategory,
     InferClassificationOutput,
-    InferDetectionModelOutput,
     InferDetectionOutput,
+    InferInput,
     InferInputImage,
     InferOutput,
+    InferRegression,
     InferRegressionOutput,
-    InferRegressions,
     InferSegmentationOutput,
+    InputBody,
     ModelOutput,
+    NpArray,
 )
