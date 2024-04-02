@@ -1,4 +1,4 @@
-# Classification task in FLaVor Inference Service
+# Classification task with the FLaVor Inference Service
 
 This guide will walk you through integrating the FLaVor inference service for 2D multi-label classification task using the [cft-chexpert](https://github.com/maxium0526/cft-chexpert) inference model.
 
@@ -25,19 +25,19 @@ git clone https://github.com/maxium0526/cft-chexpert.git chexpert
 pip install tensorflow==2.8.0
 pip install protobuf==3.14.0
 # initiate service
-python main.py
+python cls_example.py
 ```
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](./Dockerfile).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](examples/hello-inference/dockerfile/Dockerfile.cls).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
 # build docker image
 docker build -t <your_image_name> -f dockerfile/Dockerfile.cls .
 # run the container
-docker run -p 9999:9999 <your_image_name>
+docker run -p 9000:9000 <your_image_name>
 ```
 
 ## Integration with InferAPP

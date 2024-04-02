@@ -7,7 +7,7 @@ from lungmask import LMInferer
 
 from flavor.serve.apps import GradioInferAPP
 from flavor.serve.inference import GradioInferenceModel
-from flavor.serve.models import InferSegmentationOutput, ModelOutput
+from flavor.serve.models import InferSegmentationOutput
 from flavor.serve.strategies import GradioInputStrategy, GradioSegmentationStrategy
 
 
@@ -72,12 +72,21 @@ class SegmentationGradioInferenceModel(GradioInferenceModel):
 
         return model_out
 
-    def inference(self, data_filenames: Sequence[str]) -> Tuple[ModelOutput, List[str]]:
+    def __call__(self, **infer_input) -> InferSegmentationOutput:
+        # input data filename parser
+        data_filenames = self.get_data_filename(**infer_input)
+
+        # inference
         data, sorted_data_filenames = self.preprocess(data_filenames)
         model_out = self.network.apply(data.squeeze(0))
         model_out = self.postprocess(model_out)
 
-        return model_out, sorted_data_filenames, data
+        # inference model output formatter
+        result = self.make_infer_result(
+            model_out, sorted_data_filenames=sorted_data_filenames, data=data, **infer_input
+        )
+
+        return result
 
 
 if __name__ == "__main__":
@@ -87,4 +96,4 @@ if __name__ == "__main__":
         input_strategy=GradioInputStrategy,
         output_strategy=GradioSegmentationStrategy,
     )
-    app.run(port=int(os.getenv("PORT", 9999)))
+    app.run(port=int(os.getenv("PORT", 9000)))

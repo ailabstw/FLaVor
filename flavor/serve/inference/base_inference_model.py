@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from pydantic import TypeAdapter
@@ -10,7 +10,7 @@ from flavor.serve.models import (
     InferInputImage,
     InferOutput,
     InferRegression,
-    ModelOutput,
+    ModelOut,
 )
 
 
@@ -66,19 +66,19 @@ class BaseInferenceModel:
 
     def make_infer_result(
         self,
-        model_out: ModelOutput,
+        model_out: ModelOut,
         sorted_data_filenames: Optional[Sequence[str]] = None,
-        **input_aicoco
+        **infer_input
     ) -> InferOutput:
         """
         Formulates inference output and validates output type based on `output_data_model`.
         If `sorted_data_filenames` is provided, return the order of `image` field will based on it.
 
         Args:
-            model_out (ModelOutput): Inference model output.
+            model_out (ModelOut): Inference model output.
             sorted_data_filenames (Optional[Sequence[str]]):
                 List of data filenames arranged in order if input data is in 3D. Default: None.
-            **input_aicoco: Additional input data.
+            **infer_input: Additional input data.
 
         Returns:
             InferOutput: Formulated inference model output.
@@ -86,13 +86,13 @@ class BaseInferenceModel:
 
         if sorted_data_filenames is not None:
             images_path_table = {}
-            for image in input_aicoco["images"]:
+            for image in infer_input["images"]:
                 images_path_table[image["physical_file_name"]] = image
 
             images = [images_path_table[filename] for filename in sorted_data_filenames]
 
         else:
-            images = sorted(input_aicoco["images"], key=lambda x: x["index"])
+            images = sorted(infer_input["images"], key=lambda x: x["index"])
 
         infer_output = {
             "images": images,
@@ -126,7 +126,9 @@ class BaseInferenceModel:
         return data_filenames
 
     @abc.abstractmethod
-    def preprocess(self, data_filenames: Sequence[str]) -> Tuple[np.ndarray, List[str]]:
+    def preprocess(
+        self, data_filenames: Sequence[str]
+    ) -> Union[np.ndarray, Tuple[np.ndarray, List[str]]]:
         """
         Abstract method for data preprocessing.
         The `preprocess` method is responsible for preparing the input data for the inference process.
@@ -138,11 +140,11 @@ class BaseInferenceModel:
         """
         raise NotImplementedError
 
-    def postprocess(self, model_out: Any) -> ModelOutput:
+    def postprocess(self, model_out: Any) -> ModelOut:
         """Handles additional postprocessing of model output."""
         return model_out
 
-    def __call__(self, **input_aicoco: InferInput) -> InferOutput:
+    def __call__(self, **infer_input: InferInput) -> InferOutput:
         """Runs the inference model.
 
         Returns:
@@ -161,7 +163,7 @@ class BaseInferenceModel:
         """
 
         # input data filename parser
-        data_filenames = self.get_data_filename(**input_aicoco)
+        data_filenames = self.get_data_filename(**infer_input)
 
         # inference
         data = self.preprocess(data_filenames)
@@ -169,6 +171,6 @@ class BaseInferenceModel:
         model_out = self.postprocess(model_out)
 
         # inference model output formatter
-        result = self.make_infer_result(model_out, **input_aicoco)
+        result = self.make_infer_result(model_out, **infer_input)
 
         return result

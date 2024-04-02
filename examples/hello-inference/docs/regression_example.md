@@ -1,4 +1,4 @@
-# Regression task in FLaVor Inference Service
+# Regression task with the FLaVor Inference Service
 
 This guide will walk you through integrating the FLaVor inference service for a 2D regression task using a dummy ResNet18 inference model.
 
@@ -23,19 +23,19 @@ You can initiate the service either locally or using Docker.
 # install package
 pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip && pip install "flavor[infer]"
 # initiate service
-python main.py
+python reg_example.py
 ```
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](./Dockerfile).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](examples/hello-inference/dockerfile/Dockerfile.reg).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
 # build docker image
 docker build -t <your_image_name> -f dockerfile/Dockerfile.reg .
 # run the container
-docker run -p 9999:9999 <your_image_name>
+docker run -p 9000:9000 <your_image_name>
 ```
 
 ## Integration with InferAPP

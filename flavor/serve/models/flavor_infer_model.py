@@ -22,19 +22,19 @@ class NpArray(BaseModel, arbitrary_types_allowed=True):
 
         if type(array) == np.ndarray:
             if shape is not None or dtype is not None:
-                raise ValueError("shape and dtype should be None if array is an `np.ndarray`")
+                raise ValueError("The shape and dtype should be `None` if array is `np.ndarray`.")
 
         elif type(array) == str:
             if shape is None or dtype is None:
                 raise ValueError(
-                    "shape and dtype cannot be None if array is an `np.ndarray` string representation"
+                    "The shape and dtype cannot be `None` if array is string representation of `np.ndarray`."
                 )
             array = ast.literal_eval(array)
             shape = tuple(ast.literal_eval(shape))
             array = np.frombuffer(array, dtype=getattr(np, dtype)).reshape(shape)
 
         if type(array) != np.ndarray:
-            raise TypeError(f"array must have type: np.ndarray. got {type(array)}")
+            raise TypeError(f"`array` must have type: np.ndarray but got {type(array)}")
 
         data["array"] = array
         data["shape"] = array.shape
@@ -48,6 +48,10 @@ class NpArray(BaseModel, arbitrary_types_allowed=True):
             "shape": json.dumps(self.array.shape),
             "dtype": self.dtype,
         }
+
+
+def check_any_nonint(x):
+    return np.any(~(np.mod(x, 1) == 0))
 
 
 class InputBody(BaseModel):
@@ -81,36 +85,124 @@ class InferRegression(BaseModel):
     unit: Optional[str] = None
 
 
-class DetModelOutput(BaseModel):
-    bbox_pred: Sequence[Sequence[int]]
-    cls_pred: Any  # TODO add strong constraint
-    confidence_score: Optional[float] = None
-    regression_value: Optional[float] = None
-
-
-class InferClassificationOutput(BaseModel):
+class InferClassificationOutput(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     images: Sequence[AiImage]
     categories: Dict[int, InferCategory]
-    model_out: Any  # TODO add strong constraint
+    model_out: np.ndarray
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_model_out(cls, data: Any) -> Any:
+        model_out = data.get("model_out")
+
+        if not isinstance(model_out, np.ndarray):
+            raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
+
+        if model_out.ndim != 1:
+            raise ValueError(
+                f"The dimension of `model_out` should be in 1D but got {model_out.ndim}."
+            )
+
+        if check_any_nonint(model_out):
+            raise ValueError(
+                "The value of `model_out` should be only 0 or 1 with int or float type."
+            )
+
+        return data
 
 
-class InferDetectionOutput(BaseModel):
+class DetModelOut(BaseModel, arbitrary_types_allowed=True):
+    bbox_pred: Sequence[Sequence[int]]
+    cls_pred: Union[np.ndarray, Sequence[np.ndarray], Sequence[Sequence[Union[int, float]]]]
+    confidence_score: Optional[Union[np.ndarray, Sequence[float]]] = None
+    regression_value: Optional[Union[np.ndarray, Sequence[float]]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_model_out(cls, data: Any) -> Any:
+        bbox_pred = data.get("bbox_pred")
+        cls_pred = data.get("cls_pred")
+        confidence_score = data.get("confidence_score", None)
+        regression_value = data.get("regression_value", None)
+
+        if len(bbox_pred) != len(cls_pred):
+            raise ValueError("`bbox_pred` and `cls_pred` should have same amount of elements.")
+
+        if confidence_score is not None and len(bbox_pred) != len(confidence_score):
+            raise ValueError(
+                "`bbox_pred` and `confidence_score` should have same amount of elements."
+            )
+
+        if regression_value is not None and len(bbox_pred) != len(regression_value):
+            raise ValueError(
+                "`bbox_pred` and `regression_value` should have same amount of elements."
+            )
+
+        if not isinstance(cls_pred, np.ndarray) and not isinstance(cls_pred, list):
+            raise TypeError(
+                f"`cls_pred` must be type: np.ndarray or list but got {type(cls_pred)}."
+            )
+
+        if check_any_nonint(cls_pred):
+            raise ValueError(
+                "The value of `cls_pred` should be only 0 or 1 with int or float type."
+            )
+
+        return data
+
+
+class InferDetectionOutput(BaseModel, protected_namespaces=()):
     images: Sequence[AiImage]
     categories: Dict[int, InferCategory]
     regressions: Optional[Dict[int, InferRegression]] = None
-    model_out: DetModelOutput
+    model_out: DetModelOut
 
 
-class InferRegressionOutput(BaseModel):
+class InferRegressionOutput(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     images: Sequence[AiImage]
     regressions: Dict[int, InferRegression]
-    model_out: Any  # TODO add strong constraint
+    model_out: np.ndarray
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_model_out(cls, data: Any) -> Any:
+        model_out = data.get("model_out")
+
+        if not isinstance(model_out, np.ndarray):
+            raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
+
+        if model_out.ndim != 1 and model_out.ndim != 4:
+            raise ValueError(
+                f"The dimension of `model_out` should be in 1D but got {model_out.ndim}."
+            )
+
+        return data
 
 
-class InferSegmentationOutput(BaseModel):
+class InferSegmentationOutput(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     images: Sequence[AiImage]
     categories: Dict[int, InferCategory]
-    model_out: Any  # TODO add strong constraint
+    model_out: np.ndarray
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_model_out(cls, data: Any) -> Any:
+        model_out = data.get("model_out")
+
+        if not isinstance(model_out, np.ndarray):
+            raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
+
+        if model_out.ndim != 3 and model_out.ndim != 4:
+            raise ValueError(
+                f"The dimension of `model_out` should be in 3D or 4D but got {model_out.ndim}."
+            )
+
+        if check_any_nonint(model_out):
+            raise ValueError(
+                "The value of `model_out` should be integer such as 0, 1, 2 ... with int or float type."
+            )
+
+        return data
 
 
 InferOutput = Union[
@@ -120,4 +212,4 @@ InferOutput = Union[
     InferSegmentationOutput,
 ]
 
-ModelOutput = Union[np.ndarray, DetModelOutput]
+ModelOut = Union[np.ndarray, DetModelOut]

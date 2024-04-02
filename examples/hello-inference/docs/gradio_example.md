@@ -9,11 +9,11 @@ To quickly evaluate how well the model performs, we provide a visualization tool
 
 ## Prerequisite
 
-Please follow the instructions in [segmentation example](./segmentation_example.md).
+Please follow the instructions in [segmentation example](./docs/segmentation_example.md).
 
 ## Getting started
 
-Let's demonstrate Gradio Strategy with [segmentation example](./segmentation_example.md). To adopt Gradio interface, we provide base class in `base_gradio_inference_model.py`. By reusing most of the code in `seg_example.py`, we can demonstrate the usage of Gradio service in `gradio_example.py`.
+Let's demonstrate Gradio Strategy with [segmentation example](./docs/segmentation_example.md). To adopt Gradio interface, we provide base class in `base_gradio_inference_model.py`. By reusing most of the code in `seg_example.py`, we can demonstrate the usage of Gradio service in `gradio_example.py`.
 
 Here's the output format for gradio inference model in segmentation task. You can see that we only add a new key-value pair `data` in the `infer_output`.
 

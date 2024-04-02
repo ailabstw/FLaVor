@@ -1,7 +1,8 @@
 import os
-from typing import List, Sequence, Tuple
+from typing import Sequence
 
 import numpy as np
+import torch
 import torch.nn as nn
 from PIL import Image
 from torchvision.models import ResNet18_Weights, resnet18
@@ -32,16 +33,16 @@ class RegressionInferenceModel(BaseInferenceModel):
         }
         return regressions
 
-    def preprocess(self, data_filenames: Sequence[str]) -> Tuple[np.ndarray, List[str]]:
+    def preprocess(self, data_filenames: Sequence[str]) -> torch.Tensor:
         img = Image.open(data_filenames[0])
 
         transforms = ResNet18_Weights.DEFAULT.transforms()
         img = transforms(img).unsqueeze(0)
 
-        return img, data_filenames
+        return img
 
-    def postprocess(self, model_out: np.ndarray) -> np.ndarray:
-        return model_out.squeeze(0)
+    def postprocess(self, model_out: torch.Tensor) -> np.ndarray:
+        return model_out.squeeze(0).cpu().detach().numpy()
 
 
 if __name__ == "__main__":
@@ -51,4 +52,4 @@ if __name__ == "__main__":
         input_strategy=AiCOCOInputStrategy,
         output_strategy=AiCOCORegressionOutputStrategy,
     )
-    app.run(port=int(os.getenv("PORT", 9999)))
+    app.run(port=int(os.getenv("PORT", 9000)))

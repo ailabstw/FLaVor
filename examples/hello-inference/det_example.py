@@ -1,5 +1,5 @@
 import os
-from typing import List, Sequence, Tuple
+from typing import Any, Sequence
 
 import cv2
 import numpy as np
@@ -7,7 +7,7 @@ from ultralytics import YOLO
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference import BaseInferenceModel
-from flavor.serve.models import InferDetectionOutput, ModelOutput
+from flavor.serve.models import DetModelOut, InferDetectionOutput, InferInput
 from flavor.serve.strategies import AiCOCODetectionOutputStrategy, AiCOCOInputStrategy
 
 
@@ -16,7 +16,7 @@ class DetectionInferenceModel(BaseInferenceModel):
         super().__init__(output_data_model=output_data_model)
 
     def define_inference_network(self):
-        return YOLO("./best.pt")
+        return YOLO("examples/hello-inference/best.pt")
 
     def define_categories(self):
         categories = {
@@ -29,13 +29,13 @@ class DetectionInferenceModel(BaseInferenceModel):
     def define_regressions(self):
         return None
 
-    def preprocess(self, data_filenames: Sequence[str]) -> Tuple[np.ndarray, List[str]]:
+    def preprocess(self, data_filenames: Sequence[str]) -> np.ndarray:
         image = cv2.imread(data_filenames[0])
         image = image.astype(np.float32)
 
-        return image, data_filenames
+        return image
 
-    def postprocess(self, model_out: np.ndarray) -> np.ndarray:
+    def postprocess(self, model_out: Any) -> DetModelOut:
 
         format_output = {
             "bbox_pred": [],
@@ -53,12 +53,19 @@ class DetectionInferenceModel(BaseInferenceModel):
 
         return format_output
 
-    def inference(self, data_filenames: Sequence[str]) -> Tuple[ModelOutput, List[str]]:
-        data, sorted_data_filenames = self.preprocess(data_filenames)
+    def __call__(self, **infer_input: InferInput) -> InferDetectionOutput:
+        # input data filename parser
+        data_filenames = self.get_data_filename(**infer_input)
+
+        # inference
+        data = self.preprocess(data_filenames)
         model_out = self.network.predict(data, conf=0.7)[0]
         model_out = self.postprocess(model_out)
 
-        return model_out, sorted_data_filenames
+        # inference model output formatter
+        result = self.make_infer_result(model_out, **infer_input)
+
+        return result
 
 
 if __name__ == "__main__":
@@ -68,4 +75,4 @@ if __name__ == "__main__":
         input_strategy=AiCOCOInputStrategy,
         output_strategy=AiCOCODetectionOutputStrategy,
     )
-    app.run(port=int(os.getenv("PORT", 9999)))
+    app.run(port=int(os.getenv("PORT", 9000)))

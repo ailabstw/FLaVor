@@ -1,4 +1,4 @@
-# Segmentation task in FLaVor Inference Service
+# Segmentation task with the FLaVor Inference Service
 
 This guide will walk you through integrating the FLaVor inference service for 2D segmentation tasks using the [lungmask](https://github.com/JoHof/lungmask) inference model.
 
@@ -23,18 +23,18 @@ You can initiate the service either locally or using Docker.
 pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip && pip install "flavor[infer]"
 pip install lungmask==0.2.18
 # initiate service
-python main.py
+python seg_example.py
 ```
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](./Dockerfile).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](examples/hello-inference/dockerfile/Dockerfile.seg).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
 docker build -t <your_image_name> -f dockerfile/Dockerfile.seg .
 # run the container
-docker run -p 9999:9999 <your_image_name>
+docker run -p 9000:9000 <your_image_name>
 ```
 
 ## Integration with InferAPP
