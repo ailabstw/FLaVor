@@ -16,7 +16,7 @@ class DetectionInferenceModel(BaseInferenceModel):
         super().__init__(output_data_model=output_data_model)
 
     def define_inference_network(self):
-        return YOLO("examples/hello-inference/best.pt")
+        return YOLO("best.pt")
 
     def define_categories(self):
         categories = {
