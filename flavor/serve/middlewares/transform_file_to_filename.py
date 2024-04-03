@@ -1,3 +1,4 @@
+import pathlib
 from collections.abc import Callable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
 
@@ -81,8 +82,10 @@ class TransformFileToFilenameMiddleware(BaseHTTPMiddleware):
             if isinstance(form_data[k], UploadFile):
                 filenames = []
                 for file_ in form_data.getlist(k):
+                    path = pathlib.Path(file_.filename)
+                    suffix = str(path).replace('/', '_')
                     temp_file = NamedTemporaryFile(
-                        delete=False, dir=tempdir.name, suffix=f"{file_.filename}"
+                        delete=False, dir=tempdir.name, suffix=f"{suffix}"
                     )
                     async with aiofile.async_open(temp_file.name, "wb") as f:
                         await f.write(await file_.read())

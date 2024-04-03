@@ -45,8 +45,8 @@ class AiCOCOInputStrategy(BaseStrategy):
         return data
 
     def match_file_name(self, file_name, files):
-
         try:
+            file_name = file_name.replace('/', '_')
             return next(file for file in files if file_name in file)
         except StopIteration:
             raise Exception(f"Filename {file_name} not match")
