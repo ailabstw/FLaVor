@@ -28,7 +28,7 @@ python seg_example.py
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](examples/hello-inference/dockerfile/Dockerfile.seg).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](../dockerfile/Dockerfile.seg).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference

@@ -103,9 +103,7 @@ app.run(port=int(os.getenv("PORT", 9000)))
 
 ### Step 4: Send Inference Requests
 
-Once the FLaVor Inference Service is running, send POST requests to the /invocations endpoint with image data and associated metadata formatted in AiCOCO format to perform segmentation inference.
-
-By following these steps, you can seamlessly integrate your segmentation model with the FLaVor Inference Service and leverage its user-friendly interface for simplified segmentation tasks.
+Once the FLaVor Inference Service is running, send POST requests to the `/invocations` endpoint with image data and associated metadata formatted in AiCOCO format to perform inference. See [`send_request.py`](send_request.py) for python example.
 
 ### More Examples for Various Tasks
 

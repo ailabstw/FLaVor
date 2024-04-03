@@ -30,7 +30,7 @@ python det_example.py
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](examples/hello-inference/dockerfile/Dockerfile.det).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](../dockerfile/Dockerfile.det).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference

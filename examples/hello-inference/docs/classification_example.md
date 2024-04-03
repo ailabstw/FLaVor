@@ -30,7 +30,7 @@ python cls_example.py
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](examples/hello-inference/dockerfile/Dockerfile.cls).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](../dockerfile/Dockerfile.cls).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference

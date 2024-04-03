@@ -19,4 +19,4 @@ COPY det_example.py /app/
 
 RUN wget https://github.com/sevdaimany/YOLOv8-Medical-Imaging/raw/master/runs/detect/train/weights/best.pt -P /app/
 
-CMD ["python", "main.py"]
+CMD ["python", "det_example.py"]

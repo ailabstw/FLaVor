@@ -17,4 +17,4 @@ RUN pip install lungmask==0.2.18
 WORKDIR /app
 COPY seg_example.py /app/
 
-CMD ["python", "main.py"]
+CMD ["python", "seg_example.py"]

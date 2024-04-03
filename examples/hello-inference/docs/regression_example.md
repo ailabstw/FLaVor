@@ -28,7 +28,7 @@ python reg_example.py
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](examples/hello-inference/dockerfile/Dockerfile.reg).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](../dockerfile/Dockerfile.reg).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
