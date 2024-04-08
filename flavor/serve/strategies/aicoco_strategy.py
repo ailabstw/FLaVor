@@ -2,49 +2,70 @@ import abc
 import copy
 import json
 from json import JSONDecodeError
-from typing import Any, Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import cv2  # type: ignore
 import numpy as np
 from nanoid import generate  # type: ignore
 from pydantic import TypeAdapter
-from starlette.datastructures import FormData
 
-from ..models import AiCOCOFormat, AiImage
+from ..models import (
+    AiAnnotation,
+    AiCategory,
+    AiCOCOFormat,
+    AiImage,
+    AiMeta,
+    AiObject,
+    AiRegression,
+    InferCategory,
+    InferClassificationOutput,
+    InferDetectionOutput,
+    InferOutput,
+    InferRegression,
+    InferRegressionOutput,
+    InferSegmentationOutput,
+    InputBody,
+    ModelOut,
+)
 from .base_strategy import BaseStrategy
+
+AiCOCOOut = Dict[
+    str, Union[Sequence[AiImage], Sequence[AiCategory], Sequence[AiRegression], AiMeta]
+]
 
 
 class AiCOCOInputStrategy(BaseStrategy):
-    async def apply(self, form_data: FormData):
+    async def apply(self, body: InputBody) -> Dict[str, List[AiImage]]:
         """
         Apply the AiCOCO input strategy to process input data.
 
         Args:
-            form_data (FormData): Input data in the form of FormData or a dictionary.
+            body (InputBody): Input data in the form of InputBody.
 
         Returns:
             Dict[str, Any]: Processed data in AiCOCO compatible `images` format.
         """
-        files = form_data.get("files")
+        InputBody.model_validate(body)
+        files = body.get("files")
 
-        images = self.load_and_validate(form_data, "images", List[AiImage])
+        images = self.load_and_validate(body, "images")
         for image in images:
             image["physical_file_name"] = self.match_file_name(image["file_name"], files)
 
         return {"images": images}
 
-    def load_and_validate(self, form_data, key, data_model):
-
+    def load_and_validate(self, body: InputBody, key: str) -> List[AiImage]:
         try:
-            data = json.loads(form_data.get(key))
+            data = json.loads(body.get(key))
         except JSONDecodeError as e:
             raise JSONDecodeError(doc="", msg=str(e), pos=-1)
-        ta = TypeAdapter(data_model)
+
+        ta = TypeAdapter(List[AiImage])
         ta.validate_python(data)
 
         return data
 
-    def match_file_name(self, file_name, files):
+    def match_file_name(self, file_name: str, files: Sequence[str]) -> str:
         try:
             file_name = file_name.replace('/', '_')
             return next(file for file in files if file_name in file)
@@ -53,43 +74,39 @@ class AiCOCOInputStrategy(BaseStrategy):
 
 
 class BaseAiCOCOOutputStrategy(BaseStrategy):
-    async def apply(self, result: Dict[str, Any]) -> Dict[str, Any]:
+    async def apply(self, infer_output: InferOutput) -> AiCOCOFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
         Args:
-            **result (Dict[str, Any]): A dictionary containing the model's output.
+            **infer_output (InferOutput): A dictionary containing the model's output.
 
         Returns:
-            Dict[str, Any]: Result in complete AICOCO format.
+            AiCOCOFormat: Result in complete AiCOCO format.
         """
-
-        ta = TypeAdapter(AiCOCOFormat)
-
-        aicoco_out, model_out = self.prepare_aicoco(**result)
-
+        aicoco_out, model_out = self.prepare_aicoco(**infer_output)
         response = self.model_to_aicoco(aicoco_out, model_out)
 
-        ta.validate_python(response)
+        AiCOCOFormat.model_validate(response)
 
         return response
 
     @abc.abstractmethod
-    def model_to_aicoco(self, *args, **kwargs):
+    def model_to_aicoco(self, aicoco_out: AiCOCOOut, model_out: ModelOut, **kwargs) -> AiCOCOFormat:
         """
         Abstract method to convert model output to AiCOCO compatible format.
         """
         raise NotImplementedError
 
-    def generate_images(self, images: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def generate_images(self, images: Sequence[AiImage]) -> List[AiImage]:
         """
-        Generate `categories` in AiCOCO compatible format by removing physical_file_name.
+        Generate `images` field in AiCOCO compatible format by removing physical_file_name.
 
         Args:
-            images (List[Dict[str, Any]]): List of dictionary mapping for AiCOCO image attribute.
+            images (Sequence[AiImage]): Modified AiCOCO `images` field.
 
         Returns:
-            List[Dict[str, Any]]: Modified list of dictionary mapping for AiCOCO image attribute.
+            List[AiImage]: AiCOCO `images` field.
         """
         for image in images:
             if "physical_file_name" in image:
@@ -97,15 +114,15 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
         return images
 
-    def generate_categories(self, categories: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def generate_categories(self, categories: Dict[int, InferCategory]) -> List[InferCategory]:
         """
-        Generate `categories` in AiCOCO compatible format.
+        Generate `categories` field in AiCOCO compatible format.
 
         Args:
-            categories (Dict[int, Dict[str, Any]]): Dictionary mapping class indices to category nanoid.
+            categories (Dict[int, Dict[str, InferCategory]]): Dictionary mapping class indices to category nanoid.
 
         Returns:
-            List[Dict[str, Any]]: Dictionary containing AiCOCO compatible `categories` format.
+            List[InferCategory]: AiCOCO `categories` field.
         """
         res = list()
         supercategory_id_table = dict()
@@ -127,15 +144,17 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
         return res
 
-    def generate_regressions(self, regressions: Dict[int, Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def generate_regressions(
+        self, regressions: Dict[int, InferRegression]
+    ) -> List[InferRegression]:
         """
-        Generate `regressions` in AiCOCO compatible format.
+        Generate `regressions` field in AiCOCO compatible format.
 
         Args:
-            regressions (Dict[int, Dict[str, Any]]): Dictionary mapping regression indices to regression nanoid.
+            regressions (Dict[int, InferRegression]): Dictionary mapping regression indices to regression nanoid.
 
         Returns:
-            List[Dict[str, Any]]: Dictionary containing AiCOCO compatible `regressions` format.
+            List[InferRegression]: AiCOCO `regressions` field.
         """
         res = list()
         superregression_id_table = dict()
@@ -159,17 +178,19 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
     def set_images_class_regression_id_table(
         self,
-        images: List[Dict[str, Any]],
+        images: Sequence[AiImage],
     ) -> None:
         """
-        Set table attributes for mapping image, class, and regression IDs.
+        Set table attributes for mapping images, class, and regression IDs.
+        The class and regression ID tables are only set in the first inference run.
 
         Args:
-            images (List[Dict[str, Any]]): List of images.
+            images (Sequence[AiImage]): AiCOCO `images` field.
         """
         self.images_id_table = {idx: image["id"] for idx, image in enumerate(images)}
         self.class_id_table = {}
         self.regression_id_table = {}
+
         for category in self.aicoco_categories:
             class_id = category.pop("class_id", None)
             display = category["display"] if "display" in category else True
@@ -183,74 +204,83 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
     def prepare_aicoco(
         self,
-        model_out: np.ndarray,
-        sorted_images: List[Dict[str, Any]],
-        meta: Dict[str, Any] = {"category_ids": None, "regressions": None},
+        model_out: ModelOut,
+        images: Sequence[AiImage],
+        categories: Optional[Dict[int, InferCategory]] = {},
+        regressions: Optional[Dict[int, InferRegression]] = {},
+        meta: AiMeta = {"category_ids": None, "regressions": None},
         **kwargs,
-    ) -> Tuple[Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]]:
+    ) -> Tuple[AiCOCOOut, ModelOut]:
         """
         Prepare prerequisite for AiCOCO.
 
         Args:
-            model_out (np.ndarray): Model output.
-            sorted_images (List[Dict[str, Any]]): Sorted images.
-            meta (Dict[str, Any]): Dictionary of meta. Default: `{"category_ids": None, "regressions": None}`.
-            kwargs:
-                categories (Dict[int, Any]): Dictionary of unprocessed categories.
-                regressions (Dict[int, Any]): Dictionary of unprocessed regressions.
+            model_out (ModelOut): Inference model output.
+            images (Sequence[AiImage]): List of AiCOCO images field.
+            meta (AiMeta): AiCOCO meta field. Default: {"category_ids": None, "regressions": None}.
+            categories (Dict[int, InferCategory]): Dictionary of unprocessed categories. Default: {}.
+            regressions (Dict[int, InferRegression]): Dictionary of unprocessed regressions. Default:{}.
         Returns:
-            Tuple[Dict[str, Any], Union[np.ndarray, Dict[str, np.ndarray]]]: Prepared AiCOCO output and model output as np.ndarray.
+            Tuple[AiCOCOOut, ModelOut]: Prepared AiCOCO output and inference model output array.
         """
-        categories = kwargs.get("categories") if kwargs.get("categories") is not None else {}
-        regressions = kwargs.get("regressions") if kwargs.get("regressions") is not None else {}
-
-        aicoco_images = {"images": self.generate_images(copy.deepcopy(sorted_images))}
+        if categories is None:
+            categories = {}
+        if regressions is None:
+            regressions = {}
 
         if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
+            # only activate at first run
             self.aicoco_categories = self.generate_categories(copy.deepcopy(categories))
             self.aicoco_regressions = self.generate_regressions(copy.deepcopy(regressions))
-            self.set_images_class_regression_id_table(sorted_images)
+            self.set_images_class_regression_id_table(images)
 
-        aicoco_categories = {"categories": self.aicoco_categories}
-        aicoco_regressions = {"regressions": self.aicoco_regressions}
-        aicoco_meta = {"meta": copy.deepcopy(meta)}
+        aicoco_out = {
+            "images": self.generate_images(copy.deepcopy(images)),
+            "categories": self.aicoco_categories,
+            "regressions": self.aicoco_regressions,
+            "meta": copy.deepcopy(meta),
+        }
 
-        return {
-            **aicoco_images,
-            **aicoco_categories,
-            **aicoco_regressions,
-            **aicoco_meta,
-        }, model_out
+        return aicoco_out, model_out
 
 
 class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
-    def model_to_aicoco(
-        self,
-        aicoco_out: Dict[str, Any],
-        model_out: np.ndarray,
-    ) -> Dict[str, Any]:
-        """
-        Convert segmentation model output to AiCOCO compatible format.
-
-        Args:
-            aicoco_out (Dict[str, Any]): AiCOCO output.
-            model_out (np.ndarray): Segmentation model output.
+    def prepare_aicoco(
+        self, **infer_output: InferSegmentationOutput
+    ) -> Tuple[AiCOCOOut, np.ndarray]:
+        """Validate and prepare inputs for AiCOCO Segmentation Output Strategy.
 
         Returns:
-            Dict[str, Any]: Result in AiCOCO compatible format.
+            Tuple[AiCOCOOut, np.ndarray]: Prepared AiCOCO output and inference model output array.
+        """
+        InferSegmentationOutput.model_validate(infer_output)
+        return super().prepare_aicoco(**infer_output)
+
+    def model_to_aicoco(self, aicoco_out: AiCOCOOut, model_out: ModelOut) -> AiCOCOFormat:
+        """
+        Convert segmentation inference model output to AiCOCO compatible format.
+
+        Args:
+            aicoco_out (AiCOCOOut): Complete AiCOCO output.
+            model_out (ModelOut): Segmentation inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in AiCOCO compatible format.
         """
         annot_obj = self.generate_annotations_objects(model_out)
 
         return {**aicoco_out, **annot_obj}
 
-    def generate_annotations_objects(self, out: np.ndarray) -> Dict[str, Any]:
+    def generate_annotations_objects(
+        self, out: ModelOut
+    ) -> Dict[str, Union[Sequence[AiAnnotation], Sequence[AiObject]]]:
         """
         Generate `annotations` and `objects` in AiCOCO compatible format from 4D volumetric data.
 
         Args:
-            out (np.ndarray): 3D or 4D predicted seg model output. This could be regular semantic seg mask or grouped instance seg mask.
+            out (ModelOut): 3D or 4D predicted seg inference model output. This could be regular semantic seg mask or grouped instance seg mask.
         Returns:
-            Dict[str, Any]: Dictionary containing annotations and objects in AiCOCO compatible format.
+            Dict[str, Union[Sequence[AiAnnotation], Sequence[AiObject]]]: Dictionary containing annotations and objects in AiCOCO compatible format.
 
         Notes:
             - The function assumes the input data is preprocessed with connected regions labeled with indices if it is an instance segmentation task.
@@ -327,20 +357,31 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
 
 
 class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
-    def model_to_aicoco(
-        self,
-        aicoco_out: Dict[str, Any],
-        model_out: np.ndarray,
-    ) -> Dict[str, Any]:
-        """
-        Convert classification model output to AiCOCO compatible format.
-
-        Args:
-            aicoco_out (Dict[str, Any]): AiCOCO output.
-            model_out (np.ndarray): Classification model output.
+    def prepare_aicoco(
+        self, **infer_output: InferClassificationOutput
+    ) -> Tuple[AiCOCOOut, np.ndarray]:
+        """Validate and prepare inputs for AiCOCO Classification Output Strategy.
 
         Returns:
-            Dict[str, Any]: Result in AiCOCO compatible format.
+            Tuple[AiCOCOOut, np.ndarray]: Prepared AiCOCO output and inference model output array.
+        """
+        InferClassificationOutput.model_validate(infer_output)
+        return super().prepare_aicoco(**infer_output)
+
+    def model_to_aicoco(
+        self,
+        aicoco_out: AiCOCOOut,
+        model_out: ModelOut,
+    ) -> AiCOCOFormat:
+        """
+        Convert classification inference model output to AiCOCO compatible format.
+
+        Args:
+            aicoco_out (AiCOCOOut): Complete AiCOCO output.
+            model_out (ModelOut): Classification inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in AiCOCO compatible format.
         """
         aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(
             model_out, aicoco_out["images"], aicoco_out["meta"]
@@ -352,25 +393,25 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
 
     def update_images_meta(
         self,
-        out: np.ndarray,
-        images: List[Dict[str, Any]],
-        meta: Dict[str, Any],
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        out: ModelOut,
+        images: Sequence[AiImage],
+        meta: AiMeta,
+    ) -> Tuple[List[AiImage], AiMeta]:
         """
         Update `category_ids` in  `images` and `meta` based on the classification model output.
 
         Args:
-            out (np.ndarray): Model output in 1D shape: (n,).
-            images (List[Dict[str, Any]]): List of image metadata dictionaries.
-            meta (Dict[str, Any]): Meta information dictionary.
+            out (ModelOut): Inference model output in 1D shape: (n,).
+            images (Sequence[AiImage]): List of AiCOCO images field.
+            meta (AiMeta): AiCOCO meta field.
 
         Returns:
-            Tuple[List[Dict[str, Any]], Dict[str, Any]]: Updated AiCOCO compatible images and meta dictionaries.
+            Tuple[List[AiImage], AiMeta]: Updated AiCOCO compatible images and meta field.
 
         Notes:
-            The function updates the 'category_ids' field in both the images and meta dictionaries based on the model output.
-            For 2D input data, it updates both meta and the last image in the images list.
-            For 3D input data, it only updates meta.
+            The function updates the 'category_ids' field in both the images and meta dictionaries based on the inference model output.
+            For 2D input data, it updates the last element of the images field list.
+            For 3D input data, it updates meta field.
         """
         assert out.ndim == 1, f"dim of the inference model output {out.shape} should be 1D."
         n_classes = len(out)
@@ -405,20 +446,29 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
 
 
 class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
-    def model_to_aicoco(
-        self,
-        aicoco_out: Dict[str, Any],
-        model_out: Dict[str, List[np.ndarray]],
-    ) -> Dict[str, Any]:
-        """
-        Convert detection model output to AiCOCO compatible format.
-
-        Args:
-            aicoco_out (Dict[str, Any]): AiCOCO output.
-            model_out (Dict[str, List[np.ndarray]]): Detection model output.
+    def prepare_aicoco(self, **infer_output: InferDetectionOutput) -> Tuple[AiCOCOOut, np.ndarray]:
+        """Validate and prepare inputs for AiCOCO Detection Output Strategy.
 
         Returns:
-            Dict[str, Any]: Result in AiCOCO compatible format.
+            Tuple[AiCOCOOut, np.ndarray]: Prepared AiCOCO output and inference model output array.
+        """
+        InferDetectionOutput.model_validate(infer_output)
+        return super().prepare_aicoco(**infer_output)
+
+    def model_to_aicoco(
+        self,
+        aicoco_out: AiCOCOOut,
+        model_out: ModelOut,
+    ) -> AiCOCOFormat:
+        """
+        Convert detection inference model output to AiCOCO compatible format.
+
+        Args:
+            aicoco_out (AiCOCOOut): Complete AiCOCO output.
+            model_out (ModelOut): Detection inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in AiCOCO compatible format.
         """
         annot_obj = self.generate_annotations_objects(model_out)
 
@@ -426,20 +476,21 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
 
     def generate_annotations_objects(
         self,
-        out: Dict[str, Any],
-    ) -> Dict[str, Any]:
+        out: ModelOut,
+    ) -> Dict[str, Union[Sequence[AiAnnotation], Sequence[AiObject]]]:
         """
         Generate `annotations` and `objects` in AiCOCO compatible format from detection model output.
 
         Args:
-            out (Dict[str, Any]): Detection model output dictionary with keys:
+            out (ModelOut): Detection inference model output dictionary with keys:
                 - 'bbox_pred': List of bounding box predictions in the format [y_min, x_min, y_max, x_max].
                 - 'cls_pred': List of one-hot classification result for each bbox.
                 - 'confidence_score' (optional): List of confidence scores for each prediction.
                 - 'regression_value' (optional): List of regression values for each prediction.
+            Please refer to `DetModelOut` for more detail.
 
         Returns:
-            Dict[str, Any]: Dictionary containing annotations and objects in AiCOCO compatible format.
+            Dict[str, Union[Sequence[AiAnnotation], Sequence[AiObject]]]: Dictionary containing annotations and objects in AiCOCO compatible format.
 
         Notes:
             - The function generates unique object IDs, image IDs, and annotation IDs using the `generate` function.
@@ -520,20 +571,29 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
 
 
 class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
-    def model_to_aicoco(
-        self,
-        aicoco_out: Dict[str, Any],
-        model_out: np.ndarray,
-    ) -> Dict[str, Any]:
-        """
-        Convert regression model output to AiCOCO compatible format.
-
-        Args:
-            aicoco_out (Dict[str, Any]): AiCOCO output.
-            model_out (np.ndarray): Regression model output.
+    def prepare_aicoco(self, **infer_output: InferRegressionOutput) -> Tuple[AiCOCOOut, np.ndarray]:
+        """Validate and prepare inputs for AiCOCO Regression Output Strategy.
 
         Returns:
-            Dict[str, Any]: Result in AiCOCO compatible format.
+            Tuple[AiCOCOOut, np.ndarray]: Prepared AiCOCO output and inference model output array.
+        """
+        InferRegressionOutput.model_validate(infer_output)
+        return super().prepare_aicoco(**infer_output)
+
+    def model_to_aicoco(
+        self,
+        aicoco_out: AiCOCOOut,
+        model_out: ModelOut,
+    ) -> AiCOCOFormat:
+        """
+        Convert regression inference model output to AiCOCO compatible format.
+
+        Args:
+            aicoco_out (AiCOCOOut): Complete AiCOCO output.
+            model_out (ModelOut): Regression inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in AiCOCO compatible format.
         """
         aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(
             model_out, aicoco_out["images"], aicoco_out["meta"]
@@ -545,25 +605,25 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
 
     def update_images_meta(
         self,
-        out: np.ndarray,
-        images: List[Dict[str, Any]],
-        meta: Dict[str, Any],
-    ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+        out: ModelOut,
+        images: Sequence[AiImage],
+        meta: AiMeta,
+    ) -> Tuple[List[AiImage], AiMeta]:
         """
         Update `regressions` in `images` and `meta` based on the regression model output.
 
         Args:
-            out (np.ndarray): Model output in 1D shape: (n,).
-            images (List[Dict[str, Any]]): List of image metadata dictionaries.
-            meta (Dict[str, Any]): Meta information dictionary.
+            out (ModelOut): Inference model output in 1D shape: (n,).
+            images (Sequence[AiImage]): List of AiCOCO images field.
+            meta (AiMeta): AiCOCO meta field.
 
         Returns:
-            Tuple[List[Dict[str, Any]], Dict[str, Any]]: Updated AiCOCO compatible images and meta dictionaries.
+            Tuple[List[AiImage], AiMeta]: Updated AiCOCO compatible images and meta field.
 
         Notes:
             The function updates the 'regressions' field in both the images and meta dictionaries based on the model output.
-            For 2D input data, it updates both meta and the last image in the images list.
-            For 3D input data, it only updates meta.
+            For 2D input data, it updates the last element of the images field list.
+            For 3D input data, it updates meta.
         """
         assert out.ndim == 1, f"dim of the inference model output {out.shape} should be 1D."
 

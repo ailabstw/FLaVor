@@ -10,7 +10,7 @@ import requests
 parser = argparse.ArgumentParser()
 parser.add_argument("-f", "--filenames", type=str, help="Input file dir")
 parser.add_argument("-d", "--data", type=str, help="Json file path")
-parser.add_argument("-p", "--port", type=str, default=9999, help="Port")
+parser.add_argument("-p", "--port", type=str, default=9000, help="Port")
 args = parser.parse_args()
 
 while True:

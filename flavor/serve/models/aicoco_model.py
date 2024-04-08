@@ -19,10 +19,10 @@ class AiAnnotation(BaseModel):
 
 
 class AiCategory(BaseModel):
-    color: Optional[str] = None
     id: str
     name: str
     supercategory_id: Optional[str]
+    color: Optional[str] = None
 
 
 class AiRegression(BaseModel):
@@ -30,6 +30,7 @@ class AiRegression(BaseModel):
     name: str
     superregression_id: Optional[str]
     unit: Optional[str] = None
+    threshold: Optional[str] = None
 
 
 class AiRegressionItem(BaseModel, extra="forbid"):
@@ -56,7 +57,7 @@ class AiMeta(BaseModel):
     task_type: Optional[TaskType] = None
 
 
-class AiImage(BaseModel):
+class AiImage(BaseModel, extra="allow"):
     category_ids: Optional[Sequence[str]]
     file_name: str
     id: str

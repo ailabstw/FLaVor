@@ -4,7 +4,7 @@ AiCOCO format is devised by Taiwan AILabs to communicate across services.
 
 ## Specification example
 
-The AiCOCO format is described in detail below. We also provide [schema](../../schema/aicoco.json) for structured output, including required and optional fields for `images`, `annotations`, `categories`, `regression` and `objects`. Please replace all placeholders with actual values, e.g.  `<filename>.<ext>`, `nanoid`, and details under each JSON key.
+The AiCOCO format is described in detail below. We also provide [schema](../../../schema/aicoco.json) for structured output, including required and optional fields for `images`, `annotations`, `categories`, `regression` and `objects`. Please replace all placeholders with actual values, e.g.  `<filename>.<ext>`, `nanoid`, and details under each JSON key.
 
 ```python
 {

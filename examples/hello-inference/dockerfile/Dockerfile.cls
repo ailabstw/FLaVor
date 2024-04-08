@@ -20,4 +20,4 @@ COPY cls_example.py /app/
 
 RUN git clone https://github.com/maxium0526/cft-chexpert.git /app/chexpert
 
-CMD ["python", "main.py"]
+CMD ["python", "cls_example.py"]

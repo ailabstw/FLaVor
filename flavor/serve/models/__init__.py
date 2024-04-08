@@ -9,6 +9,7 @@ from .aicoco_model import (
     AiRegressionItem,
 )
 from .flavor_infer_model import (
+    DetModelOut,
     InferCategory,
     InferClassificationOutput,
     InferDetectionOutput,
@@ -19,6 +20,6 @@ from .flavor_infer_model import (
     InferRegressionOutput,
     InferSegmentationOutput,
     InputBody,
-    ModelOutput,
+    ModelOut,
     NpArray,
 )

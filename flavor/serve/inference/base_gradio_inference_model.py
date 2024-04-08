@@ -1,8 +1,8 @@
-from typing import List, Sequence, Tuple
+from typing import Optional, Sequence
 
 import numpy as np
 
-from flavor.serve.models import InferOutput, ModelOutput
+from flavor.serve.models import InferOutput, ModelOut
 
 from .base_inference_model import BaseInferenceModel
 
@@ -10,27 +10,26 @@ from .base_inference_model import BaseInferenceModel
 class GradioInferenceModel(BaseInferenceModel):
     def make_infer_result(
         self,
-        model_out: ModelOutput,
-        sorted_data_filenames: Sequence[str],
+        model_out: ModelOut,
         data: np.ndarray,
-        **input_aicoco
+        sorted_data_filenames: Optional[Sequence[str]] = None,
+        **infer_input
     ) -> InferOutput:
-        infer_output = super().make_infer_result(model_out, sorted_data_filenames, **input_aicoco)
+        infer_output = super().make_infer_result(model_out, sorted_data_filenames, **infer_input)
         infer_output["data"] = data
 
         return infer_output
 
-    def inference(self, data_filenames: Sequence[str]) -> Tuple[ModelOutput, List[str]]:
+    def __call__(self, **infer_input) -> InferOutput:
+        # input data filename parser
+        data_filenames = self.get_data_filename(**infer_input)
 
-        data, sorted_data_filenames = self.preprocess(data_filenames)
+        # inference
+        data = self.preprocess(data_filenames)
         model_out = self.network(data)
         model_out = self.postprocess(model_out)
 
-        return model_out, sorted_data_filenames, data
-
-    def __call__(self, **input_aicoco) -> InferOutput:
-        data_filenames = self.get_data_filename(**input_aicoco)
-        model_out, sorted_data_filenames, data = self.inference(data_filenames)
-        result = self.make_infer_result(model_out, sorted_data_filenames, data, **input_aicoco)
+        # inference model output formatter
+        result = self.make_infer_result(model_out, data=data, **infer_input)
 
         return result

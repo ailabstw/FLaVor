@@ -1,4 +1,4 @@
-# Detection task in FLaVor Inference Service
+# Detection task with the FLaVor Inference Service
 
 This guide will walk you through integrating the FLaVor inference service for 2D object detection task using the [YOLOv8-Medical-Imaging](https://github.com/sevdaimany/YOLOv8-Medical-Imaging) inference model.
 
@@ -25,19 +25,19 @@ pip install -U https://github.com/ailabstw/FLaVor/archive/refs/heads/release/sta
 pip install ultralytics
 wget https://github.com/sevdaimany/YOLOv8-Medical-Imaging/raw/master/runs/detect/train/weights/best.pt
 # initiate service
-python main.py
+python det_example.py
 ```
 
 ### Docker Initiation
 
-If you prefer Docker, you can build the environment using the provided [Dockerfile](./Dockerfile).
+If you prefer Docker, you can build the environment using the provided [Dockerfile](../dockerfile/Dockerfile.det).
 
 ```bash
 # working directory: /your/path/FLaVor/examples/hello-inference
 # build docker image
 docker build -t <your_image_name> -f dockerfile/Dockerfile.det .
 # run the container
-docker run -p 9999:9999 <your_image_name>
+docker run -p 9000:9000 <your_image_name>
 ```
 
 ## Integration with InferAPP

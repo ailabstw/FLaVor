@@ -1,5 +1,5 @@
 import os
-from typing import List, Sequence, Tuple
+from typing import Sequence
 
 import cv2
 import numpy as np
@@ -7,7 +7,7 @@ from chexpert.utils.wrappers import Wrapper
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference import BaseInferenceModel
-from flavor.serve.models import InferClassificationOutput, ModelOutput
+from flavor.serve.models import InferClassificationOutput, InferInput
 from flavor.serve.strategies import (
     AiCOCOClassificationOutputStrategy,
     AiCOCOInputStrategy,
@@ -60,14 +60,14 @@ class ClassificationInferenceModel(BaseInferenceModel):
     def define_regressions(self):
         return None
 
-    def preprocess(self, data_filenames: Sequence[str]) -> Tuple[np.ndarray, List[str]]:
+    def preprocess(self, data_filenames: Sequence[str]) -> np.ndarray:
         img = cv2.imread(data_filenames[0], cv2.IMREAD_GRAYSCALE)
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_AREA)
 
         img = img.astype(np.float32)
 
-        return img, data_filenames
+        return img
 
     def postprocess(self, model_out: np.ndarray) -> np.ndarray:
         format_output = np.zeros(len(self.categories))
@@ -77,12 +77,19 @@ class ClassificationInferenceModel(BaseInferenceModel):
 
         return format_output
 
-    def inference(self, data_filenames: Sequence[str]) -> Tuple[ModelOutput, List[str]]:
-        data, sorted_data_filenames = self.preprocess(data_filenames)
+    def __call__(self, **infer_input: InferInput) -> InferClassificationOutput:
+        # input data filename parser
+        data_filenames = self.get_data_filename(**infer_input)
+
+        # inference
+        data = self.preprocess(data_filenames)
         model_out = self.network.predict(data)
         model_out = self.postprocess(model_out)
 
-        return model_out, sorted_data_filenames
+        # inference model output formatter
+        result = self.make_infer_result(model_out, **infer_input)
+
+        return result
 
 
 if __name__ == "__main__":
@@ -92,4 +99,4 @@ if __name__ == "__main__":
         input_strategy=AiCOCOInputStrategy,
         output_strategy=AiCOCOClassificationOutputStrategy,
     )
-    app.run(port=int(os.getenv("PORT", 9999)))
+    app.run(port=int(os.getenv("PORT", 9000)))

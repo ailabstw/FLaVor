@@ -37,16 +37,16 @@ class InferInvocationAPP(BaseInvocationAPP):
         body = request.state.transformed_json
         try:
             if self.input_strategy:
-                kwargs = {**await self.input_strategy.apply(body)}
+                processed_json = {**await self.input_strategy.apply(body)}
             else:
-                kwargs = {**body}
+                processed_json = {**body}
 
-            result = self.infer_function(**kwargs)
+            infer_output = self.infer_function(**processed_json)
 
             if self.output_strategy:
-                response = await self.output_strategy.apply(result)
+                response = await self.output_strategy.apply(infer_output)
             else:
-                response = result
+                response = infer_output
 
         except Exception as e:
 
