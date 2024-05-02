@@ -16,30 +16,41 @@ class NpArray(BaseModel, arbitrary_types_allowed=True):
     @model_validator(mode="before")
     @classmethod
     def set_arr_attrs(cls, data):
-        array = data.get("array")
-        shape = data.get("shape")
-        dtype = data.get("dtype")
+        if isinstance(data, np.ndarray):
+            out = {
+                "array": data,
+                "shape": data.shape,
+                "dtype": data.dtype.name,
+            }
+            return out
+        else:
+            array = data.get("array")
+            shape = data.get("shape")
+            dtype = data.get("dtype")
 
-        if type(array) == np.ndarray:
-            if shape is not None or dtype is not None:
-                raise ValueError("The shape and dtype should be `None` if array is `np.ndarray`.")
+            if type(array) == np.ndarray:
+                if shape is not None or dtype is not None:
+                    raise ValueError(
+                        "The shape and dtype should be `None` if array is `np.ndarray`."
+                    )
 
-        elif type(array) == str:
-            if shape is None or dtype is None:
-                raise ValueError(
-                    "The shape and dtype cannot be `None` if array is string representation of `np.ndarray`."
-                )
-            array = ast.literal_eval(array)
-            shape = tuple(ast.literal_eval(shape))
-            array = np.frombuffer(array, dtype=getattr(np, dtype)).reshape(shape)
+            elif type(array) == str:
+                # deserialize
+                if shape is None or dtype is None:
+                    raise ValueError(
+                        "The shape and dtype cannot be `None` if array is string representation of `np.ndarray`."
+                    )
+                array = ast.literal_eval(array)
+                shape = tuple(ast.literal_eval(shape))
+                array = np.frombuffer(array, dtype=getattr(np, dtype)).reshape(shape)
 
-        if type(array) != np.ndarray:
-            raise TypeError(f"`array` must have type: np.ndarray but got {type(array)}")
+            if type(array) != np.ndarray:
+                raise TypeError(f"`array` must have type: np.ndarray but got {type(array)}")
 
-        data["array"] = array
-        data["shape"] = array.shape
-        data["dtype"] = array.dtype.name
-        return data
+            data["array"] = array
+            data["shape"] = array.shape
+            data["dtype"] = array.dtype.name
+            return data
 
     @model_serializer
     def serialize(self) -> Dict[str, Any]:
@@ -87,7 +98,7 @@ class InferRegression(BaseModel):
 
 class InferClassificationOutput(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     images: Sequence[AiImage]
-    categories: Dict[int, InferCategory]
+    categories: Sequence[InferCategory]
     model_out: np.ndarray
 
     @model_validator(mode="before")
@@ -153,14 +164,14 @@ class DetModelOut(BaseModel, arbitrary_types_allowed=True):
 
 class InferDetectionOutput(BaseModel, protected_namespaces=()):
     images: Sequence[AiImage]
-    categories: Dict[int, InferCategory]
-    regressions: Optional[Dict[int, InferRegression]] = None
+    categories: Sequence[InferCategory]
+    regressions: Optional[Sequence[InferRegression]] = None
     model_out: DetModelOut
 
 
 class InferRegressionOutput(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     images: Sequence[AiImage]
-    regressions: Dict[int, InferRegression]
+    regressions: Sequence[InferRegression]
     model_out: np.ndarray
 
     @model_validator(mode="before")
@@ -181,7 +192,7 @@ class InferRegressionOutput(BaseModel, arbitrary_types_allowed=True, protected_n
 
 class InferSegmentationOutput(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     images: Sequence[AiImage]
-    categories: Dict[int, InferCategory]
+    categories: Sequence[InferCategory]
     model_out: np.ndarray
 
     @model_validator(mode="before")

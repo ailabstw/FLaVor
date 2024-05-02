@@ -1,7 +1,7 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractclassmethod
 
 
 class BaseStrategy(ABC):
-    @abstractmethod
-    def apply(self, body):
+    @abstractclassmethod
+    def __call__(self):
         pass

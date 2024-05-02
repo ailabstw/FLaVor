@@ -2,7 +2,7 @@ from typing import Callable, List, Optional, Type
 
 import gradio as gr
 import uvicorn
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.gzip import GZipMiddleware
 
 from .invocations import InferInvocationAPP
@@ -22,7 +22,7 @@ class BaseAPP(object):
         )
 
     async def ping(self):
-        return Response(status_code=204)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def run(self, host="0.0.0.0", port=9000, log_level="error"):
         # Run the FastAPI application using uvicorn
@@ -34,8 +34,8 @@ class InferAPP(BaseAPP):
     def __init__(
         self,
         infer_function: Callable,
-        input_strategy: Optional[Type[BaseStrategy]] = None,
-        output_strategy: Optional[Type[BaseStrategy]] = None,
+        input_data_model: Optional[Type[BaseStrategy]] = None,
+        output_data_model: Optional[Type[BaseStrategy]] = None,
     ):
 
         super().__init__()
@@ -43,7 +43,7 @@ class InferAPP(BaseAPP):
         # Mount the InferInvocationAPP which handles model inference
         self.app.mount(
             path="",
-            app=InferInvocationAPP(infer_function, input_strategy, output_strategy).app,
+            app=InferInvocationAPP(infer_function, input_data_model, output_data_model).app,
         )
 
         # Add middleware to compress responses using gzip

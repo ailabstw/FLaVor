@@ -1,13 +1,18 @@
+import json
 import logging
+import pathlib
 import traceback
-from typing import Callable, Optional, Type
+from collections.abc import Iterable
+from tempfile import NamedTemporaryFile, TemporaryDirectory
+from typing import Callable
 
-from fastapi import Request
+import aiofile
+from fastapi import Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from starlette.datastructures import UploadFile
 
-from ..middlewares import TransformFileToFilenameMiddleware
-from ..strategies import BaseStrategy
 from .base_invocation import BaseInvocationAPP
 
 
@@ -15,8 +20,8 @@ class InferInvocationAPP(BaseInvocationAPP):
     def __init__(
         self,
         infer_function: Callable,
-        input_strategy: Optional[Type[BaseStrategy]] = None,
-        output_strategy: Optional[Type[BaseStrategy]] = None,
+        input_data_model: BaseModel,
+        output_data_model: BaseModel,
     ):
 
         super().__init__()
@@ -27,35 +32,59 @@ class InferInvocationAPP(BaseInvocationAPP):
             methods=["post"],
         )
 
-        self.app.add_middleware(TransformFileToFilenameMiddleware)
-
         self.infer_function = infer_function
-        self.input_strategy = input_strategy() if input_strategy else None
-        self.output_strategy = output_strategy() if output_strategy else None
+        self.input_data_model = input_data_model
+        self.output_data_model = output_data_model
+
+    async def save_temp_files(self, input_dict, tempdir):
+        for k in input_dict:
+            if isinstance(input_dict[k], Iterable) and all(
+                (isinstance(f, UploadFile) for f in input_dict[k])
+            ):
+                # save temp file
+                filenames = []
+                for file_ in input_dict[k]:
+                    path = pathlib.Path(file_.filename)
+                    suffix = str(path).replace("/", "_")
+                    temp_file = NamedTemporaryFile(
+                        delete=False, dir=tempdir.name, suffix=f"{suffix}"
+                    )
+                    async with aiofile.async_open(temp_file.name, "wb") as f:
+                        await f.write(await file_.read())
+                    filenames.append(temp_file.name)
+                input_dict[k] = filenames
+
+        return input_dict
+
+    def deserialize(self, form_data):
+        input_dict = {}
+        for k in form_data:
+            if isinstance(form_data[k], str):
+                input_dict[k] = json.loads(form_data[k])
+            elif isinstance(form_data[k], UploadFile) or issubclass(form_data[k], UploadFile):
+                input_dict[k] = form_data.getlist(k)
+            else:
+                input_dict[k] = form_data[k]
+
+        return input_dict
 
     async def invocations(self, request: Request):
-        body = request.state.transformed_json
+        form_data = await request.form()
+
         try:
-            if self.input_strategy:
-                processed_json = {**await self.input_strategy.apply(body)}
-            else:
-                processed_json = {**body}
-
-            infer_output = self.infer_function(**processed_json)
-
-            if self.output_strategy:
-                response = await self.output_strategy.apply(infer_output)
-            else:
-                response = infer_output
-
+            input_dict = self.deserialize(form_data)
+            self.input_data_model.model_validate(input_dict)
+            tempdir: TemporaryDirectory = TemporaryDirectory()
+            input_dict = await self.save_temp_files(input_dict, tempdir)
+            response = self.infer_function(**input_dict)
+            response = self.output_data_model.model_validate(response)
         except Exception as e:
-
             err_msg = "".join(
                 traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
             )
-
             logging.error(err_msg)
+            return JSONResponse(content=err_msg, status_code=status.HTTP_400_BAD_REQUEST)
 
-            return JSONResponse(content=err_msg, status_code=500)
+        tempdir.cleanup()
 
-        return JSONResponse(content=jsonable_encoder(response), status_code=200)
+        return JSONResponse(content=jsonable_encoder(response), status_code=status.HTTP_200_OK)

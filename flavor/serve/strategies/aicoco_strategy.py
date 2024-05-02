@@ -1,7 +1,6 @@
-import abc
 import copy
 import json
-from json import JSONDecodeError
+from abc import abstractmethod
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import cv2  # type: ignore
@@ -20,11 +19,9 @@ from ..models import (
     InferCategory,
     InferClassificationOutput,
     InferDetectionOutput,
-    InferOutput,
     InferRegression,
     InferRegressionOutput,
     InferSegmentationOutput,
-    InputBody,
     ModelOut,
 )
 from .base_strategy import BaseStrategy
@@ -35,17 +32,16 @@ AiCOCOOut = Dict[
 
 
 class AiCOCOInputStrategy(BaseStrategy):
-    async def apply(self, body: InputBody) -> Dict[str, List[AiImage]]:
+    async def apply(self, body) -> Dict[str, List[AiImage]]:
         """
         Apply the AiCOCO input strategy to process input data.
 
         Args:
-            body (InputBody): Input data in the form of InputBody.
+            body : Input data in the form of InputBody.
 
         Returns:
             Dict[str, Any]: Processed data in AiCOCO compatible `images` format.
         """
-        InputBody.model_validate(body)
         files = body.get("files")
 
         images = self.load_and_validate(body, "images")
@@ -54,11 +50,11 @@ class AiCOCOInputStrategy(BaseStrategy):
 
         return {"images": images}
 
-    def load_and_validate(self, body: InputBody, key: str) -> List[AiImage]:
+    def load_and_validate(self, body, key: str) -> List[AiImage]:
         try:
             data = json.loads(body.get(key))
-        except JSONDecodeError as e:
-            raise JSONDecodeError(doc="", msg=str(e), pos=-1)
+        except json.JSONDecodeError as e:
+            raise json.JSONDecodeError(doc="", msg=str(e), pos=-1)
 
         ta = TypeAdapter(List[AiImage])
         ta.validate_python(data)
@@ -67,31 +63,14 @@ class AiCOCOInputStrategy(BaseStrategy):
 
     def match_file_name(self, file_name: str, files: Sequence[str]) -> str:
         try:
-            file_name = file_name.replace('/', '_')
+            file_name = file_name.replace("/", "_")
             return next(file for file in files if file_name in file)
         except StopIteration:
             raise Exception(f"Filename {file_name} not match")
 
 
 class BaseAiCOCOOutputStrategy(BaseStrategy):
-    async def apply(self, infer_output: InferOutput) -> AiCOCOFormat:
-        """
-        Apply the AiCOCO output strategy to reformat the model's output.
-
-        Args:
-            **infer_output (InferOutput): A dictionary containing the model's output.
-
-        Returns:
-            AiCOCOFormat: Result in complete AiCOCO format.
-        """
-        aicoco_out, model_out = self.prepare_aicoco(**infer_output)
-        response = self.model_to_aicoco(aicoco_out, model_out)
-
-        AiCOCOFormat.model_validate(response)
-
-        return response
-
-    @abc.abstractmethod
+    @abstractmethod
     def model_to_aicoco(self, aicoco_out: AiCOCOOut, model_out: ModelOut, **kwargs) -> AiCOCOFormat:
         """
         Abstract method to convert model output to AiCOCO compatible format.
@@ -114,12 +93,12 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
         return images
 
-    def generate_categories(self, categories: Dict[int, InferCategory]) -> List[InferCategory]:
+    def generate_categories(self, categories: Sequence[InferCategory]) -> List[InferCategory]:
         """
         Generate `categories` field in AiCOCO compatible format.
 
         Args:
-            categories (Dict[int, Dict[str, InferCategory]]): Dictionary mapping class indices to category nanoid.
+            categories (Sequence[InferCategory]): Dictionary mapping class indices to category nanoid.
 
         Returns:
             List[InferCategory]: AiCOCO `categories` field.
@@ -127,7 +106,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         res = list()
         supercategory_id_table = dict()
 
-        for class_id, category in categories.items():
+        for class_id, category in enumerate(categories):
             if category.get("supercategory_name", None):
                 if category["supercategory_name"] not in supercategory_id_table:
                     supercategory_id_table[category["supercategory_name"]] = generate()
@@ -144,14 +123,12 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
         return res
 
-    def generate_regressions(
-        self, regressions: Dict[int, InferRegression]
-    ) -> List[InferRegression]:
+    def generate_regressions(self, regressions: Sequence[InferRegression]) -> List[InferRegression]:
         """
         Generate `regressions` field in AiCOCO compatible format.
 
         Args:
-            regressions (Dict[int, InferRegression]): Dictionary mapping regression indices to regression nanoid.
+            regressions (Sequence[InferRegression]): Dictionary mapping regression indices to regression nanoid.
 
         Returns:
             List[InferRegression]: AiCOCO `regressions` field.
@@ -159,7 +136,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         res = list()
         superregression_id_table = dict()
 
-        for regression_id, regression in regressions.items():
+        for regression_id, regression in enumerate(regressions):
             if regression.get("superregression_name", None):
                 if regression["superregression_name"] not in superregression_id_table:
                     superregression_id_table[regression["superregression_name"]] = generate()
@@ -206,10 +183,9 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         self,
         model_out: ModelOut,
         images: Sequence[AiImage],
-        categories: Optional[Dict[int, InferCategory]] = {},
-        regressions: Optional[Dict[int, InferRegression]] = {},
+        categories: Optional[Sequence[InferCategory]] = [],
+        regressions: Optional[Sequence[InferRegression]] = [],
         meta: AiMeta = {"category_ids": None, "regressions": None},
-        **kwargs,
     ) -> Tuple[AiCOCOOut, ModelOut]:
         """
         Prepare prerequisite for AiCOCO.
@@ -218,8 +194,8 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             model_out (ModelOut): Inference model output.
             images (Sequence[AiImage]): List of AiCOCO images field.
             meta (AiMeta): AiCOCO meta field. Default: {"category_ids": None, "regressions": None}.
-            categories (Dict[int, InferCategory]): Dictionary of unprocessed categories. Default: {}.
-            regressions (Dict[int, InferRegression]): Dictionary of unprocessed regressions. Default:{}.
+            categories (Sequence[InferCategory]): List of unprocessed categories. Default: [].
+            regressions (Sequence[InferRegression]): List of unprocessed regressions. Default: [].
         Returns:
             Tuple[AiCOCOOut, ModelOut]: Prepared AiCOCO output and inference model output array.
         """
@@ -245,6 +221,27 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
 
 class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
+    def __call__(
+        self, images: Sequence[AiImage], categories: Sequence[InferCategory], model_out: np.ndarray
+    ) -> AiCOCOFormat:
+        """
+        Apply the AiCOCO output strategy to reformat the model's output.
+
+        Args:
+            images (Sequence[AiImage]): List of AiCOCO images field.
+            categories (Sequence[InferCategory]): List of unprocessed categories.
+            model_out (np.ndarray): Inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in complete AiCOCO format.
+        """
+        aicoco_out, model_out = self.prepare_aicoco(
+            images=images, categories=categories, model_out=model_out
+        )
+        response = self.model_to_aicoco(aicoco_out, model_out)
+        AiCOCOFormat.model_validate(response)
+        return response
+
     def prepare_aicoco(
         self, **infer_output: InferSegmentationOutput
     ) -> Tuple[AiCOCOOut, np.ndarray]:
@@ -357,6 +354,27 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
 
 
 class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
+    def __call__(
+        self, images: Sequence[AiImage], categories: Sequence[InferCategory], model_out: np.ndarray
+    ) -> AiCOCOFormat:
+        """
+        Apply the AiCOCO output strategy to reformat the model's output.
+
+        Args:
+            images (Sequence[AiImage]): List of AiCOCO images field.
+            categories (Sequence[InferCategory]): List of unprocessed categories.
+            model_out (np.ndarray): Inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in complete AiCOCO format.
+        """
+        aicoco_out, model_out = self.prepare_aicoco(
+            images=images, categories=categories, model_out=model_out
+        )
+        response = self.model_to_aicoco(aicoco_out, model_out)
+        AiCOCOFormat.model_validate(response)
+        return response
+
     def prepare_aicoco(
         self, **infer_output: InferClassificationOutput
     ) -> Tuple[AiCOCOOut, np.ndarray]:
@@ -446,6 +464,32 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
 
 
 class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
+    def __call__(
+        self,
+        images: Sequence[AiImage],
+        categories: Sequence[InferCategory],
+        regressions: Sequence[InferRegression],
+        model_out: np.ndarray,
+    ) -> AiCOCOFormat:
+        """
+        Apply the AiCOCO output strategy to reformat the model's output.
+
+        Args:
+            images (Sequence[AiImage]): List of AiCOCO images field.
+            categories (Sequence[InferCategory]): List of unprocessed categories.
+            regressions (Sequence[InferRegression]): List of unprocessed regressions.
+            model_out (np.ndarray): Inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in complete AiCOCO format.
+        """
+        aicoco_out, model_out = self.prepare_aicoco(
+            images=images, categories=categories, regressions=regressions, model_out=model_out
+        )
+        response = self.model_to_aicoco(aicoco_out, model_out)
+        AiCOCOFormat.model_validate(response)
+        return response
+
     def prepare_aicoco(self, **infer_output: InferDetectionOutput) -> Tuple[AiCOCOOut, np.ndarray]:
         """Validate and prepare inputs for AiCOCO Detection Output Strategy.
 
@@ -571,6 +615,30 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
 
 
 class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
+    def __call__(
+        self,
+        images: Sequence[AiImage],
+        regressions: Sequence[InferRegression],
+        model_out: np.ndarray,
+    ) -> AiCOCOFormat:
+        """
+        Apply the AiCOCO output strategy to reformat the model's output.
+
+        Args:
+            images (Sequence[AiImage]): List of AiCOCO images field.
+            regressions (Sequence[InferRegression]): List of unprocessed regressions.
+            model_out (np.ndarray): Inference model output.
+
+        Returns:
+            AiCOCOFormat: Result in complete AiCOCO format.
+        """
+        aicoco_out, model_out = self.prepare_aicoco(
+            images=images, regressions=regressions, model_out=model_out
+        )
+        response = self.model_to_aicoco(aicoco_out, model_out)
+        AiCOCOFormat.model_validate(response)
+        return response
+
     def prepare_aicoco(self, **infer_output: InferRegressionOutput) -> Tuple[AiCOCOOut, np.ndarray]:
         """Validate and prepare inputs for AiCOCO Regression Output Strategy.
 

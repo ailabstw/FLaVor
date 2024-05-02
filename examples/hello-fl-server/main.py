@@ -27,7 +27,7 @@ class FedAvg(object):
 
         # Get Path
         localModelPaths = GetPaths("localModels")
-        localInfoPaths = GetPaths("localInfos")  # noqa 841
+        localInfoPaths = GetPaths("localInfos")  # noqa F841
         globalModelPath = GetPaths("globalModel")[0]
         globalInfoPath = GetPaths("globalInfo")[0]
 

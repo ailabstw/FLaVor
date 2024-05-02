@@ -4,10 +4,10 @@ import numpy as np
 
 from flavor.serve.models import InferOutput, ModelOut
 
-from .base_inference_model import BaseInferenceModel
+from .base_aicoco_inference_model import BaseAiCOCOInferenceModel
 
 
-class GradioInferenceModel(BaseInferenceModel):
+class GradioInferenceModel(BaseAiCOCOInferenceModel):
     def make_infer_result(
         self,
         model_out: ModelOut,
