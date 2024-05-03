@@ -1,41 +1,49 @@
 import os
-from typing import Any, Sequence
+from typing import Any, List, Sequence, Tuple
 
 import cv2
 import numpy as np
 from ultralytics import YOLO
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import BaseInferenceModel
-from flavor.serve.models import DetModelOut, InferDetectionOutput, InferInput
-from flavor.serve.strategies import AiCOCODetectionOutputStrategy, AiCOCOInputStrategy
+from flavor.serve.inference import (
+    BaseAiCOCOInferenceModel,
+    BaseAiCOCOInputDataModel,
+    BaseAiCOCOOutputDataModel,
+)
+from flavor.serve.models import AiImage, DetModelOut, InferCategory, InferRegression
+from flavor.serve.strategies import AiCOCODetectionOutputStrategy
 
 
-class DetectionInferenceModel(BaseInferenceModel):
-    def __init__(self, output_data_model: InferDetectionOutput):
-        super().__init__(output_data_model=output_data_model)
+class DetectionInferenceModel(BaseAiCOCOInferenceModel):
+    def __init__(self):
+        self.formatter = AiCOCODetectionOutputStrategy()
+        super().__init__()
 
     def define_inference_network(self):
-        return YOLO("best.pt")
+        return YOLO(os.path.join(os.getcwd(), "best.pt"))
 
-    def define_categories(self):
-        categories = {
-            0: {"name": "RBC", "display": True},
-            1: {"name": "WBC", "display": True},
-            2: {"name": "Platelets", "display": True},
-        }
+    def set_categories(self):
+        categories = [
+            {"name": "RBC", "display": True},
+            {"name": "WBC", "display": True},
+            {"name": "Platelets", "display": True},
+        ]
         return categories
 
-    def define_regressions(self):
+    def set_regressions(self):
         return None
 
-    def preprocess(self, data_filenames: Sequence[str]) -> np.ndarray:
-        image = cv2.imread(data_filenames[0])
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
+        image = cv2.imread(files[0])
         image = image.astype(np.float32)
 
-        return image
+        return image, None, None
 
-    def postprocess(self, model_out: Any) -> DetModelOut:
+    def inference(self, x: np.ndarray) -> np.ndarray:
+        return self.network.predict(x, conf=0.7)[0]
+
+    def postprocess(self, model_out: Any, **kwargs) -> DetModelOut:
 
         format_output = {
             "bbox_pred": [],
@@ -46,33 +54,32 @@ class DetectionInferenceModel(BaseInferenceModel):
         for obj in model_out.boxes.data.tolist():
             x1, y1, x2, y2, score, class_id = obj
             format_output["bbox_pred"].append([int(x1), int(y1), int(x2), int(y2)])
-            cls_pred = np.zeros(len(self.categories))
+            cls_pred = np.zeros(3)
             cls_pred[int(class_id)] = 1
             format_output["cls_pred"].append(cls_pred)
             format_output["confidence_score"].append(score)
 
         return format_output
 
-    def __call__(self, **infer_input: InferInput) -> InferDetectionOutput:
-        # input data filename parser
-        data_filenames = self.get_data_filename(**infer_input)
+    def output_formatter(
+        self,
+        model_out: DetModelOut,
+        images: Sequence[AiImage],
+        categories: List[InferCategory],
+        regressions: List[InferRegression],
+        **kwargs
+    ) -> Any:
+        output = self.formatter(
+            model_out=model_out, images=images, categories=categories, regressions=regressions
+        )
+        return output
 
-        # inference
-        data = self.preprocess(data_filenames)
-        model_out = self.network.predict(data, conf=0.7)[0]
-        model_out = self.postprocess(model_out)
 
-        # inference model output formatter
-        result = self.make_infer_result(model_out, **infer_input)
-
-        return result
-
+app = InferAPP(
+    infer_function=DetectionInferenceModel(),
+    input_data_model=BaseAiCOCOInputDataModel,
+    output_data_model=BaseAiCOCOOutputDataModel,
+)
 
 if __name__ == "__main__":
-
-    app = InferAPP(
-        infer_function=DetectionInferenceModel(output_data_model=InferDetectionOutput),
-        input_strategy=AiCOCOInputStrategy,
-        output_strategy=AiCOCODetectionOutputStrategy,
-    )
-    app.run(port=int(os.getenv("PORT", 9000)))
+    app.run(port=int(os.getenv("PORT", 9111)))

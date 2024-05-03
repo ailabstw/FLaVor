@@ -279,7 +279,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         model_out: Any,
         images: Optional[Sequence[AiImage]] = None,
         categories: Optional[List[InferCategory]] = None,
-        regressions: Optional[List[InferCategory]] = None,
+        regressions: Optional[List[InferRegression]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -290,7 +290,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
             model_out (Any): Inference output.
             images (Optional[Sequence[AiImage]], optional): List of images. Defaults to None.
             categories (Optional[List[InferCategory]], optional): List of inference categories. Defaults to None.
-            regressions (Optional[List[InferCategory]], optional): List of inference regressions. Defaults to None.
+            regressions (Optional[List[InferRegression]], optional): List of inference regressions. Defaults to None.
 
         Returns:
             Any: Formatted output.
@@ -349,10 +349,10 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
                 raise TypeError("`modified_filenames` should have type of `Sequence`.")
 
         self._update_images(modified_filenames=modified_filenames, **net_input)
-        x = self.preprocess(data)
         with torch.no_grad():
+            x = self.preprocess(data)
             out = self.inference(x)
-        out = self.postprocess(out, metadata=metadata)
+            out = self.postprocess(out, metadata=metadata)
         result = self.output_formatter(
             out, images=self.images, categories=categories, regressions=regressions
         )

@@ -10,7 +10,11 @@ from monai.inferers import sliding_window_inference
 from monai.networks.nets import SwinUNETR
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import BaseAiCOCOInferenceModel
+from flavor.serve.inference import (
+    BaseAiCOCOInferenceModel,
+    BaseAiCOCOInputDataModel,
+    BaseAiCOCOOutputDataModel,
+)
 from flavor.serve.models import AiImage, InferCategory
 from flavor.serve.strategies import AiCOCOSegmentationOutputStrategy
 
@@ -30,7 +34,9 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
             use_checkpoint=True,
         )
 
-        model_dict = torch.load("swin_unetr.tiny_5000ep_f12_lr2e-4_pretrained.pt")["state_dict"]
+        model_dict = torch.load(
+            os.path.join(os.getcwd(), "swin_unetr.tiny_5000ep_f12_lr2e-4_pretrained.pt")
+        )["state_dict"]
         model.load_state_dict(model_dict)
         model.eval()
         model.to(self.device)
@@ -133,7 +139,7 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
 
     def output_formatter(
         self,
-        model_out: Any,
+        model_out: np.ndarray,
         images: Sequence[AiImage],
         categories: Sequence[InferCategory],
         **kwargs
@@ -144,15 +150,11 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
         return output
 
 
-if __name__ == "__main__":
-    from flavor.serve.inference import (
-        BaseAiCOCOInputDataModel,
-        BaseAiCOCOOutputDataModel,
-    )
+app = InferAPP(
+    infer_function=SegmentationInferenceModel(),
+    input_data_model=BaseAiCOCOInputDataModel,
+    output_data_model=BaseAiCOCOOutputDataModel,
+)
 
-    app = InferAPP(
-        infer_function=SegmentationInferenceModel(),
-        input_data_model=BaseAiCOCOInputDataModel,
-        output_data_model=BaseAiCOCOOutputDataModel,
-    )
-    app.run(port=int(os.getenv("PORT", 9000)))
+if __name__ == "__main__":
+    app.run(port=int(os.getenv("PORT", 9111)))

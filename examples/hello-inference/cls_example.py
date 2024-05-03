@@ -1,22 +1,23 @@
 import os
-from typing import Sequence
+from typing import Any, List, Sequence, Tuple
 
 import cv2
 import numpy as np
+
 from chexpert.utils.wrappers import Wrapper
-
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import BaseInferenceModel
-from flavor.serve.models import InferClassificationOutput, InferInput
-from flavor.serve.strategies import (
-    AiCOCOClassificationOutputStrategy,
-    AiCOCOInputStrategy,
+from flavor.serve.inference import (
+    BaseAiCOCOInferenceModel,
+    BaseAiCOCOInputDataModel,
+    BaseAiCOCOOutputDataModel,
 )
+from flavor.serve.models import AiImage, InferCategory
+from flavor.serve.strategies import AiCOCOClassificationOutputStrategy
 
 
-class ClassificationInferenceModel(BaseInferenceModel):
-    def __init__(self, output_data_model: InferClassificationOutput):
-        super().__init__(output_data_model=output_data_model)
+class ClassificationInferenceModel(BaseAiCOCOInferenceModel):
+    def __init__(self):
+        self.formatter = AiCOCOClassificationOutputStrategy()
 
         self.thesholds = {
             "Atelectasis": 0.3,
@@ -34,69 +35,65 @@ class ClassificationInferenceModel(BaseInferenceModel):
             "Pneumothorax": 0.31,
             "Support Devices": 0.49,
         }
+        super().__init__()
 
     def define_inference_network(self):
-        return Wrapper("chexpert/instances/optimized_model.h5")
+        return Wrapper(os.path.join(os.getcwd(), "chexpert/instances/optimized_model.h5"))
 
-    def define_categories(self):
-        categories = {
-            0: {"name": "Atelectasis"},
-            1: {"name": "Cardiomegaly"},
-            2: {"name": "Consolidation"},
-            3: {"name": "Edema"},
-            4: {"name": "Enlarged Cardiomediastinum"},
-            5: {"name": "Fracture"},
-            6: {"name": "Lung Lesion"},
-            7: {"name": "Lung Opacity"},
-            8: {"name": "No Finding"},
-            9: {"name": "Pleural Effusion"},
-            10: {"name": "Pleural Other"},
-            11: {"name": "Pneumonia"},
-            12: {"name": "Pneumothorax"},
-            13: {"name": "Support Devices"},
-        }
+    def set_categories(self):
+        categories = [
+            {"name": "Atelectasis"},
+            {"name": "Cardiomegaly"},
+            {"name": "Consolidation"},
+            {"name": "Edema"},
+            {"name": "Enlarged Cardiomediastinum"},
+            {"name": "Fracture"},
+            {"name": "Lung Lesion"},
+            {"name": "Lung Opacity"},
+            {"name": "No Finding"},
+            {"name": "Pleural Effusion"},
+            {"name": "Pleural Other"},
+            {"name": "Pneumonia"},
+            {"name": "Pneumothorax"},
+            {"name": "Support Devices"},
+        ]
         return categories
 
-    def define_regressions(self):
+    def set_regressions(self):
         return None
 
-    def preprocess(self, data_filenames: Sequence[str]) -> np.ndarray:
-        img = cv2.imread(data_filenames[0], cv2.IMREAD_GRAYSCALE)
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
+        img = cv2.imread(files[0], cv2.IMREAD_GRAYSCALE)
         img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         img = cv2.resize(img, (224, 224), interpolation=cv2.INTER_AREA)
-
         img = img.astype(np.float32)
 
-        return img
+        return img, None, None
 
-    def postprocess(self, model_out: np.ndarray) -> np.ndarray:
-        format_output = np.zeros(len(self.categories))
-        for k, v in self.categories.items():
-            category = v["name"]
-            format_output[k] = int(model_out[category] > self.thesholds[category])
+    def inference(self, x: np.ndarray) -> np.ndarray:
+        return self.network.predict(x)
 
-        return format_output
+    def output_formatter(
+        self,
+        model_out: np.ndarray,
+        images: Sequence[AiImage],
+        categories: List[InferCategory],
+        **kwargs
+    ) -> Any:
+        format_output = np.zeros(len(categories))
+        for i, category in enumerate(categories):
+            name = category["name"]
+            format_output[i] = int(model_out[name] > self.thesholds[name])
 
-    def __call__(self, **infer_input: InferInput) -> InferClassificationOutput:
-        # input data filename parser
-        data_filenames = self.get_data_filename(**infer_input)
+        output = self.formatter(model_out=format_output, images=images, categories=categories)
+        return output
 
-        # inference
-        data = self.preprocess(data_filenames)
-        model_out = self.network.predict(data)
-        model_out = self.postprocess(model_out)
 
-        # inference model output formatter
-        result = self.make_infer_result(model_out, **infer_input)
-
-        return result
-
+app = InferAPP(
+    infer_function=ClassificationInferenceModel(),
+    input_data_model=BaseAiCOCOInputDataModel,
+    output_data_model=BaseAiCOCOOutputDataModel,
+)
 
 if __name__ == "__main__":
-
-    app = InferAPP(
-        infer_function=ClassificationInferenceModel(output_data_model=InferClassificationOutput),
-        input_strategy=AiCOCOInputStrategy,
-        output_strategy=AiCOCOClassificationOutputStrategy,
-    )
-    app.run(port=int(os.getenv("PORT", 9000)))
+    app.run(port=int(os.getenv("PORT", 9111)))
