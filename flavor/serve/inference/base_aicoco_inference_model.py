@@ -301,11 +301,11 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         """
         Run the inference model.
         """
-        categories = self.set_categories()
-        if categories is not None:
-            if isinstance(categories, Sequence):
+        self.categories = self.set_categories()
+        if self.categories is not None:
+            if isinstance(self.categories, Sequence):
                 try:
-                    for c in categories:
+                    for c in self.categories:
                         InferCategory.model_validate(c)
                 except ValidationError:
                     logging.error(
@@ -315,11 +315,11 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
             else:
                 raise TypeError("`categories` should have type of `Sequence[InferCategory]`.")
 
-        regressions = self.set_regressions()
-        if regressions is not None:
-            if isinstance(regressions, Sequence):
+        self.regressions = self.set_regressions()
+        if self.regressions is not None:
+            if isinstance(self.regressions, Sequence):
                 try:
-                    for r in regressions:
+                    for r in self.regressions:
                         InferRegression.model_validate(r)
                 except ValidationError:
                     logging.error(
@@ -354,7 +354,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
             out = self.inference(x)
             out = self.postprocess(out, metadata=metadata)
         result = self.output_formatter(
-            out, images=self.images, categories=categories, regressions=regressions
+            out, images=self.images, categories=self.categories, regressions=self.regressions
         )
 
         return result

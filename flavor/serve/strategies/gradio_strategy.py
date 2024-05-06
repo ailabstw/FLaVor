@@ -3,43 +3,9 @@ import random
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
-from nanoid import generate  # type: ignore
 from PIL import Image, ImageDraw
-from starlette.datastructures import FormData
 
-from .aicoco_strategy import AiCOCOInputStrategy
 from .base_strategy import BaseStrategy
-
-
-class GradioInputStrategy(AiCOCOInputStrategy):
-    async def apply(self, form_data: FormData):
-        """
-        Apply the AiCOCO input strategy to process input data.
-
-        Args:
-            form_data (FormData): Input data in the form of FormData or a dictionary.
-
-        Returns:
-            Dict[str, Any]: Processed data in AiCOCO compatible `images` format.
-        """
-        files = form_data.get("files")
-
-        if "images" not in form_data:
-            images = [
-                {
-                    "id": generate(),
-                    "file_name": file,
-                    "physical_file_name": file,
-                    "index": idx,
-                    "category_ids": None,
-                    "regressions": None,
-                }
-                for idx, file in enumerate(files)
-            ]
-
-            return {"images": images}
-        else:
-            return super().apply(form_data)
 
 
 class BaseGradioStrategy(BaseStrategy):

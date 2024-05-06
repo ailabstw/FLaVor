@@ -1,5 +1,5 @@
 import os
-from typing import Any, Sequence, Tuple
+from typing import Any, List, Sequence, Tuple
 
 import numpy as np
 import SimpleITK as sitk
@@ -8,7 +8,7 @@ from lungmask import LMInferer
 from flavor.serve.apps import GradioInferAPP
 from flavor.serve.inference import GradioInferenceModel
 from flavor.serve.models import AiImage, InferCategory
-from flavor.serve.strategies import GradioInputStrategy, GradioSegmentationStrategy
+from flavor.serve.strategies import GradioSegmentationStrategy
 
 
 class SegmentationGradioInferenceModel(GradioInferenceModel):
@@ -32,23 +32,52 @@ class SegmentationGradioInferenceModel(GradioInferenceModel):
     def set_regressions(self):
         return None
 
-    def data_reader(self, images: Sequence[AiImage], **kwargs) -> Tuple[np.ndarray, None, None]:
-        files = []
-        for image in images:
-            files.append(image.pop("physical_file_name"))
-        dicom_reader = sitk.ImageFileReader()
-        dicom_reader.SetFileName(files[0])
-        dicom_reader.ReadImageInformation()
-        dicom = sitk.GetArrayFromImage(dicom_reader.Execute()).squeeze()
+    def data_reader(
+        self, files: Sequence[str], **kwargs
+    ) -> Tuple[np.ndarray, List[str], Tuple[int]]:
+        def sort_images_by_z_axis(filenames):
 
-        return dicom, None, None
+            sorted_reader_filename_pairs = []
 
-    def preprocess(self, data: np.ndarray) -> np.ndarray:
-        data = np.expand_dims(data, axis=0)
-        return data
+            for f in filenames:
+                dicom_reader = sitk.ImageFileReader()
+                dicom_reader.SetFileName(f)
+                dicom_reader.ReadImageInformation()
+
+                sorted_reader_filename_pairs.append((dicom_reader, f))
+
+            zs = [
+                float(r.GetMetaData(key="0020|0032").split("\\")[-1])
+                for r, _ in sorted_reader_filename_pairs
+            ]
+
+            sort_inds = np.argsort(zs)[::-1]
+            sorted_reader_filename_pairs = [sorted_reader_filename_pairs[s] for s in sort_inds]
+
+            return sorted_reader_filename_pairs
+
+        pairs = sort_images_by_z_axis(files)
+
+        readers, sorted_filenames = zip(*pairs)
+        sorted_filenames = list(sorted_filenames)
+
+        simages = [sitk.GetArrayFromImage(r.Execute()).squeeze() for r in readers]
+        volume = np.stack(simages)
+        volume = np.expand_dims(volume, axis=0)
+
+        return volume, sorted_filenames, volume.shape[1:]
 
     def inference(self, x: np.ndarray) -> np.ndarray:
-        return self.network.apply(x)
+        return self.network.apply(np.squeeze(x, axis=0))
+
+    def postprocess(self, out: Any, metadata: Any = None) -> Any:
+        # (1, h, w) -> (6, h, w)
+        out = [
+            np.expand_dims((out == i).astype(np.uint8), axis=0)
+            for i in range(6)  # or len(self.categories)
+        ]
+        out = np.concatenate(out, axis=0)
+        return out
 
     def output_formatter(
         self,
@@ -58,20 +87,12 @@ class SegmentationGradioInferenceModel(GradioInferenceModel):
         data: Any,
         **kwargs
     ) -> Any:
-
-        # (1, h, w) -> (c, h, w)
-        model_out = [
-            np.expand_dims((model_out == i).astype(np.uint8), axis=0)
-            for i in range(len(categories))
-        ]
-        model_out = np.concatenate(model_out, axis=0)
         output = {"model_out": model_out, "images": images, "categories": categories, "data": data}
         return output
 
 
 app = GradioInferAPP(
     infer_function=SegmentationGradioInferenceModel(),
-    input_strategy=GradioInputStrategy,
     output_strategy=GradioSegmentationStrategy,
 )
 

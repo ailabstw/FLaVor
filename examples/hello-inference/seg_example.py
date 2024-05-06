@@ -52,6 +52,15 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
     def inference(self, x: np.ndarray) -> np.ndarray:
         return self.network.apply(x)
 
+    def postprocess(self, out: Any, metadata: Any = None) -> Any:
+        # (1, h, w) -> (c, h, w)
+        out = [
+            np.expand_dims((out == i).astype(np.uint8), axis=0)
+            for i in range(6)  # or len(self.categories)
+        ]
+        out = np.concatenate(out, axis=0)
+        return out
+
     def output_formatter(
         self,
         model_out: np.ndarray,
@@ -60,12 +69,6 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
         **kwargs
     ) -> Any:
 
-        # (1, h, w) -> (c, h, w)
-        model_out = [
-            np.expand_dims((model_out == i).astype(np.uint8), axis=0)
-            for i in range(len(categories))
-        ]
-        model_out = np.concatenate(model_out, axis=0)
         output = self.formatter(model_out=model_out, images=images, categories=categories)
         return output
 

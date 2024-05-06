@@ -1,12 +1,10 @@
 import copy
-import json
 from abc import abstractmethod
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import cv2  # type: ignore
 import numpy as np
 from nanoid import generate  # type: ignore
-from pydantic import TypeAdapter
 
 from ..models import (
     AiAnnotation,
@@ -29,44 +27,6 @@ from .base_strategy import BaseStrategy
 AiCOCOOut = Dict[
     str, Union[Sequence[AiImage], Sequence[AiCategory], Sequence[AiRegression], AiMeta]
 ]
-
-
-class AiCOCOInputStrategy(BaseStrategy):
-    async def apply(self, body) -> Dict[str, List[AiImage]]:
-        """
-        Apply the AiCOCO input strategy to process input data.
-
-        Args:
-            body : Input data in the form of InputBody.
-
-        Returns:
-            Dict[str, Any]: Processed data in AiCOCO compatible `images` format.
-        """
-        files = body.get("files")
-
-        images = self.load_and_validate(body, "images")
-        for image in images:
-            image["physical_file_name"] = self.match_file_name(image["file_name"], files)
-
-        return {"images": images}
-
-    def load_and_validate(self, body, key: str) -> List[AiImage]:
-        try:
-            data = json.loads(body.get(key))
-        except json.JSONDecodeError as e:
-            raise json.JSONDecodeError(doc="", msg=str(e), pos=-1)
-
-        ta = TypeAdapter(List[AiImage])
-        ta.validate_python(data)
-
-        return data
-
-    def match_file_name(self, file_name: str, files: Sequence[str]) -> str:
-        try:
-            file_name = file_name.replace("/", "_")
-            return next(file for file in files if file_name in file)
-        except StopIteration:
-            raise Exception(f"Filename {file_name} not match")
 
 
 class BaseAiCOCOOutputStrategy(BaseStrategy):
