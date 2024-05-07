@@ -14,6 +14,22 @@ from flavor.serve.inference import (
 
 
 class SamEncoderInferenceModel:
+    """
+    SAM encoder Triton Inference Server.
+
+    Arguments
+        triton_url: str
+            Triton URL
+        model_name: str
+            SAM encoder name in Triton
+        model_version: str
+            SAM encoder version in Triton
+        shape: tuple = (1024, 1024)
+            Encoder resize shape in SAM.
+        is_shared_memory: bool = False
+            If set to True, will utilize system shared memory.
+            Make sure the inference app and Triton are on the same machine.
+    """
     def __init__(
         self,
         triton_url: str,
@@ -31,7 +47,6 @@ class SamEncoderInferenceModel:
             self.triton_client = TritonInferenceModel(triton_url, model_name, model_version)
 
     def load_image(self, image_path: str) -> np.ndarray:
-
         _, file_extension = os.path.splitext(image_path)
 
         if file_extension == ".dcm":
@@ -133,8 +148,11 @@ class SamDecoderInferenceModel:
     ):
         """
         Arguments
-            orig_im_size:
-                (h, w)
+            encoder_input_shape: tuple
+                this should match the argument `shape` of SamEncoderInferenceModel
+            is_shared_memory: bool = False
+                If set to True, will utilize system shared memory.
+                Make sure the inference app and Triton are on the same machine.
         """
         self.encoder_input_shape = encoder_input_shape
         if is_shared_memory:

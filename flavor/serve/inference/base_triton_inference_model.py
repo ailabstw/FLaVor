@@ -9,6 +9,9 @@ import tritonclient.utils.shared_memory as shm
 
 
 class BaseTritonClient:
+    """
+    BaseTritonClient is a base class that sets up connections with Triton Inference Server.
+    """
     DTYPES = {
         "TYPE_FP32": "FP32",
     }
@@ -21,6 +24,9 @@ class BaseTritonClient:
         self.model_configs = self._load_model_configs()
 
     def _init_triton_client(self, triton_url):
+        """
+        Make connection with Triton Inference Server.
+        """
         client = tritonclient.http.InferenceServerClient(triton_url)
         try:
             client.is_server_ready()
@@ -29,6 +35,9 @@ class BaseTritonClient:
             raise ConnectionError(f"cannot connect to triton inference server at {triton_url}")
 
     def _load_model_configs(self):
+        """
+        Read current model configurations from Triton Inference Server.
+        """
         models_status = self.client.get_model_repository_index()
         models = {}
         for model in models_status:
@@ -44,6 +53,9 @@ class BaseTritonClient:
         return models
 
     def get_model_states(self):
+        """
+        Read all model states.
+        """
         self.model_configs = self._load_model_configs()
         states = {}
         for model in self.model_configs.values():
@@ -77,11 +89,17 @@ class BaseTritonClient:
         return states
 
     def get_model_state(self, model_name):
+        """
+        Read model state of given model.
+        """
         states = self.get_model_states()
         return states.get(model_name, {})
 
 
 class TritonInferenceModel(BaseTritonClient):
+    """
+    TritonInferenceModel is a class that handles request inputs and response outputs.
+    """
     def __init__(
         self,
         triton_url: str,
@@ -129,6 +147,7 @@ class TritonInferenceModel(BaseTritonClient):
                 item: np.ndarray = data_dict[name]
                 dims = item.shape
             else:
+                # TODO: this can be discussed.
                 logging.warning(f"cannot find expected key {name}. init with `np.zero`")
                 item = np.zeros(dims)
 
@@ -183,6 +202,12 @@ class TritonInferenceModel(BaseTritonClient):
 
 
 class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
+    """
+    TritonInferenceModelSharedSystemMemory is similar to TritonInferenceModel.
+    However, data transmission is through system shared memory.
+    To utilize shared memory, input shape must be specified, hence size of shared memory could be registered correctly.
+    If output shape is not provided, response will be sent through http.
+    """
     def __init__(
         self,
         triton_url: str,
