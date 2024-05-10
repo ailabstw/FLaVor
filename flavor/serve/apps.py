@@ -5,9 +5,10 @@ import uvicorn
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.gzip import GZipMiddleware
 from nanoid import generate
+from pydantic import BaseModel
 
 from .invocations import InferInvocationAPP
-from .strategies import BaseStrategy
+from .strategies.gradio_strategy import BaseGradioStrategy
 
 
 class BaseAPP(object):
@@ -35,8 +36,8 @@ class InferAPP(BaseAPP):
     def __init__(
         self,
         infer_function: Callable,
-        input_data_model: Optional[Type[BaseStrategy]] = None,
-        output_data_model: Optional[Type[BaseStrategy]] = None,
+        input_data_model: Optional[Type[BaseModel]] = None,
+        output_data_model: Optional[Type[BaseModel]] = None,
     ):
 
         super().__init__()
@@ -72,7 +73,7 @@ class GradioInferAPP(object):
     def __init__(
         self,
         infer_function: Callable,
-        output_strategy: Optional[Type[BaseStrategy]] = None,
+        output_strategy: Type[BaseGradioStrategy] = None,
     ):
 
         self.infer_function = infer_function

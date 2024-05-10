@@ -4,15 +4,16 @@ from pathlib import Path
 
 import pytest
 from httpx import AsyncClient
-from seg3d_example import app
+
+from examples.inference.seg3d_example import app
 
 files = []
-for filepath in glob.glob("examples/hello-inference/test_data/seg/img0062/*"):
+for filepath in glob.glob("examples/inference/test_data/seg/img0062/*"):
     filepath = Path(filepath)
     file = open(filepath, "rb")
     files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
 
-with open("examples/hello-inference/test_data/seg/input_3d_dcm.json", "r") as f:
+with open("examples/inference/test_data/seg/input_3d_dcm.json", "r") as f:
     data = json.load(f)
 
 for k in data:

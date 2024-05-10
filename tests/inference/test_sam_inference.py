@@ -23,13 +23,13 @@ import json
 import numpy as np
 import pytest
 from httpx import AsyncClient
-from sam_decoder import sam_decoder_app
-from sam_encoder import sam_encoder_app
-from sam_triton_inference_model import (
+
+from examples.inference.SAM.sam_decoder import sam_decoder_app
+from examples.inference.SAM.sam_encoder import sam_encoder_app
+from examples.inference.SAM.sam_triton_inference_model import (
     SamDecoderInferenceModel,
     SamEncoderInferenceModel,
 )
-
 from flavor.serve.models.flavor_infer_model import NpArray
 
 

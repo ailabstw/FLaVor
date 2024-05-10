@@ -30,6 +30,7 @@ class SamEncoderInferenceModel:
             If set to True, will utilize system shared memory.
             Make sure the inference app and Triton are on the same machine.
     """
+
     def __init__(
         self,
         triton_url: str,

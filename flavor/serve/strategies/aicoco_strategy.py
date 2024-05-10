@@ -37,22 +37,6 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         """
         raise NotImplementedError
 
-    def generate_images(self, images: Sequence[AiImage]) -> List[AiImage]:
-        """
-        Generate `images` field in AiCOCO compatible format by removing physical_file_name.
-
-        Args:
-            images (Sequence[AiImage]): Modified AiCOCO `images` field.
-
-        Returns:
-            List[AiImage]: AiCOCO `images` field.
-        """
-        for image in images:
-            if "physical_file_name" in image:
-                image.pop("physical_file_name", None)
-
-        return images
-
     def generate_categories(self, categories: Sequence[InferCategory]) -> List[InferCategory]:
         """
         Generate `categories` field in AiCOCO compatible format.
@@ -171,7 +155,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             self.set_images_class_regression_id_table(images)
 
         aicoco_out = {
-            "images": self.generate_images(copy.deepcopy(images)),
+            "images": images,
             "categories": self.aicoco_categories,
             "regressions": self.aicoco_regressions,
             "meta": copy.deepcopy(meta),
@@ -182,7 +166,11 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
 class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
     def __call__(
-        self, images: Sequence[AiImage], categories: Sequence[InferCategory], model_out: np.ndarray
+        self,
+        images: Sequence[AiImage],
+        categories: Sequence[InferCategory],
+        model_out: np.ndarray,
+        **kwargs,
     ) -> AiCOCOFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
@@ -315,7 +303,11 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
 
 class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
     def __call__(
-        self, images: Sequence[AiImage], categories: Sequence[InferCategory], model_out: np.ndarray
+        self,
+        images: Sequence[AiImage],
+        categories: Sequence[InferCategory],
+        model_out: np.ndarray,
+        **kwargs,
     ) -> AiCOCOFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
@@ -430,6 +422,7 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         categories: Sequence[InferCategory],
         regressions: Sequence[InferRegression],
         model_out: np.ndarray,
+        **kwargs,
     ) -> AiCOCOFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
@@ -511,7 +504,7 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         res["annotations"] = list()
         res["objects"] = list()
 
-        for i, bbox_pred in enumerate(out["bbox_pred"]):
+        for i, (bbox_pred, cls_pred) in enumerate(zip(out["bbox_pred"], out["cls_pred"])):
             if isinstance(bbox_pred, np.ndarray):
                 bbox_pred = bbox_pred.tolist()
             y_min, x_min, y_max, x_max = bbox_pred
@@ -525,11 +518,6 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
                 "category_ids": [],
             }
 
-            cls_pred = out["cls_pred"][i]
-            assert len(cls_pred) == len(
-                self.class_id_table
-            ), f"The number of categories is not matched with the detection output {cls_pred.shape}."
-
             for c in range(len(cls_pred)):
                 if cls_pred[c] == 0 or c not in self.class_id_table:
                     continue
@@ -540,12 +528,12 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
                 continue
 
             confidence_score = out.get("confidence_score")
-            if confidence_score:
+            if confidence_score is not None:
                 cs = confidence_score[i]
                 obj["confidence"] = cs.item() if isinstance(cs, np.ndarray) else cs
 
             regression_value = out.get("regression_value")
-            if regression_value:
+            if regression_value is not None:
                 obj["regressions"] = list()
                 for i, value in enumerate(regression_value[i]):
                     obj["regressions"].append(
@@ -580,6 +568,7 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
         images: Sequence[AiImage],
         regressions: Sequence[InferRegression],
         model_out: np.ndarray,
+        **kwargs,
     ) -> AiCOCOFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.

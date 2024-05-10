@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
-from sam_triton_inference_model import (
+
+from examples.inference.SAM.sam_triton_inference_model import (
     SamDecoderInferenceModel,
     SamEncoderInferenceModel,
 )

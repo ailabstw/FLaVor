@@ -103,6 +103,32 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
 
     def __init__(self):
         self.network = self.define_inference_network()
+        self.categories = self.set_categories()
+        if self.categories is not None:
+            if isinstance(self.categories, Sequence):
+                try:
+                    for c in self.categories:
+                        InferCategory.model_validate(c)
+                except ValidationError:
+                    logging.error(
+                        "Each element of `categories` should have format of `InferCategory`."
+                    )
+                    raise
+            else:
+                raise TypeError("`categories` should have type of `Sequence[InferCategory]`.")
+        self.regressions = self.set_regressions()
+        if self.regressions is not None:
+            if isinstance(self.regressions, Sequence):
+                try:
+                    for r in self.regressions:
+                        InferRegression.model_validate(r)
+                except ValidationError:
+                    logging.error(
+                        "Each element of `regressions` should have format of `InferRegression`."
+                    )
+                    raise
+            else:
+                raise TypeError("`regressions` should have type of `Sequence[InferRegression]`.")
 
     @abstractmethod
     def define_inference_network(self) -> Callable:
@@ -301,34 +327,6 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         """
         Run the inference model.
         """
-        self.categories = self.set_categories()
-        if self.categories is not None:
-            if isinstance(self.categories, Sequence):
-                try:
-                    for c in self.categories:
-                        InferCategory.model_validate(c)
-                except ValidationError:
-                    logging.error(
-                        "Each element of `categories` should have format of `InferCategory`."
-                    )
-                    raise
-            else:
-                raise TypeError("`categories` should have type of `Sequence[InferCategory]`.")
-
-        self.regressions = self.set_regressions()
-        if self.regressions is not None:
-            if isinstance(self.regressions, Sequence):
-                try:
-                    for r in self.regressions:
-                        InferRegression.model_validate(r)
-                except ValidationError:
-                    logging.error(
-                        "Each element of `regressions` should have format of `InferRegression`."
-                    )
-                    raise
-            else:
-                raise TypeError("`regressions` should have type of `Sequence[InferRegression]`.")
-
         self._set_images(**net_input)
         if self.images is None:
             raise ValueError("`self.images` should not be None.")
@@ -349,10 +347,12 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
                 raise TypeError("`modified_filenames` should have type of `Sequence`.")
 
         self._update_images(modified_filenames=modified_filenames, **net_input)
+
         with torch.no_grad():
             x = self.preprocess(data)
             out = self.inference(x)
             out = self.postprocess(out, metadata=metadata)
+
         result = self.output_formatter(
             out, images=self.images, categories=self.categories, regressions=self.regressions
         )

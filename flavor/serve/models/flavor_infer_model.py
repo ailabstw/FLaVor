@@ -123,7 +123,7 @@ class InferClassificationOutput(BaseModel, arbitrary_types_allowed=True, protect
 
 
 class DetModelOut(BaseModel, arbitrary_types_allowed=True):
-    bbox_pred: Sequence[Sequence[int]]
+    bbox_pred: Union[np.ndarray, Sequence[np.ndarray], Sequence[Sequence[int]]]
     cls_pred: Union[np.ndarray, Sequence[np.ndarray], Sequence[Sequence[Union[int, float]]]]
     confidence_score: Optional[Union[np.ndarray, Sequence[float]]] = None
     regression_value: Optional[Union[np.ndarray, Sequence[float]]] = None
