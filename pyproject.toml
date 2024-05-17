@@ -1,0 +1,69 @@
+[tool.poetry]
+name = "flavor"
+version = "1.1.0"
+description = "AILabs Federated Learning and Validation Framework"
+authors = ["Stanley Huang <ding3820@gmail.com>", "Keng-Chi Liu <calvin89029@gmail.com>"]
+readme = "README.md"
+exclude = ["dockerfile*", "examples*", "script*"]
+
+[tool.poetry.dependencies]
+python = ">=3.8, <3.11"
+jsonschema = ">=4.5.1"
+aiofile = {version = "^3.8.2", optional = true}
+fastapi = {version = "^0.100.0", optional = true}
+pydantic = {version = "^2.0.0", optional = true}
+uvicorn = {version = "^0.21.0", optional = true}
+nanoid = {version = "^2.0.0", optional = true}
+gradio = {version = "^4.0.0", optional = true}
+tritonclient = {extras = ["http"], version = "^2.45.0", optional = true}
+# protobuf = {version = "3.14.0", optional = true}
+# grpcio = {version = "1.34.0", optional = true}
+# grpcio-tools = {version = "1.33.1", optional = true}
+tensorflow-io-gcs-filesystem = "0.27.0"
+tensorflow = "~2.10"
+
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.0"
+pytest-asyncio = "^0.23.6"
+httpx = "^0.27.0"
+
+[tool.poetry.group.examples]
+optional = true
+
+[tool.poetry.group.examples.dependencies]
+simpleitk = "^2.3.1"
+dicom2jpg = "^0.1.10"
+scipy = "1.9.2"
+torch = {version = "2.1.0+cu121", source = "torch-cu121"}
+lungmask = "^0.2.20"
+ultralytics = "^8.2.16"
+opencv-python-headless = "<4.9, >4.6"
+monai = {version = "~1.1.0", extras = ["einops"]}
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^3.5.0"
+
+[[tool.poetry.source]]
+name = "torch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+[tool.poetry.extras]
+infer = ["jsonschema", "aiofile", "fastapi", "pydantic", "uvicorn", "nanoid", "gradio", "tritonclient"]
+# fl = ["protobuf", "grpcio", "grpcio-tools"]
+
+[tool.poetry.scripts]
+flavor-fl = "bin.flavor_fl:main"
+flavor-fv = "bin.flavor_fv:main"
+flavor-agg = "bin.flavor_agg:main"
+check-fl = "bin.check_fl:main"
+check-fv = "bin.check_fv:main"
+check-agg = "bin.check_agg:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

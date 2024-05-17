@@ -1,7 +1,6 @@
 from typing import Any, List, Optional, Sequence, Tuple
 
 import numpy as np
-from sam_triton_inference_model import SamDecoderInferenceModel
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference import (
@@ -11,6 +10,8 @@ from flavor.serve.inference import (
 )
 from flavor.serve.models import AiImage, InferCategory, NpArray
 from flavor.serve.strategies import AiCOCOSegmentationOutputStrategy
+
+from .sam_triton_inference_model import SamDecoderInferenceModel
 
 
 class SamAiCOCODecoderInferenceModel(BaseAiCOCOInferenceModel):

@@ -19,7 +19,7 @@ class ClassificationInferenceModel(BaseAiCOCOInferenceModel):
     def __init__(self):
         self.formatter = AiCOCOClassificationOutputStrategy()
 
-        self.thesholds = {
+        self.thresholds = {
             "Atelectasis": 0.3,
             "Cardiomegaly": 0.04,
             "Consolidation": 0.17,
@@ -83,7 +83,7 @@ class ClassificationInferenceModel(BaseAiCOCOInferenceModel):
         format_output = np.zeros(len(categories))
         for i, category in enumerate(categories):
             name = category["name"]
-            format_output[i] = int(model_out[name] > self.thesholds[name])
+            format_output[i] = int(model_out[name] > self.thresholds[name])
 
         output = self.formatter(model_out=format_output, images=images, categories=categories)
         return output

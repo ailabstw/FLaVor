@@ -1,11 +1,12 @@
 from typing import Any, List, Optional, Sequence, Tuple
 
 from pydantic import BaseModel
-from sam_triton_inference_model import SamEncoderInferenceModel
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference import BaseAiCOCOInferenceModel, BaseAiCOCOInputDataModel
 from flavor.serve.models import NpArray
+
+from .sam_triton_inference_model import SamEncoderInferenceModel
 
 
 class SamEncoderAiCOCOInferenceModel(BaseAiCOCOInferenceModel):
