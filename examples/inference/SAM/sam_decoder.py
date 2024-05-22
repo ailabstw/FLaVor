@@ -11,7 +11,7 @@ from flavor.serve.inference import (
 from flavor.serve.models import AiImage, InferCategory, NpArray
 from flavor.serve.strategies import AiCOCOSegmentationOutputStrategy
 
-from .sam_triton_inference_model import SamDecoderInferenceModel
+from .sam_triton_inference_model import SamDecoderTritonInferenceModel
 
 
 class SamAiCOCODecoderInferenceModel(BaseAiCOCOInferenceModel):
@@ -71,7 +71,7 @@ class SamAiCOCODecoderInferenceModel(BaseAiCOCOInferenceModel):
         return None
 
     def define_inference_network(self):
-        decoder = SamDecoderInferenceModel(
+        decoder = SamDecoderTritonInferenceModel(
             triton_url=self.triton_url, model_name=self.triton_network_name, is_shared_memory=False
         )
         return decoder
@@ -148,7 +148,7 @@ class OutputDataModel(BaseAiCOCOOutputDataModel):
 
 sam_decoder_app = InferAPP(
     infer_function=SamAiCOCODecoderInferenceModel(
-        triton_url="triton.user-hannchyun-chen:8000",
+        triton_url="triton:8000",
         triton_network_name="sam_decoder",
     ),
     input_data_model=InputDataModel,

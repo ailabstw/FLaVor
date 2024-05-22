@@ -21,7 +21,15 @@ class DetectionInferenceModel(BaseAiCOCOInferenceModel):
         super().__init__()
 
     def define_inference_network(self):
-        return YOLO(os.path.join(os.getcwd(), "best.pt"))
+        ckpt_path = os.path.join(os.getcwd(), "best.pt")
+        if not os.path.exists(ckpt_path):
+            from urllib.request import urlretrieve
+
+            urlretrieve(
+                "https://github.com/sevdaimany/YOLOv8-Medical-Imaging/raw/master/runs/detect/train/weights/best.pt",
+                ckpt_path,
+            )
+        return YOLO(ckpt_path)
 
     def set_categories(self):
         categories = [

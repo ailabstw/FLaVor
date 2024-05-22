@@ -6,7 +6,7 @@ from flavor.serve.apps import InferAPP
 from flavor.serve.inference import BaseAiCOCOInferenceModel, BaseAiCOCOInputDataModel
 from flavor.serve.models import NpArray
 
-from .sam_triton_inference_model import SamEncoderInferenceModel
+from .sam_triton_inference_model import SamEncoderTritonInferenceModel
 
 
 class SamEncoderAiCOCOInferenceModel(BaseAiCOCOInferenceModel):
@@ -48,7 +48,7 @@ class SamEncoderAiCOCOInferenceModel(BaseAiCOCOInferenceModel):
         return None
 
     def define_inference_network(self):
-        encoder = SamEncoderInferenceModel(
+        encoder = SamEncoderTritonInferenceModel(
             triton_url=self.triton_url,
             model_name=self.triton_network_name,
             is_shared_memory=False,
@@ -86,7 +86,7 @@ class OutputDataModel(BaseModel):
 
 sam_encoder_app = InferAPP(
     infer_function=SamEncoderAiCOCOInferenceModel(
-        triton_url="triton.user-hannchyun-chen:8000",
+        triton_url="triton:8000",
         triton_network_name="sam_encoder",
     ),
     input_data_model=BaseAiCOCOInputDataModel,

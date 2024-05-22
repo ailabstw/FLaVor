@@ -4,7 +4,7 @@ version = "1.1.0"
 description = "AILabs Federated Learning and Validation Framework"
 authors = ["Stanley Huang <ding3820@gmail.com>", "Keng-Chi Liu <calvin89029@gmail.com>"]
 readme = "README.md"
-exclude = ["dockerfile*", "examples*", "script*"]
+exclude = ["examples*"]
 
 [tool.poetry.dependencies]
 python = ">=3.8, <3.11"
@@ -34,7 +34,7 @@ optional = true
 [tool.poetry.group.examples.dependencies]
 simpleitk = "^2.3.1"
 dicom2jpg = "^0.1.10"
-scipy = "1.9.2"
+scipy = "^1.9.2"
 torch = {version = "2.1.0+cu121", source = "torch-cu121"}
 lungmask = "^0.2.20"
 ultralytics = "^8.2.16"
@@ -46,6 +46,7 @@ tensorflow = "~2.10"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.5.0"
+ipykernel = "^6.29.4"
 
 [[tool.poetry.source]]
 name = "torch-cu121"

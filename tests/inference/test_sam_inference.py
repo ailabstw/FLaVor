@@ -27,8 +27,8 @@ from httpx import AsyncClient
 from examples.inference.SAM.sam_decoder import sam_decoder_app
 from examples.inference.SAM.sam_encoder import sam_encoder_app
 from examples.inference.SAM.sam_triton_inference_model import (
-    SamDecoderInferenceModel,
-    SamEncoderInferenceModel,
+    SamDecoderTritonInferenceModel,
+    SamEncoderTritonInferenceModel,
 )
 from flavor.serve.models.flavor_infer_model import NpArray
 
@@ -76,7 +76,7 @@ async def test_encoder():
     assert embeddings.shape == (1, 256, 64, 64)
     assert len(data["original_shapes"]) == 2
 
-    triton_sam_encoder = SamEncoderInferenceModel(triton_url="triton.user-hannchyun-chen:8000")
+    triton_sam_encoder = SamEncoderTritonInferenceModel(triton_url="triton:8000")
     res = triton_sam_encoder.predict([filepath])
     assert np.array_equal(embeddings.array, res["embeddings"])
 
@@ -105,7 +105,7 @@ async def test_decoder():
         "orig_im_size": np.array([1500, 1435]),
     }
 
-    triton_sam_decoder = SamDecoderInferenceModel(triton_url="triton.user-hannchyun-chen:8000")
+    triton_sam_decoder = SamDecoderTritonInferenceModel(triton_url="triton:8000")
     res = triton_sam_decoder.predict(fake_input)
     mask_bin = (res["masks"] > 0).astype(np.uint8)
 

@@ -13,7 +13,7 @@ from flavor.serve.inference import (
 )
 
 
-class SamEncoderInferenceModel:
+class SamEncoderTritonInferenceModel:
     """
     SAM encoder Triton Inference Server.
 
@@ -138,7 +138,7 @@ class SamEncoderInferenceModel:
         return results
 
 
-class SamDecoderInferenceModel:
+class SamDecoderTritonInferenceModel:
     def __init__(
         self,
         triton_url: str,
@@ -150,7 +150,7 @@ class SamDecoderInferenceModel:
         """
         Arguments
             encoder_input_shape: tuple
-                this should match the argument `shape` of SamEncoderInferenceModel
+                this should match the argument `shape` of SamEncoderTritonInferenceModel
             is_shared_memory: bool = False
                 If set to True, will utilize system shared memory.
                 Make sure the inference app and Triton are on the same machine.
