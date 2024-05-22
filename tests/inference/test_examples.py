@@ -7,7 +7,7 @@ from httpx import AsyncClient
 
 @pytest.mark.asyncio
 async def test_seg():
-    from examples.inference.seg_example import app as seg_app
+    from test_tasks.seg_example import app as seg_app
 
     files = []
     filepath = "examples/inference/test_data/seg/0.dcm"
@@ -28,7 +28,7 @@ async def test_seg():
 
 @pytest.mark.asyncio
 async def test_cls():
-    from examples.inference.cls_example import app as cls_app
+    from test_tasks.cls_example import app as cls_app
 
     files = []
     filepath = "chexpert/demo_img.jpg"
@@ -49,7 +49,7 @@ async def test_cls():
 
 @pytest.mark.asyncio
 async def test_reg():
-    from examples.inference.reg_example import app as reg_app
+    from test_tasks.reg_example import app as reg_app
 
     files = []
     filepath = "examples/inference/test_data/reg/test.jpeg"
@@ -70,7 +70,7 @@ async def test_reg():
 
 @pytest.mark.asyncio
 async def test_det():
-    from examples.inference.det_example import app as det_app
+    from test_tasks.det_example import app as det_app
 
     files = []
     filepath = "examples/inference/test_data/det/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg"

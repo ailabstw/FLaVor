@@ -4,8 +4,7 @@ from pathlib import Path
 
 import pytest
 from httpx import AsyncClient
-
-from examples.inference.seg3d_example import app
+from test_tasks.seg3d_example import app
 
 files = []
 for filepath in glob.glob("examples/inference/test_data/seg/img0062/*"):

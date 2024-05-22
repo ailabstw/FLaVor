@@ -148,7 +148,7 @@ class OutputDataModel(BaseAiCOCOOutputDataModel):
 
 sam_decoder_app = InferAPP(
     infer_function=SamAiCOCODecoderInferenceModel(
-        triton_url="triton.user-hannchyun-chen:8000",
+        triton_url="triton:8000",
         triton_network_name="sam_decoder",
     ),
     input_data_model=InputDataModel,

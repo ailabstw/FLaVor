@@ -8,8 +8,8 @@ from examples.inference.SAM.sam_triton_inference_model import (
 
 
 def test_integration_triton():
-    encoder = SamEncoderInferenceModel(triton_url="triton.user-hannchyun-chen:8000")
-    decoder = SamDecoderInferenceModel(triton_url="triton.user-hannchyun-chen:8000")
+    encoder = SamEncoderInferenceModel(triton_url="triton:8000")
+    decoder = SamDecoderInferenceModel(triton_url="triton:8000")
     results = encoder.predict(["examples/hello-inference/test_data/SAM/shapes.png"])
 
     fake_input = {
@@ -23,7 +23,7 @@ def test_integration_triton():
 
 
 def test_decoder_different_coord_dtype():
-    triton_sam_decoder = SamDecoderInferenceModel(triton_url="triton.user-hannchyun-chen:8000")
+    triton_sam_decoder = SamDecoderInferenceModel(triton_url="triton:8000")
     arr = np.random.rand(1, 256, 64, 64).astype(np.float32)
 
     res1 = triton_sam_decoder.predict(
@@ -47,9 +47,7 @@ def test_decoder_different_coord_dtype():
 
 
 def test_decoder_shared_memory():
-    triton_sam_decoder = SamDecoderInferenceModel(
-        triton_url="triton.user-hannchyun-chen:8000", is_shared_memory=True
-    )
+    triton_sam_decoder = SamDecoderInferenceModel(triton_url="triton:8000", is_shared_memory=True)
 
     res1 = triton_sam_decoder.predict(
         {
@@ -73,7 +71,7 @@ def test_decoder_shared_memory():
 
 
 def test_decoder_http():
-    triton_sam_decoder = SamDecoderInferenceModel(triton_url="triton.user-hannchyun-chen:8000")
+    triton_sam_decoder = SamDecoderInferenceModel(triton_url="triton:8000")
 
     res = triton_sam_decoder.predict(
         {
@@ -92,7 +90,7 @@ def test_decoder_http():
 
 
 def test_encoder_http():
-    triton_sam_encoder = SamEncoderInferenceModel(triton_url="triton.user-hannchyun-chen:8000")
+    triton_sam_encoder = SamEncoderInferenceModel(triton_url="triton:8000")
 
     res = triton_sam_encoder.predict(["examples/hello-inference/test_data/SAM/cat.jpg"])
 
