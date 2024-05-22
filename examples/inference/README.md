@@ -116,7 +116,7 @@ app.run(port=int(os.getenv("PORT", 9111)))
 `InferAPP` serves as the central component of the FLaVor Inference Service, facilitating seamless interaction between other services and the machine learning models. To harness the power of `InferAPP`, developers need to provide the following essential components:
 
 - `infer_function`: Specify your custom inference model, allowing `InferAPP` to invoke the model and process its input/output seamlessly. Data reading, preprocessing, inference (network forward operation), postprocessing, and output formatting are performed accordingly. The  inference operation also supports Triton Inference Server to scale up the network forward operation. See the example in [SAM](./SAM/README.md)
-- `input_data_model` and `output_data_model`: Define the required Pydantic data models for the input request and output response.
+- `input_data_model` and `output_data_model`: Define the required Pydantic data models for the input request and output response. `BaseAiCOCOInputDataModel` and `BaseAiCOCOOutputDataModel` are default data models for input and output respectively.
 
 ### Step 4: Testing the Service by Sending Inference Requests
 
