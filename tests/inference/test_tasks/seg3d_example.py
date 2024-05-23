@@ -34,9 +34,16 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
             use_checkpoint=True,
         )
 
-        model_dict = torch.load(
-            os.path.join(os.getcwd(), "swin_unetr.tiny_5000ep_f12_lr2e-4_pretrained.pt")
-        )["state_dict"]
+        ckpt_path = os.path.join(os.getcwd(), "swin_unetr.tiny_5000ep_f12_lr2e-4_pretrained.pt")
+        if not os.path.exists(ckpt_path):
+            from urllib.request import urlretrieve
+
+            urlretrieve(
+                "https://github.com/Project-MONAI/MONAI-extra-test-data/releases/download/0.8.1/swin_unetr.tiny_5000ep_f12_lr2e-4_pretrained.pt",
+                ckpt_path,
+            )
+
+        model_dict = torch.load(ckpt_path)["state_dict"]
         model.load_state_dict(model_dict)
         model.eval()
         model.to(self.device)
