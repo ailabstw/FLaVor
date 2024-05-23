@@ -38,13 +38,13 @@ data = {
 }
 
 img_files = [("files", (f"images_image.jpg", open("image.jpg", "rb")))]
-json_file["images"] = json.dumps(data)
+json_data["images"] = json.dumps(data)
 
 # Send the POST request
 response = requests.post(
     "http://0.0.0.0:9111/invocations",
-    data=img_files,
-    files=files,
+    data=json_data,
+    files=img_files,
 )
 ```
 
