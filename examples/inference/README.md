@@ -8,7 +8,18 @@ Welcome to the FLaVor Inference Service! This service simplifies the deployment 
 
 ## How Does It Work
 
-Using the FLaVor inference service is straightforward. Simply initiate `InferAPP` built upon a customized inference model. By sending a POST request to the `/invocations` endpoint of `InferAPP`, it will respond in a predefined format. The `/invocations` endpoint processes the request through the following stages:
+To initiate the service, simply instantiate `InferAPP` built upon a customized inference model. For example:
+
+```python
+app = InferAPP(
+    infer_function=YourInferenceModel(),
+    input_data_model=YourInputDataModel,
+    output_data_model=YourOutputDataModel,
+)
+app.run(port=int(os.getenv("PORT", 9111)))
+```
+
+By sending a POST request to the `/invocations` endpoint of `InferAPP`, it will respond in a format defined in your model.
 
 ## `/invocations` API Endpoint
 
@@ -56,9 +67,9 @@ To begin with the FLaVor Inference Service, follow these steps:
 
 ### Step 1: Define Your Inference Model
 
-Start by defining your custom inference model by subclassing the `BaseInferenceModel`. This serves as a template for implementing inference functionality tailored to your machine learning model.
+Start by defining your custom inference model by inheriting the `BaseInferenceModel` class. This serves as a template for implementing inference functionality tailored to your machine learning model.
 
-Here's an example for a segmentation task. For more detail in the implementation, refer to the [Segmentation task example](examples/inference/seg_example.ipynb).
+Here's an example of a segmentation inference model. For more detail in the implementation, refer to the [Segmentation task example](examples/inference/seg_example.ipynb).
 
 ```python
 from flavor.serve.models import BaseAiCOCOInferenceModel
@@ -71,30 +82,29 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
 
 ### Step 2: Customize Model-specific Behavior
 
-The image below illustrates the workflow of the inference model. We will go through the implementation step-by-step.
+Firstly, override the following abstract methods in your customized inference model.
 
-<p align="left">
-    <img src="images/call.png" width="700">
-</p>
-
-First, override the following abstract methods in your custom inference model to define the specific behavior of your model:
-
-For constructor:
+For constructor, i.e., `__init__()`:
 
 - `define_inference_network()`: Define the inference network or model and return a callable object or a network instance.
 - `set_categories()`: Set inference categories and return `None` if no categories. For example, a segmentation output would contain `c` channels. By specifying in `set_categories()`, we show the exact meaning of each channel.
 - `set_regressions()`: Set inference regressions and return `None` if no regressions. In segmentation task, here we simply return `None`.
 
-For inference workflow:
+For inference workflow, i.e., `__call__()`:
 
-- `data_reader()`: Read input data to numpy array or torch tensor.
-- `output_formatter()`: Format the network output to a structured response. Currently four standard output strategy are available: `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy`, and `AiCOCOSegmentationOutputStrategy`. See [Standard input and output structure](./docs/input_output_structure.md). In segmentation task, we choose `AiCOCOSegmentationOutputStrategy` as the formatter.
+<p align="left">
+    <img src="images/call.png" width="600">
+</p>
 
-Next, you can override the following non-abstract methods if necessary:
+The above image illustrates the workflow of inference model. We will go through the implementation step-by-step.
 
+- `data_reader()`: (Abstract method) Read input data to numpy array or torch tensor.
 - `preprocess()`: Implement data transformation for the inference process.
 - `inference()`: Implement forward operation.
 - `postprocess()`: Implement any additional postprocessing steps for model output.
+- `output_formatter()`: (Abstract method) Format the network output to a structured response. Currently four standard output strategy are available: `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy`, and `AiCOCOSegmentationOutputStrategy`. See [Standard input and output structure](./docs/input_output_structure.md). In segmentation task, we choose `AiCOCOSegmentationOutputStrategy` as the formatter.
+
+Next, you can override the following non-abstract methods if necessary:
 
 ### Step 3: Run the Inference Service
 
