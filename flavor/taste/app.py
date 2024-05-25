@@ -13,7 +13,7 @@ os.environ["LOGLEVEL"] = "ERROR"
 os.environ["FLAVOR"] = "true"
 
 
-class EdgeEvalServicer(object):
+class EdgeEvalApp(object):
     def __init__(self, mainProcess, preProcess):
 
         self.__log_filename = os.path.join(os.environ["LOG_PATH"], "error.log")

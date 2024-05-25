@@ -105,10 +105,16 @@ def SaveGlobalInfoJson(infos: list, output_info_path: str):
             else:
                 out["metrics"][metric].append(client_info_dict["metrics"][metric])
 
+    out["metadata"]["datasetSize"] = sum(out["metadata"]["datasetSize"])
+
     for metric in out["metrics"]:
         if "basic/" in metric:
-            continue
-        out["metrics"][metric] = sum(out["metrics"][metric]) / len(out["metrics"][metric])
+            if any(i == -1 for i in out["metrics"][metric]):
+                out["metrics"][metric] = -1
+            else:
+                out["metrics"][metric] = sum(out["metrics"][metric])
+        else:
+            out["metrics"][metric] = sum(out["metrics"][metric]) / len(out["metrics"][metric])
 
     with open(output_info_path, "w") as openfile:
         json.dump(out, openfile)
