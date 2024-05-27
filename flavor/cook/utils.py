@@ -106,6 +106,7 @@ def SaveGlobalInfoJson(infos: list, output_info_path: str):
                 out["metrics"][metric].append(client_info_dict["metrics"][metric])
 
     out["metadata"]["datasetSize"] = sum(out["metadata"]["datasetSize"])
+    out["metadata"]["importance"] = -1
 
     for metric in out["metrics"]:
         if "basic/" in metric:

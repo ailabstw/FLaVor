@@ -33,10 +33,6 @@ def main():
     set_env_var("WEIGHT_PATH", os.getenv("WEIGHT_PATH", "/weight/weight.ckpt"), force_default)
     set_env_var("LOG_PATH", os.getenv("LOG_PATH", "/log"), force_default)
 
-    os.environ["SCHEMA_PATH"] = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "../schema/FVresult.json"
-    )
-
     os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
     os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
 

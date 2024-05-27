@@ -60,9 +60,6 @@ def main():
     )
     set_env_var("LOG_PATH", os.getenv("LOG_PATH", "/log"), force_default)
 
-    os.environ["SCHEMA_PATH"] = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "../schema/FLresult.json"
-    )
     os.environ["REPO_ROOT"] = os.path.dirname(os.environ["LOCAL_MODEL_PATH"])
 
     os.makedirs(os.environ["LOG_PATH"], exist_ok=True)

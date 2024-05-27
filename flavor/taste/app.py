@@ -4,9 +4,9 @@ import os
 import subprocess
 import sys
 
-from jsonschema import validate
-
 from flavor.cook.utils import CleanEvent, IsSetEvent
+
+from .model import FVResponse
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
@@ -96,15 +96,9 @@ class EdgeEvalApp(object):
         try:
             with open(self.__result_file, "r") as openfile:
                 instance = json.load(openfile)
-            with open(os.environ["SCHEMA_PATH"], "r") as openfile:
-                schema = json.load(openfile)
+            FVResponse.model_validate(instance)
         except Exception as e:
             self.terminate(e)
-
-        try:
-            validate(instance=instance, schema=schema)
-        except Exception:
-            self.terminate("Json Schema Error")
 
         logging.info("Complete validation.")
 

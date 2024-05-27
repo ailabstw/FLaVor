@@ -10,9 +10,8 @@ import requests
 import uvicorn
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
-from jsonschema import validate
 
-from .model import AggregateRequest, LocalTrainRequest
+from .model import AggregateRequest, FLResponse, LocalTrainRequest
 from .utils import (
     CleanAllEvent,
     CleanEvent,
@@ -175,8 +174,6 @@ class EdgeApp(BaseAPP):
         self.app.add_api_route("/TrainInterrupt", self.train_interrupt, methods=["POST"])
         self.app.add_api_route("/TrainFinish", self.train_finish, methods=["POST"])
 
-        self.schema = self.__load_schema(os.getenv("SCHEMA_PATH"))
-
     def data_validate(self, request: Request):
 
         logger.info("[DataValidate] Start DataValidate.")
@@ -306,34 +303,24 @@ class EdgeApp(BaseAPP):
                 os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json"), "r"
             ) as openfile:
                 info = json.load(openfile)
-        except Exception as err:
-            self.sendLog("ERROR", f"[LocalTrain] Exception: {err}")
 
-        try:
-            validate(instance=info, schema=self.schema)
+            FLResponse.model_validate(info)
             logger.info(
                 "[LocalTrain] model datasetSize: {}".format(info["metadata"]["datasetSize"])
             )
             logger.info("[LocalTrain] model metrics: {}".format(info["metrics"]))
-        except Exception:
-            self.sendLog("ERROR", "[LocalTrain] Exception: Json Schema Error")
 
-        if not self.debugMode:
-
-            try:
+            if not self.debugMode:
                 response = requests.post(f"{OPERATOR_REST_API_URI}/LocalTrainFinish", json=info)
                 assert (
                     response.status_code == 200
                 ), f"Failed to post data. Status code: {response.status_code}, Error: {response.text}"
                 logger.info("[LocalTrain] Response sent.")
-            except Exception as err:
-                self.sendLog("ERROR", f"[LocalTrain] Error: {err}")
+
+        except Exception as err:
+            self.sendLog("ERROR", f"[LocalTrain] Exception: {err}")
 
         logger.info("[LocalTrain] Trainer finish training.")
-
-    def __load_schema(self, path):
-        with open(path, "r") as openfile:
-            return json.load(openfile)
 
 
 class AggregatorApp(BaseAPP):
@@ -438,11 +425,13 @@ class AggregatorApp(BaseAPP):
             WaitEvent("AggregateFinished")
             logger.info("[aggregate] Get AggregateFinished.")
 
-        if not self.debugMode:
-            try:
-                logger.info("[aggregate] Read info from training process.")
-                with open(self.global_info_path, "r") as openfile:
-                    global_info = json.load(openfile)
+        try:
+            logger.info("[aggregate] Read info from training process.")
+            with open(self.global_info_path, "r") as openfile:
+                global_info = json.load(openfile)
+            FLResponse.model_validate(global_info)
+
+            if not self.debugMode:
                 response = requests.post(
                     f"{OPERATOR_REST_API_URI}/AggregateFinish", json=global_info
                 )
@@ -450,8 +439,9 @@ class AggregatorApp(BaseAPP):
                     response.status_code == 200
                 ), f"Failed to post data. Status code: {response.status_code}, Error: {response.text}"
                 logger.info("[aggregate] Response sent.")
-            except Exception as err:
-                self.sendLog("ERROR", f"[Aggregate] Error: {err}")
+
+        except Exception as err:
+            self.sendLog("ERROR", f"[Aggregate] Error: {err}")
 
         self.sendLog("INFO", "[aggregate] Aggregation succeeds.")
 
