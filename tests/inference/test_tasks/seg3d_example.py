@@ -122,9 +122,11 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
         return data
 
     def inference(self, x: torch.Tensor) -> torch.Tensor:
-        return sliding_window_inference(
-            x, (96, 96, 96), 4, self.network, overlap=0.5, mode="gaussian"
-        )
+        with torch.no_grad():
+            out = sliding_window_inference(
+                x, (96, 96, 96), 4, self.network, overlap=0.5, mode="gaussian"
+            )
+        return out
 
     def postprocess(self, out: torch.Tensor, metadata: Tuple[int]) -> np.ndarray:
         def resample_3d(img, target_size):

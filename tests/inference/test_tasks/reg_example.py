@@ -44,6 +44,11 @@ class RegressionInferenceModel(BaseAiCOCOInferenceModel):
         img = Image.open(files[0])
         return img, None, None
 
+    def inference(self, x: Any) -> Any:
+        with torch.no_grad():
+            out = self.network(x)
+        return out
+
     def preprocess(self, data: np.ndarray) -> torch.Tensor:
         transforms = ResNet18_Weights.DEFAULT.transforms()
         img = transforms(data).unsqueeze(0).to(self.device)

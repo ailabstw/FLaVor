@@ -134,7 +134,7 @@ Once the FLaVor Inference Service is running, send POST requests to the `/invoca
 
 ### More Examples for Various Tasks
 
-Please visit following instruction pages:
+We try to integrate FLaVor with other existing projects or libraries. Please visit following instruction pages:
 
 - [Classification task example](./cls_example.ipynb)
 - [Detection task example](./det_example.ipynb)
