@@ -78,10 +78,8 @@ class InferInvocationAPP(BaseInvocationAPP):
             input_dict = await self.save_temp_files(input_dict, tempdir)
             response = self.infer_function(**input_dict)
             response = self.output_data_model.model_validate(response)
-        except Exception as e:
-            err_msg = "".join(
-                traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__)
-            )
+        except Exception:
+            err_msg = traceback.format_exc()
             logging.error(err_msg)
             return JSONResponse(content=err_msg, status_code=status.HTTP_400_BAD_REQUEST)
 

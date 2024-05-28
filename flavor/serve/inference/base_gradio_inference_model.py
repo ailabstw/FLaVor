@@ -1,5 +1,3 @@
-import torch
-
 from .base_aicoco_inference_model import BaseAiCOCOInferenceModel
 
 
@@ -10,10 +8,9 @@ class GradioInferenceModel(BaseAiCOCOInferenceModel):
 
         data, _, metadata = self.data_reader(**net_input)
 
-        with torch.no_grad():
-            x = self.preprocess(data)
-            out = self.inference(x)
-            out = self.postprocess(out, metadata=metadata)
+        x = self.preprocess(data)
+        out = self.inference(x)
+        out = self.postprocess(out, metadata=metadata)
         result = self.output_formatter(
             out, categories=self.categories, regressions=self.regressions, data=x, **net_input
         )

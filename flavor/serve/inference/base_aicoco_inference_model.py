@@ -3,7 +3,6 @@ import warnings
 from abc import abstractmethod
 from typing import Any, Callable, List, Optional, Sequence, Tuple
 
-import torch
 from fastapi import UploadFile
 from nanoid import generate
 from pydantic import BaseModel, ValidationError
@@ -348,10 +347,9 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
 
         self._update_images(modified_filenames=modified_filenames, **net_input)
 
-        with torch.no_grad():
-            x = self.preprocess(data)
-            out = self.inference(x)
-            out = self.postprocess(out, metadata=metadata)
+        x = self.preprocess(data)
+        out = self.inference(x)
+        out = self.postprocess(out, metadata=metadata)
 
         result = self.output_formatter(
             out, images=self.images, categories=self.categories, regressions=self.regressions

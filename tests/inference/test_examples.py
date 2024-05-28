@@ -31,12 +31,12 @@ async def test_cls():
     from test_tasks.cls_example import app as cls_app
 
     files = []
-    filepath = "chexpert/demo_img.jpg"
+    filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
     filepath = Path(filepath)
     file = open(filepath, "rb")
     files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
 
-    with open("examples/inference/test_data/cls/input.json", "r") as f:
+    with open("examples/inference/test_data/cls_reg/input.json", "r") as f:
         data = json.load(f)
 
     for k in data:
@@ -52,12 +52,12 @@ async def test_reg():
     from test_tasks.reg_example import app as reg_app
 
     files = []
-    filepath = "examples/inference/test_data/reg/test.jpeg"
+    filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
     filepath = Path(filepath)
     file = open(filepath, "rb")
     files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
 
-    with open("examples/inference/test_data/reg/input.json", "r") as f:
+    with open("examples/inference/test_data/cls_reg/input.json", "r") as f:
         data = json.load(f)
 
     for k in data:
