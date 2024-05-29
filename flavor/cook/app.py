@@ -3,6 +3,7 @@ import logging
 import multiprocessing as mp
 import os
 import subprocess
+import threading
 import time
 from platform import python_version
 
@@ -71,10 +72,10 @@ class BaseAPP(object):
 
         self.preProcess = preProcess
         self.mainProcess = mainProcess
-        self.monitorProcess = None
-        self.p = None
+        self.monitorThread = None
 
         self.AliveEvent = mp.Event()
+        self.is_error = mp.Value("i", 0)
 
         self.debugMode = debugMode
 
@@ -94,9 +95,6 @@ class BaseAPP(object):
 
     def sendLog(self, level, message, log_name="logger"):
 
-        if IsSetEvent("Error"):
-            return
-
         log_obj = process_logger if log_name == "process_logger" else logger
 
         message = self.get_last_n_kb(str(message))
@@ -115,18 +113,16 @@ class BaseAPP(object):
                 log_obj.error(f"[sendLog] Exception: {err}")
 
         if level == "ERROR":
-            log_obj.info("[sendLog] Set edge alive event")
 
-            SetEvent("Error")
+            self.is_error.value = 1
+            self.close_process()
+
+            log_obj.info("[sendLog] Set edge alive event")
             self.AliveEvent.set()
 
-            if not self.debugMode:
-                while True:
-                    time.sleep(1)
+    def subprocessLog(self):
 
-    def subprocessLog(self, process):
-
-        _, stderr = process.communicate()
+        _, stderr = self.mainProcess.communicate()
         if stderr and not IsSetEvent("ProcessFinished"):
             self.sendLog("ERROR", f"[subprocessLog] Exception: {stderr}", "process_logger")
 
@@ -139,28 +135,8 @@ class BaseAPP(object):
                 logger.info("[close_process] Close training process.")
                 self.mainProcess.terminate()
                 self.mainProcess.kill()
-            except Exception as err:
-                logger.info(f"[close_process] Got error for closing training process: {err}")
-
-        if isinstance(self.monitorProcess, mp.context.Process):
-            try:
-                logger.info("[close_process] Close monitor process.")
-                self.monitorProcess.terminate()
-                self.monitorProcess.join()
-                if compareVersion(python_version(), "3.7") >= 0:
-                    self.monitorProcess.close()
-            except Exception as err:
-                logger.info(f"[close_process] Got error for closing monitor process: {err}")
-
-        if isinstance(self.p, mp.context.Process):
-            try:
-                logger.info("[close_process] Close func process.")
-                self.p.terminate()
-                self.p.join()
-                if compareVersion(python_version(), "3.7") >= 0:
-                    self.p.close()
-            except Exception as err:
-                logger.info(f"[close_process] Got error for closing func process: {err}")
+            except Exception:
+                pass
 
 
 class EdgeApp(BaseAPP):
@@ -176,7 +152,7 @@ class EdgeApp(BaseAPP):
 
     def data_validate(self, request: Request):
 
-        logger.info("[DataValidate] Start DataValidate.")
+        logger.info("[data_validate] Start DataValidate.")
 
         try:
             CleanAllEvent()
@@ -185,15 +161,19 @@ class EdgeApp(BaseAPP):
                 os.remove(os.environ["LOCAL_MODEL_PATH"])
         except Exception as err:
             self.sendLog("ERROR", f"[DataValidate] Exception: {err}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"message": f"{err}"},
+            )
 
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def train_init(self, request: Request):
 
-        logger.info("[TrainInit] Start TrainInit.")
+        logger.info("[train_init] Start TrainInit.")
 
         if isinstance(self.mainProcess, subprocess.Popen):
-            logger.warning("[TrainInit] Process already exists.")
+            logger.warning("[train_init] Process already exists.")
             return JSONResponse(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 content={"message": "Training process already exists."},
@@ -202,8 +182,8 @@ class EdgeApp(BaseAPP):
         if self.preProcess:
             process = None
             try:
-                logger.info("[TrainInit] Start data preprocessing.")
-                logger.info("[TrainInit] {}.".format(self.preProcess))
+                logger.info("[train_init] Start data preprocessing.")
+                logger.info("[train_init] {}.".format(self.preProcess))
 
                 process = subprocess.Popen(
                     [ele for ele in self.preProcess.split(" ") if ele.strip()],
@@ -215,20 +195,22 @@ class EdgeApp(BaseAPP):
                 _, stderr = process.communicate()
                 if stderr and not IsSetEvent("ProcessFinished"):
                     self.sendLog("ERROR", f"[TrainInit] CalledProcessError: {stderr}")
-                CleanEvent("ProcessFinished")
-
-                if IsSetEvent("Error"):
                     return JSONResponse(
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         content={"message": f"{stderr}"},
                     )
+                CleanEvent("ProcessFinished")
 
             except Exception as err:
                 self.sendLog("ERROR", f"[TrainInit] Exception: {err}")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={"message": f"{err}"},
+                )
 
         try:
-            logger.info("[TrainInit] Start training process.")
-            logger.info("[TrainInit] {}.".format(self.mainProcess))
+            logger.info("[train_init] Start training process.")
+            logger.info("[train_init] {}.".format(self.mainProcess))
 
             self.mainProcess = subprocess.Popen(
                 [ele for ele in self.mainProcess.split(" ") if ele.strip()],
@@ -238,67 +220,83 @@ class EdgeApp(BaseAPP):
 
         except Exception as err:
             self.sendLog("ERROR", f"[TrainInit] Exception: {err}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"message": f"{err}"},
+            )
 
         try:
-            logger.info("[TrainInit] Start monitor process.")
-            self.monitorProcess = mp.Process(
-                target=self.subprocessLog, kwargs={"process": self.mainProcess}
-            )
-            self.monitorProcess.start()
+            logger.info("[train_init] Start monitor thread.")
+            self.monitorThread = threading.Thread(target=self.subprocessLog)
+            self.monitorThread.start()
         except Exception as err:
             self.sendLog("ERROR", f"[TrainInit] Exception: {err}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"message": f"{err}"},
+            )
 
-        logger.info("[TrainInit] Wait for TrainInitDone.")
-        WaitEvent("TrainInitDone")
-        logger.info("[TrainInit] Get TrainInitDone.")
+        logger.info("[train_init] Wait for TrainInitDone.")
+        WaitEvent("TrainInitDone", self.is_error)
+        if self.is_error.value != 0:
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"message": "Error in TrainInit Stage."},
+            )
+        logger.info("[train_init] Get TrainInitDone.")
 
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def local_train(self, request: LocalTrainRequest):
 
-        logger.info("[LocalTrain] Start LocalTrain.")
+        logger.info("[local_train] Start LocalTrain.")
 
-        if self.mainProcess.poll() is not None:
-            self.sendLog("ERROR", "[LocalTrain] Training process has been terminated.")
+        try:
+            if self.mainProcess.poll() is not None:
+                self.sendLog("ERROR", "[local_train] Training process has been terminated.")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={"message": "Training process has been terminated"},
+                )
+        except Exception as err:
+            self.sendLog("ERROR", f"[local_train] Exception: {err}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"message": f"{err}"},
+            )
 
-        if not self.debugMode and isinstance(self.p, mp.context.Process):
-            logger.info("[LocalTrain] Close previous func process.")
-            try:
-                self.p.terminate()
-                self.p.join()
-                if compareVersion(python_version(), "3.7") >= 0:
-                    self.p.close()
-            except Exception:
-                pass
-
-        self.p = mp.Process(target=self.__func_local_train)
-        self.p.start()
+        t = threading.Thread(target=self.__func_local_train)
+        t.start()
         if self.debugMode:
-            self.p.join()
+            t.join()
 
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def train_interrupt(self, request: Request):
         # Not Implemented
-        logger.info("[TrainInterrupt] Start TrainInterrupt.")
+        logger.info("[train_interrupt] Start TrainInterrupt.")
+        self.close_process()
         self.AliveEvent.set()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def train_finish(self, request: Request):
-        logger.info("[TrainFinish] Start TrainFinish.")
+        logger.info("[train_finish] Start TrainFinish.")
+        self.close_process()
         self.AliveEvent.set()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def __func_local_train(self):
 
-        logger.info("[LocalTrain] Trainer has been called to start training.")
+        logger.info("[local_train] Trainer has been called to start training.")
         SetEvent("TrainStarted")
 
-        logger.info("[LocalTrain] Wait until the training has done.")
-        WaitEvent("TrainFinished")
+        logger.info("[local_train] Wait until the training has done.")
+        WaitEvent("TrainFinished", self.is_error)
+        if self.is_error.value != 0:
+            return
 
         try:
-            logger.info("[LocalTrain] Read info from training process.")
+            logger.info("[local_train] Read info from training process.")
             with open(
                 os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json"), "r"
             ) as openfile:
@@ -306,21 +304,21 @@ class EdgeApp(BaseAPP):
 
             FLResponse.model_validate(info)
             logger.info(
-                "[LocalTrain] model datasetSize: {}".format(info["metadata"]["datasetSize"])
+                "[local_train] model datasetSize: {}".format(info["metadata"]["datasetSize"])
             )
-            logger.info("[LocalTrain] model metrics: {}".format(info["metrics"]))
+            logger.info("[local_train] model metrics: {}".format(info["metrics"]))
 
             if not self.debugMode:
                 response = requests.post(f"{OPERATOR_REST_API_URI}/LocalTrainFinish", json=info)
                 assert (
                     response.status_code == 200
                 ), f"Failed to post data. Status code: {response.status_code}, Error: {response.text}"
-                logger.info("[LocalTrain] Response sent.")
+                logger.info("[local_train] Response sent.")
+
+            logger.info("[local_train] Trainer finish training.")
 
         except Exception as err:
             self.sendLog("ERROR", f"[LocalTrain] Exception: {err}")
-
-        logger.info("[LocalTrain] Trainer finish training.")
 
 
 class AggregatorApp(BaseAPP):
@@ -337,21 +335,15 @@ class AggregatorApp(BaseAPP):
 
         self.sendLog("INFO", "[aggregate] Start Aggregate.")
 
-        if not self.debugMode and isinstance(self.p, mp.context.Process):
-            logger.info("[aggregate] Close previous func process.")
-            try:
-                self.p.terminate()
-                self.p.join()
-                if compareVersion(python_version(), "3.7") >= 0:
-                    self.p.close()
-            except Exception:
-                pass
-
         try:
             self.__prepare_resources(request)
 
         except Exception as err:
             self.sendLog("ERROR", f"[aggregate] Exception: {err}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"message": f"{err}"},
+            )
 
         if self.init_once:
 
@@ -368,28 +360,39 @@ class AggregatorApp(BaseAPP):
 
                 except Exception as err:
                     self.sendLog("ERROR", f"[aggregate] Exception: {err}")
+                    return JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content={"message": f"{err}"},
+                    )
 
                 try:
-                    logger.info("[aggregate] Start monitor process.")
-                    self.monitorProcess = mp.Process(
-                        target=self.subprocessLog, kwargs={"process": self.mainProcess}
-                    )
-                    self.monitorProcess.start()
+                    logger.info("[aggregate] Start monitor thread.")
+                    self.monitorThread = threading.Thread(target=self.subprocessLog)
+                    self.monitorThread.start()
                 except Exception as err:
                     self.sendLog("ERROR", f"[aggregate] Exception: {err}")
+                    return JSONResponse(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        content={"message": f"{err}"},
+                    )
 
             if self.mainProcess.poll() is not None:
                 self.sendLog("ERROR", "[aggregate] Aggregator process has been terminated.")
+                return JSONResponse(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    content={"message": "Aggregator process has been terminated"},
+                )
 
-        self.p = mp.Process(target=self.__func_aggregate)
-        self.p.start()
+        t = threading.Thread(target=self.__func_aggregate)
+        t.start()
         if self.debugMode:
-            self.p.join()
+            t.join()
 
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     def train_finish(self, request: Request):
         logger.info("[train_finish] Start TrainFinish.")
+        self.close_process()
         self.AliveEvent.set()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -411,18 +414,22 @@ class AggregatorApp(BaseAPP):
                 _, stderr = process.communicate()
                 if stderr and not IsSetEvent("ProcessFinished"):
                     self.sendLog("ERROR", f"[Aggregate] CalledProcessError: {stderr}")
+                    return
                 CleanEvent("ProcessFinished")
 
                 logger.info("[Aggregate] Aggregator process finish.")
             except Exception as err:
                 self.sendLog("ERROR", f"[Aggregate] Exception: {err}")
+                return
 
         else:
             logger.info("[aggregate] Aggregator has been called to start aggregating.")
             SetEvent("AggregateStarted")
 
             logger.info("[aggregate] Wait until the aggregation has done.")
-            WaitEvent("AggregateFinished")
+            WaitEvent("AggregateFinished", self.is_error)
+            if self.is_error.value != 0:
+                return
             logger.info("[aggregate] Get AggregateFinished.")
 
         try:
@@ -442,6 +449,7 @@ class AggregatorApp(BaseAPP):
 
         except Exception as err:
             self.sendLog("ERROR", f"[Aggregate] Error: {err}")
+            return
 
         self.sendLog("INFO", "[aggregate] Aggregation succeeds.")
 
@@ -489,7 +497,6 @@ def run_app(app):
     server_process.start()
 
     app.AliveEvent.wait()
-    app.close_process()
 
     time.sleep(10)
 

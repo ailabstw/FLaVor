@@ -8,9 +8,12 @@ try:
 except ImportError:
     pass
 
+import multiprocessing as mp
+from platform import python_version
+
 import numpy as np
 
-from flavor.cook.utils import IsSetEvent
+from flavor.cook.utils import compareVersion
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
@@ -80,19 +83,12 @@ def run_app(app):
         try:
             method = getattr(app, state)
             method({})
-
-            if IsSetEvent("Error"):
-                app.close_process()
-                print("Refer to ERROR log message")
-                sys.exit(1)
-
-        except Exception as ex:
+            if app.is_error.value != 0:
+                return
+        except Exception as err:
             app.close_process()
-            print(f"Error occurred: {ex}")
-            sys.exit(1)
-
-    app.close_process()
-    print("App run completed without error.")
+            app.AliveEvent.set()
+            raise Exception(f"Error occurred: {err}")
 
 
 def main():
@@ -130,10 +126,18 @@ def main():
 
     app = EdgeApp(mainProcess=args.main, preProcess=args.preprocess, debugMode=True)
 
-    run_app(app)
+    server_process = mp.Process(target=run_app, args=(app,))
+    server_process.start()
 
-    if IsSetEvent("TrainStarted"):
-        raise AssertionError("TrainStarted event should be cleared")
+    app.AliveEvent.wait()
+
+    server_process.terminate()
+    server_process.join()
+    if compareVersion(python_version(), "3.7") >= 0:
+        server_process.close()
+
+    if app.is_error.value != 0:
+        raise Exception("Refer to ERROR log message")
 
     if not args.ignore_ckpt:
         print("Check Checkpoint")
