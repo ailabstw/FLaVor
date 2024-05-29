@@ -31,7 +31,6 @@ optional = true
 
 [tool.poetry.group.all_examples.dependencies]
 simpleitk = "^2.3.1"
-# dicom2jpg = "^0.1.10"
 scipy = "^1.9.2"
 torch = {version = "1.13.0", source = "torch-cu117"}
 torchvision = {version = "0.14.0", source = "torch-cu117"}
