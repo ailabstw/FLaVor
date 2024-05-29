@@ -16,7 +16,7 @@ uvicorn = "^0.21.0"
 nanoid = "^2.0.0"
 gradio = "^4.0.0"
 tritonclient = {extras = ["http"], version = "^2.45.0"}
-opencv-python-headless = "4.8.1.78"
+opencv-python-headless = "^4.8.1.78"
 
 [tool.poetry.group.test]
 optional = true
@@ -38,6 +38,7 @@ torchvision = {version = "0.14.0", source = "torch-cu117"}
 lungmask = "^0.2.20"
 monai = {version = "~1.1.0", extras = ["einops"]}
 ultralytics = "^8.2.16"
+opencv-python-headless = "4.8.1.78"
 
 [tool.poetry.group.cls_example]
 optional = true
@@ -50,8 +51,8 @@ torchvision = {version = "0.14.0", source = "torch-cu117"}
 optional = true
 
 [tool.poetry.group.det_example.dependencies]
-torch = {version = "1.13.0", source = "torch-cu117"}
 ultralytics = "^8.2.16"
+opencv-python-headless = "4.8.1.78"
 
 [tool.poetry.group.reg_example]
 optional = true
