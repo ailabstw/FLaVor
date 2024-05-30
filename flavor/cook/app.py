@@ -104,7 +104,7 @@ class BaseAPP(object):
             log_obj.info(f"[sendLog] Send log level: {level} message: {message}")
             try:
                 data = {"level": level, "message": message}
-                response = requests.post(f"{OPERATOR_REST_API_URI}/LogMessage", json=data)
+                response = requests.post(f"http://{OPERATOR_REST_API_URI}/LogMessage", json=data)
                 assert (
                     response.status_code == 200
                 ), f"Failed to post data. Status code: {response.status_code}, Error: {response.text}"
@@ -309,7 +309,9 @@ class EdgeApp(BaseAPP):
             logger.info("[local_train] model metrics: {}".format(info["metrics"]))
 
             if not self.debugMode:
-                response = requests.post(f"{OPERATOR_REST_API_URI}/LocalTrainFinish", json=info)
+                response = requests.post(
+                    f"http://{OPERATOR_REST_API_URI}/LocalTrainFinish", json=info
+                )
                 assert (
                     response.status_code == 200
                 ), f"Failed to post data. Status code: {response.status_code}, Error: {response.text}"
@@ -440,7 +442,7 @@ class AggregatorApp(BaseAPP):
 
             if not self.debugMode:
                 response = requests.post(
-                    f"{OPERATOR_REST_API_URI}/AggregateFinish", json=global_info
+                    f"http://{OPERATOR_REST_API_URI}/AggregateFinish", json=global_info
                 )
                 assert (
                     response.status_code == 200
