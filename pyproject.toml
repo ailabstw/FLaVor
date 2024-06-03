@@ -88,12 +88,12 @@ url = "https://download.pytorch.org/whl/cu117"
 priority = "explicit"
 
 [tool.poetry.scripts]
-flavor-fl = "bin.flavor_fl:main"
-flavor-fv = "bin.flavor_fv:main"
-flavor-agg = "bin.flavor_agg:main"
-check-fl = "bin.check_fl:main"
-check-fv = "bin.check_fv:main"
-check-agg = "bin.check_agg:main"
+flavor-fl = "flavor.runs.flavor_fl:main"
+flavor-fv = "flavor.runs.flavor_fv:main"
+flavor-agg = "flavor.runs.flavor_agg:main"
+check-fl = "flavor.runs.check_fl:main"
+check-fv = "flavor.runs.check_fv:main"
+check-agg = "flavor.runs.check_agg:main"
 
 [build-system]
 requires = ["poetry-core"]
