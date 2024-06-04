@@ -328,6 +328,9 @@ class AggregatorApp(BaseAPP):
 
         super().__init__(mainProcess=mainProcess, debugMode=debugMode)
 
+        self.app.add_api_route("/Aggregate", self.aggregate, methods=["POST"])
+        self.app.add_api_route("/TrainFinish", self.train_finish, methods=["POST"])
+
         self.init_once = init_once
         self.repo_root = os.environ.get("REPO_ROOT", "/repos")
         self.global_model_path = None
