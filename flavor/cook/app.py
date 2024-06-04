@@ -12,7 +12,12 @@ import uvicorn
 from fastapi import FastAPI, Request, Response, status
 from fastapi.responses import JSONResponse
 
-from .model import AggregateRequest, FLResponse, LocalTrainRequest
+from .model import (
+    AggregateRequest,
+    AggregateResponse,
+    LocalTrainRequest,
+    LocalTrainResponse,
+)
 from .utils import (
     CleanAllEvent,
     CleanEvent,
@@ -302,7 +307,7 @@ class EdgeApp(BaseAPP):
             ) as openfile:
                 info = json.load(openfile)
 
-            FLResponse.model_validate(info)
+            LocalTrainResponse.model_validate(info)
             logger.info(
                 "[local_train] model datasetSize: {}".format(info["metadata"]["datasetSize"])
             )
@@ -441,7 +446,7 @@ class AggregatorApp(BaseAPP):
             logger.info("[aggregate] Read info from training process.")
             with open(self.global_info_path, "r") as openfile:
                 global_info = json.load(openfile)
-            FLResponse.model_validate(global_info)
+            AggregateResponse.model_validate(global_info)
 
             if not self.debugMode:
                 response = requests.post(
