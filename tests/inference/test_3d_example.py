@@ -6,7 +6,6 @@ from pathlib import Path
 import pytest
 import requests
 from httpx import AsyncClient
-from test_tasks.seg3d_example import app
 
 
 def download_file_from_google_drive(file_id, destination):
@@ -42,34 +41,35 @@ def save_response_content(response, destination):
                 f.write(chunk)
 
 
-src = "examples/inference/test_data/seg/img0062"
-input_files = glob.glob(src + "/*")
-if not input_files:
-    print("Testing input files are not found. Downloading...")
-    download_file_from_google_drive("1h23vhCuUIKJkFw6jC7VV2XU9lGFuxrLw", src + ".zip")
-    print("Download complete")
-    os.makedirs(src, exist_ok=True)
-    import zipfile
-
-    with zipfile.ZipFile(src + ".zip", "r") as zip_ref:
-        zip_ref.extractall(src)
-    os.remove(src + ".zip")
-
-files = []
-for filepath in input_files:
-    filepath = Path(filepath)
-    file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
-
-with open("examples/inference/test_data/seg/input_3d_dcm.json", "r") as f:
-    data = json.load(f)
-
-for k in data:
-    data[k] = json.dumps(data[k])
-
-
 @pytest.mark.asyncio
 async def test_seg3d():
+    from test_tasks.seg3d_example import app
+
+    src = "examples/inference/test_data/seg/img0062"
+    input_files = glob.glob(src + "/*")
+    if not input_files:
+        print("Testing input files are not found. Downloading...")
+        download_file_from_google_drive("1h23vhCuUIKJkFw6jC7VV2XU9lGFuxrLw", src + ".zip")
+        print("Download complete")
+        os.makedirs(src, exist_ok=True)
+        import zipfile
+
+        with zipfile.ZipFile(src + ".zip", "r") as zip_ref:
+            zip_ref.extractall(src)
+        os.remove(src + ".zip")
+
+    files = []
+    for filepath in input_files:
+        filepath = Path(filepath)
+        file = open(filepath, "rb")
+        files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+
+    with open("examples/inference/test_data/seg/input_3d_dcm.json", "r") as f:
+        data = json.load(f)
+
+    for k in data:
+        data[k] = json.dumps(data[k])
+
     async with AsyncClient(app=app.app, base_url="http://test") as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200
