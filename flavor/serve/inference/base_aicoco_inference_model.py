@@ -9,7 +9,7 @@ from pydantic import BaseModel, ValidationError, model_validator
 
 from flavor.serve.models import AiCOCOFormat, AiImage, InferCategory, InferRegression
 
-from .base_inference_model import BaseInferenceModel
+from .base_inference_model import BaseAiCOCOInferenceModel
 
 
 class BaseAiCOCOImageInputDataModel(BaseModel):
@@ -85,7 +85,7 @@ class BaseAiCOCOImageOutputDataModel(AiCOCOFormat):
     pass
 
 
-class BaseAiCOCOImageInferenceModel(BaseInferenceModel):
+class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
     """
     Base class for defining inference model with AiCOCO format response.
 
