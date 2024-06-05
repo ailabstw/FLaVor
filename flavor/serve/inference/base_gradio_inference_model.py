@@ -1,7 +1,7 @@
-from .base_aicoco_inference_model import BaseAiCOCOInferenceModel
+from .base_aicoco_inference_model import BaseAiCOCOImageInferenceModel
 
 
-class GradioInferenceModel(BaseAiCOCOInferenceModel):
+class GradioInferenceModel(BaseAiCOCOImageInferenceModel):
     def __call__(self, **net_input):
         self.categories = self.set_categories()
         self.regressions = self.set_regressions()

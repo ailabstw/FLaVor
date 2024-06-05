@@ -1,31 +1,24 @@
 import logging
 import warnings
 from abc import abstractmethod
-from typing import Any, Callable, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Sequence, Tuple
 
 from fastapi import UploadFile
 from nanoid import generate
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, model_validator
 
-from flavor.serve.models import (
-    AiAnnotation,
-    AiCategory,
-    AiImage,
-    AiMeta,
-    AiObject,
-    AiRegression,
-    InferCategory,
-    InferRegression,
-)
+from flavor.serve.models import AiCOCOFormat, AiImage, InferCategory, InferRegression
 
 from .base_inference_model import BaseInferenceModel
 
 
-class BaseAiCOCOInputDataModel(BaseModel):
+class BaseAiCOCOImageInputDataModel(BaseModel):
     """
     Base class for defining input data model with AiCOCO format.
 
     Inherit it if you need extra fields.
+
+    Note that `images` and `files` could not be `None` at the same time.
 
     Attributes:
         images (Optional[Sequence[AiImage]]): Sequence of AiImage objects. Defaults to None.
@@ -33,7 +26,7 @@ class BaseAiCOCOInputDataModel(BaseModel):
 
     Example:
     ```
-    class InputDataModel(BaseAiCOCOInputDataModel):
+    class InputDataModel(BaseAiCOCOImageInputDataModel):
         image_embeddings: NpArray
 
     InputDataModel(
@@ -48,24 +41,32 @@ class BaseAiCOCOInputDataModel(BaseModel):
     images: Optional[Sequence[AiImage]] = None
     files: Optional[Sequence[UploadFile]] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def check_images_files(cls, data: Any) -> Any:
+        images = data.get("images", None)
+        files = data.get("files", None)
+        assert images or files, "`images` and `files` could not be `None` at the same time."
+        return data
 
-class BaseAiCOCOOutputDataModel(BaseModel):
+
+class BaseAiCOCOImageOutputDataModel(AiCOCOFormat):
     """
     Base class for defining output data model with AiCOCO format.
 
     Inherit it if you need extra fields.
 
     Attributes:
-        images (Optional[Sequence[AiImage]]): Sequence of AiImage objects. Defaults to None.
-        annotations (Optional[Sequence[AiAnnotation]]): Sequence of AiAnnotation objects. Defaults to None.
-        categories (Optional[Sequence[AiCategory]]): Sequence of AiCategory objects. Defaults to None.
-        regressions (Optional[Sequence[AiRegression]]): Sequence of AiRegression objects. Defaults to None.
-        objects (Optional[Sequence[AiObject]]): Sequence of AiObject objects. Defaults to None.
-        meta (Optional[AiMeta]): AiMeta object. Defaults to None.
+        images (Sequence[AiImage]): Sequence of AiImage objects. Defaults to None.
+        annotations (Sequence[AiAnnotation]): Sequence of AiAnnotation objects. Defaults to None.
+        categories (Sequence[AiCategory]): Sequence of AiCategory objects. Defaults to None.
+        regressions (Sequence[AiRegression]): Sequence of AiRegression objects. Defaults to None.
+        objects (Sequence[AiObject]): Sequence of AiObject objects. Defaults to None.
+        meta (AiMeta): AiMeta object. Defaults to None.
 
     Example:
     ```
-    class OutputDataModel(BaseAiCOCOOutputDataModel):
+    class OutputDataModel(BaseAiCOCOImageOutputDataModel):
         mask_bin: NpArray
 
     OutputDataModel(
@@ -81,15 +82,10 @@ class BaseAiCOCOOutputDataModel(BaseModel):
     ```
     """
 
-    images: Optional[Sequence[AiImage]] = None
-    annotations: Optional[Sequence[AiAnnotation]] = None
-    categories: Optional[Sequence[AiCategory]] = None
-    regressions: Optional[Sequence[AiRegression]] = None
-    objects: Optional[Sequence[AiObject]] = None
-    meta: Optional[AiMeta] = None
+    pass
 
 
-class BaseAiCOCOInferenceModel(BaseInferenceModel):
+class BaseAiCOCOImageInferenceModel(BaseInferenceModel):
     """
     Base class for defining inference model with AiCOCO format response.
 
@@ -99,66 +95,6 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
     Attributes:
         network (Callable): The inference network or model.
     """
-
-    def __init__(self):
-        self.network = self.define_inference_network()
-        self.categories = self.set_categories()
-        if self.categories is not None:
-            if isinstance(self.categories, Sequence):
-                try:
-                    for c in self.categories:
-                        InferCategory.model_validate(c)
-                except ValidationError:
-                    logging.error(
-                        "Each element of `categories` should have format of `InferCategory`."
-                    )
-                    raise
-            else:
-                raise TypeError("`categories` should have type of `Sequence[InferCategory]`.")
-        self.regressions = self.set_regressions()
-        if self.regressions is not None:
-            if isinstance(self.regressions, Sequence):
-                try:
-                    for r in self.regressions:
-                        InferRegression.model_validate(r)
-                except ValidationError:
-                    logging.error(
-                        "Each element of `regressions` should have format of `InferRegression`."
-                    )
-                    raise
-            else:
-                raise TypeError("`regressions` should have type of `Sequence[InferRegression]`.")
-
-    @abstractmethod
-    def define_inference_network(self) -> Callable:
-        """
-        Abstract method to define the inference network.
-
-        Returns:
-            Callable: The defined inference network instance.
-                The return value would be assigned to `self.network`.
-        """
-        pass
-
-    @abstractmethod
-    def set_categories(self) -> Optional[List[InferCategory]]:
-        """
-        Abstract method to set inference categories. Return `None` if no categories.
-
-        Returns:
-            List[InferCategory]: A list defining inference categories.
-        """
-        pass
-
-    @abstractmethod
-    def set_regressions(self) -> Optional[List[InferRegression]]:
-        """
-        Abstract method to set inference regressions. Return `None` if no regressions.
-
-        Returns:
-            List[InferRegression]: A list defining inference regressions.
-        """
-        pass
 
     def _set_images(self, files: Sequence[str] = [], images: Sequence[AiImage] = [], **kwargs):
         """

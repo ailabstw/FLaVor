@@ -15,7 +15,7 @@ class NpArray(BaseModel, arbitrary_types_allowed=True):
 
     @model_validator(mode="before")
     @classmethod
-    def set_arr_attrs(cls, data):
+    def set_arr_attrs(cls, data: Any) -> Dict[str, Any]:
         if isinstance(data, np.ndarray):
             out = {
                 "array": data,

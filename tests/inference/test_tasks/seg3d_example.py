@@ -11,15 +11,15 @@ from monai.networks.nets import SwinUNETR
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference import (
-    BaseAiCOCOInferenceModel,
-    BaseAiCOCOInputDataModel,
-    BaseAiCOCOOutputDataModel,
+    BaseAiCOCOImageInferenceModel,
+    BaseAiCOCOImageInputDataModel,
+    BaseAiCOCOImageOutputDataModel,
 )
 from flavor.serve.models import AiImage, InferCategory
 from flavor.serve.strategies import AiCOCOSegmentationOutputStrategy
 
 
-class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
+class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
         self.formatter = AiCOCOSegmentationOutputStrategy()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -161,8 +161,8 @@ class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
 
 app = InferAPP(
     infer_function=SegmentationInferenceModel(),
-    input_data_model=BaseAiCOCOInputDataModel,
-    output_data_model=BaseAiCOCOOutputDataModel,
+    input_data_model=BaseAiCOCOImageInputDataModel,
+    output_data_model=BaseAiCOCOImageOutputDataModel,
 )
 
 if __name__ == "__main__":
