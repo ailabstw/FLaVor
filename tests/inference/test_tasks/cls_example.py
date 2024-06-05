@@ -9,15 +9,15 @@ from torchvision.models import ResNet18_Weights, resnet18
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference import (
-    BaseAiCOCOInferenceModel,
-    BaseAiCOCOInputDataModel,
-    BaseAiCOCOOutputDataModel,
+    BaseAiCOCOImageInferenceModel,
+    BaseAiCOCOImageInputDataModel,
+    BaseAiCOCOImageOutputDataModel,
 )
 from flavor.serve.models import AiImage, InferCategory
 from flavor.serve.strategies import AiCOCOClassificationOutputStrategy
 
 
-class ClassificationInferenceModel(BaseAiCOCOInferenceModel):
+class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
         self.formatter = AiCOCOClassificationOutputStrategy()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -70,8 +70,8 @@ class ClassificationInferenceModel(BaseAiCOCOInferenceModel):
 
 app = InferAPP(
     infer_function=ClassificationInferenceModel(),
-    input_data_model=BaseAiCOCOInputDataModel,
-    output_data_model=BaseAiCOCOOutputDataModel,
+    input_data_model=BaseAiCOCOImageInputDataModel,
+    output_data_model=BaseAiCOCOImageOutputDataModel,
 )
 
 if __name__ == "__main__":

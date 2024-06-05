@@ -72,9 +72,9 @@ Start by defining your custom inference model by inheriting the `BaseInferenceMo
 Here's an example of a segmentation inference model. For more detail in the implementation, refer to the [Segmentation task example](examples/inference/seg_example.ipynb).
 
 ```python
-from flavor.serve.models import BaseAiCOCOInferenceModel
+from flavor.serve.models import BaseAiCOCOImageInferenceModel
 
-class SegmentationInferenceModel(BaseAiCOCOInferenceModel):
+class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     ## Implement methods to define model-specific behavior
     ...
 
@@ -112,12 +112,12 @@ To run the FLaVor Inference Service, instantiate the `InferAPP` class and provid
 
 ```python
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import BaseAiCOCOInputDataModel, BaseAiCOCOOutputDataModel
+from flavor.serve.inference import BaseAiCOCOImageInputDataModel, BaseAiCOCOImageOutputDataModel
 
 app = InferAPP(
     infer_function=SegmentationInferenceModel(),
-    input_data_model=BaseAiCOCOInputDataModel,
-    output_data_model=BaseAiCOCOOutputDataModel,
+    input_data_model=BaseAiCOCOImageInputDataModel,
+    output_data_model=BaseAiCOCOImageOutputDataModel,
 )
 app.run(port=int(os.getenv("PORT", 9111)))
 
@@ -126,7 +126,7 @@ app.run(port=int(os.getenv("PORT", 9111)))
 `InferAPP` serves as the central component of the FLaVor Inference Service, facilitating seamless interaction between other services and the machine learning models. To harness the power of `InferAPP`, developers need to provide the following essential components:
 
 - `infer_function`: Specify your custom inference model, allowing `InferAPP` to invoke the model and process its input/output seamlessly. Data reading, preprocessing, inference (network forward operation), postprocessing, and output formatting are performed accordingly. The  inference operation also supports Triton Inference Server to scale up the network forward operation. See the example in [SAM](./SAM/README.md)
-- `input_data_model` and `output_data_model`: Define the required Pydantic data models for the input request and output response. `BaseAiCOCOInputDataModel` and `BaseAiCOCOOutputDataModel` are default data models for input and output respectively.
+- `input_data_model` and `output_data_model`: Define the required Pydantic data models for the input request and output response. `BaseAiCOCOImageInputDataModel` and `BaseAiCOCOImageOutputDataModel` are default data models for input and output respectively.
 
 ### Step 4: Testing the Service by Sending Inference Requests
 

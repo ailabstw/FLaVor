@@ -7,15 +7,15 @@ from ultralytics import YOLO
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference import (
-    BaseAiCOCOInferenceModel,
-    BaseAiCOCOInputDataModel,
-    BaseAiCOCOOutputDataModel,
+    BaseAiCOCOImageInferenceModel,
+    BaseAiCOCOImageInputDataModel,
+    BaseAiCOCOImageOutputDataModel,
 )
 from flavor.serve.models import AiImage, DetModelOut, InferCategory, InferRegression
 from flavor.serve.strategies import AiCOCODetectionOutputStrategy
 
 
-class DetectionInferenceModel(BaseAiCOCOInferenceModel):
+class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
         self.formatter = AiCOCODetectionOutputStrategy()
         super().__init__()
@@ -85,8 +85,8 @@ class DetectionInferenceModel(BaseAiCOCOInferenceModel):
 
 app = InferAPP(
     infer_function=DetectionInferenceModel(),
-    input_data_model=BaseAiCOCOInputDataModel,
-    output_data_model=BaseAiCOCOOutputDataModel,
+    input_data_model=BaseAiCOCOImageInputDataModel,
+    output_data_model=BaseAiCOCOImageOutputDataModel,
 )
 
 if __name__ == "__main__":
