@@ -239,8 +239,8 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         self,
         model_out: Any,
         images: Optional[Sequence[AiImage]] = None,
-        categories: Optional[List[InferCategory]] = None,
-        regressions: Optional[List[InferRegression]] = None,
+        categories: Optional[Sequence[InferCategory]] = None,
+        regressions: Optional[Sequence[InferRegression]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -250,19 +250,18 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         Args:
             model_out (Any): Inference output.
             images (Optional[Sequence[AiImage]], optional): List of images. Defaults to None.
-            categories (Optional[List[InferCategory]], optional): List of inference categories. Defaults to None.
-            regressions (Optional[List[InferRegression]], optional): List of inference regressions. Defaults to None.
+            categories (Optional[Sequence[InferCategory]], optional): List of inference categories. Defaults to None.
+            regressions (Optional[Sequence[InferRegression]], optional): List of inference regressions. Defaults to None.
 
         Returns:
-            Any: Formatted output.
+            Any: AiCOCO formatted output.
         """
         pass
 
-    def __call__(self, **net_input) -> Any:
+    def check_images(self):
         """
-        Run the inference model.
+        Check if defined images field is valid for AiCOCO format.
         """
-        self._set_images(**net_input)
         if self.images is None:
             raise ValueError("`self.images` should not be None.")
         else:
@@ -275,6 +274,13 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
                     raise
             else:
                 raise TypeError("`self.images` should have type of `Sequence[AiImage]`.")
+
+    def __call__(self, **net_input) -> Any:
+        """
+        Run the inference model.
+        """
+        self._set_images(**net_input)
+        self.check_images()
 
         data, modified_filenames, metadata = self.data_reader(**net_input)
         if modified_filenames is not None:

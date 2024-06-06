@@ -85,9 +85,7 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
 
 
 app = InferAPP(
-    infer_function=SegmentationTritonInferenceModel(
-        triton_url="triton.user-hannchyun-chen:8000", model_name="toyseg"
-    ),
+    infer_function=SegmentationTritonInferenceModel(triton_url="triton:8000", model_name="toyseg"),
     input_data_model=BaseAiCOCOImageInputDataModel,
     output_data_model=BaseAiCOCOImageOutputDataModel,
 )

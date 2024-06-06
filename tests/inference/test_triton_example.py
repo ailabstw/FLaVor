@@ -6,7 +6,7 @@ from httpx import AsyncClient
 
 
 @pytest.mark.asyncio
-async def test_seg():
+async def test_seg_triton():
     from test_tasks.seg_triton_example import app as seg_triton_app
 
     files = []
