@@ -191,9 +191,9 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
     def preprocess(self, data: Any) -> Any:
         """
-        Preprocess the input data where transformations like resizing and cropping operated.
+        A default operation for transformations which is identical transformation.
 
-        Override it if needed.
+        Override it if you need other transformations like resizing or cropping, etc.
 
         Args:
             data (Any): Input data.
@@ -205,7 +205,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
     def inference(self, x: Any) -> Any:
         """
-        Perform inference.
+        A default inference operation which performs forward operation of your defined network.
 
         Override it if needed.
 
@@ -220,16 +220,16 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
     def postprocess(self, out: Any, metadata: Any = None) -> Any:
         """
-        Postprocess the inference result where activations like softmax or sigmoid operated.
+        A default operation for post-processing which is identical transformation.
 
-        Override it if needed.
+        Override it if you need activations like softmax or sigmoid generating the prediction.
 
         Args:
             out (Any): Inference result.
             metadata (Any, optional): Additional metadata. Defaults to None.
 
         Returns:
-            Any: Postprocessed result.
+            Any: Post-processed result.
         """
 
         return out
@@ -244,7 +244,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         **kwargs,
     ) -> Any:
         """
-        Abstract method to format the output of inference model.
+        Abstract method to format the output of image inference model.
         To respond results in AiCOCO format, users should adopt output strategy specifying for various tasks.
 
         Args:

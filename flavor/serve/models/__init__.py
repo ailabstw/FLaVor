@@ -13,13 +13,10 @@ from .flavor_infer_model import (
     InferCategory,
     InferClassificationOutput,
     InferDetectionOutput,
-    InferInput,
-    InferInputImage,
     InferOutput,
     InferRegression,
     InferRegressionOutput,
     InferSegmentationOutput,
-    InputBody,
     ModelOut,
     NpArray,
 )
