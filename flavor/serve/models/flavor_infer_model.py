@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional, Sequence, Tuple, Union
 import numpy as np
 from pydantic import BaseModel, model_serializer, model_validator
 
-from . import AiImage, AiRegressionItem
+from . import AiImage
 
 
 class NpArray(BaseModel, arbitrary_types_allowed=True):
@@ -63,24 +63,6 @@ class NpArray(BaseModel, arbitrary_types_allowed=True):
 
 def check_any_nonint(x):
     return np.any(~(np.mod(x, 1) == 0))
-
-
-class InputBody(BaseModel):
-    files: Sequence[str]
-    images: str
-
-
-class InferInputImage(BaseModel):
-    category_ids: Optional[Sequence[str]] = None
-    file_name: str
-    id: str
-    index: int
-    regressions: Optional[Sequence[AiRegressionItem]] = None
-    physical_file_name: str
-
-
-class InferInput(BaseModel):
-    images: Sequence[InferInputImage]
 
 
 class InferCategory(BaseModel):

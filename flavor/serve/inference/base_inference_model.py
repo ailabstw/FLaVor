@@ -1,8 +1,5 @@
-import logging
 from abc import ABC, abstractmethod
 from typing import Any, Callable, List, Optional, Sequence
-
-from pydantic import ValidationError
 
 from flavor.serve.models import InferCategory, InferRegression
 
@@ -28,14 +25,9 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         """
         if self.categories is not None:
             if isinstance(self.categories, Sequence):
-                try:
-                    for c in self.categories:
-                        InferCategory.model_validate(c)
-                except ValidationError:
-                    logging.error(
-                        "Each element of `categories` should have format of `InferCategory`."
-                    )
-                    raise
+                assert all(
+                    InferCategory.model_validate(c) for c in self.categories
+                ), "Not all elements in `self.categories` is valid for category structure."
             else:
                 raise TypeError("`categories` should have type of `Sequence[InferCategory]`.")
 
@@ -45,14 +37,9 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         """
         if self.regressions is not None:
             if isinstance(self.regressions, Sequence):
-                try:
-                    for r in self.regressions:
-                        InferRegression.model_validate(r)
-                except ValidationError:
-                    logging.error(
-                        "Each element of `regressions` should have format of `InferRegression`."
-                    )
-                    raise
+                assert all(
+                    InferRegression.model_validate(c) for c in self.regressions
+                ), "Not all elements in `self.regressions` is valid for regression structure."
             else:
                 raise TypeError("`regressions` should have type of `Sequence[InferRegression]`.")
 
@@ -88,6 +75,70 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         pass
 
     @abstractmethod
+    def preprocess(self, net_input: Any) -> Any:
+        pass
+        """
+        Abstract method to preprocess the input data where transformations like resizing and cropping operated.
+
+        Args:
+            data (Any): Input data.
+
+        Returns:
+            Any: Preprocessed data.
+        """
+
+    @abstractmethod
+    def inference(self, x: Any) -> Any:
+        pass
+        """
+        Abstract method to perform inference.
+
+        Override it if needed.
+
+        Args:
+            x (Any): Input data.
+
+        Returns:
+            Any: Inference result.
+        """
+
+    @abstractmethod
+    def postprocess(self, out: Any) -> Any:
+        pass
+        """
+        Abstract method to post-process the inference result where activations like softmax or sigmoid performed.
+
+        Args:
+            out (Any): Inference result.
+
+        Returns:
+            Any: Post-processed result.
+        """
+
+    @abstractmethod
+    def output_formatter(
+        self,
+        model_out: Any,
+        categories: Optional[Sequence[InferCategory]] = None,
+        regressions: Optional[Sequence[InferRegression]] = None,
+        **kwargs,
+    ) -> Any:
+        pass
+        """
+        Abstract method to format the output of inference model.
+        This is just a template for you to make sure you make use of `categories` and `regressions`.
+        Override it with your additional arguments such as `images`.
+
+        Args:
+            model_out (Any): Inference output.
+            categories (Optional[Sequence[InferCategory]], optional): List of inference categories. Defaults to None.
+            regressions (Optional[Sequence[InferRegression]], optional): List of inference regressions. Defaults to None.
+
+        Returns:
+            Any: Formatted output.
+        """
+
+    @abstractmethod
     def __call__(self, **net_input) -> Any:
         """
         Abstract method to run inference model.
@@ -104,7 +155,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         out = self.postprocess(out)
 
         result = self.output_formatter(
-            out, images=self.images, categories=self.categories, regressions=self.regressions
+            out, categories=self.categories, regressions=self.regressions, **net_input
         )
 
         return result
