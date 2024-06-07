@@ -72,25 +72,25 @@ def main():
 ```
 
 #### Json Example
-```json
+```python
   {
      "metadata":{
-        //(Required, int)
-        //epoch in info.json refers to round of FL and will be rename in the future.
+        # (Required, int)
+        # epoch in info.json refers to round of FL and will be rename in the future.
         "epoch":36,
         "datasetSize":100,
-        //(Required, float) Assign as aggregation weight if choosing self-defined as factor in aggregator.
-        //If not using, just fill in a number.
+        # (Required, float) Assign as aggregation weight if choosing self-defined as factor in aggregator.
+        # If not using, just fill in a number.
         "importance":1.0
      },
      "metrics":{
-        //(Required) If N/A or you don't want to track, fill in -1.
+        # (Required) If N/A or you don't want to track, fill in -1.
         "basic/confusion_tp":-1,
         "basic/confusion_fp":-1,
         "basic/confusion_fn":-1,
         "basic/confusion_tn":-1,
 
-        //(Optional) Other metrics users expect to tracked.
+        # (Optional) Other metrics users expect to tracked.
         "mIOU":0.8500
      }
   }

@@ -21,9 +21,6 @@ setup(
     author_email="calvin89029@gmail.com",
     packages=find_packages(exclude=["dockerfile*", "example*", "script*"]),
     install_requires=parse_requirements("requirements.txt"),
-    data_files=[
-        ("schema", ["schema/FLresult.json", "schema/FVresult.json"]),
-    ],
     scripts=[
         "bin/flavor-fl",
         "bin/flavor-agg",

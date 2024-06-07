@@ -1,4 +1,5 @@
 import json
+import multiprocessing as mp
 import os
 import time
 from itertools import zip_longest
@@ -11,7 +12,6 @@ EventSet = {
     "AggregateStarted",
     "AggregateFinished",
     "ProcessFinished",
-    "Error",
 }
 PathSet = {"localModels", "localInfos", "globalModel", "globalInfo"}
 
@@ -22,14 +22,17 @@ def SetEvent(event: str):
     open(os.path.join(os.environ["OUTPUT_PATH"], event), "w").close()
 
 
-def WaitEvent(event: str):
+def WaitEvent(event: str, is_error: mp.Value = None):
+
+    if is_error is None:
+        is_error = mp.Value("i", 0)
+
     if event not in EventSet:
         raise ValueError("Unknown event {}".format(event))
     while not os.path.exists(os.path.join(os.environ["OUTPUT_PATH"], event)):
         time.sleep(1)
-        if IsSetEvent("Error"):
-            raise Exception("Refer to ERROR log message")
-            os._exit(os.EX_OK)
+        if is_error.value != 0:
+            return
     os.remove(os.path.join(os.environ["OUTPUT_PATH"], event))
 
 
