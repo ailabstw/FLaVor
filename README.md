@@ -4,6 +4,8 @@ AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows mu
 
 > ***If you combine good FLaVors, model turns into an orchestra.***
 
+**Note: gRPC dependency will be removed after 2.0.0, please install 1.0.7 if necessary.**
+
 ## Installation
 
 #### Install stable versions
