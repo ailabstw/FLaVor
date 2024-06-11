@@ -72,3 +72,24 @@ class AiCOCOFormat(BaseModel, extra="forbid"):
     regressions: Sequence[AiRegression]
     objects: Sequence[AiObject]
     meta: AiMeta
+
+
+class AiTable(BaseModel, extra="allow"):
+    id: str
+    file_name: str
+
+
+class AiInstance(BaseModel):
+    id: str
+    table_id: str
+    row_indexes: Sequence[int]
+    category_ids: Sequence[str] = None
+
+
+class AiCOCOTableFormat(BaseModel, extra="forbid"):
+    tables: Sequence[AiTable]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    instances: Sequence[AiInstance]
+    objects: Sequence[AiObject]
+    meta: AiMeta
