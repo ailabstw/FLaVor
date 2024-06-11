@@ -3,10 +3,12 @@ from .aicoco_model import (
     AiCategory,
     AiCOCOFormat,
     AiImage,
+    AiInstance,
     AiMeta,
     AiObject,
     AiRegression,
     AiRegressionItem,
+    AiTable,
 )
 from .flavor_infer_model import (
     DetModelOut,

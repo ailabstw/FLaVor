@@ -1,13 +1,23 @@
 import logging
+import os
 import warnings
 from abc import abstractmethod
 from typing import Any, List, Optional, Sequence, Tuple
 
+import pandas as pd
 from fastapi import UploadFile
 from nanoid import generate
 from pydantic import BaseModel, ValidationError, model_validator
 
-from flavor.serve.models import AiCOCOFormat, AiImage, InferCategory, InferRegression
+from flavor.serve.models import (
+    AiCOCOFormat,
+    AiImage,
+    AiInstance,
+    AiMeta,
+    AiTable,
+    InferCategory,
+    InferRegression,
+)
 
 from .base_inference_model import BaseAiCOCOInferenceModel
 
@@ -295,6 +305,151 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         result = self.output_formatter(
             out, images=self.images, categories=self.categories, regressions=self.regressions
+        )
+
+        return result
+
+
+class BaseTabularInputDataModel(BaseModel):
+    """
+    Base class for tabular input data with AiCOCO format.
+
+    Note that `tables` and `files` could not be `None` at the same time.
+
+    Attributes:
+        tables (Optional[Sequence[AiTable]]): Sequence of AiTable objects. Defaults to None.
+        files (Optional[Sequence[UploadFile]]): Sequence of UploadFile objects. Defaults to None.
+
+    """
+
+    tables: Optional[Sequence[AiTable]] = None
+    files: Optional[Sequence[UploadFile]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_tables_files(cls, data: Any) -> Any:
+        tables = data.get("tables", None)
+        meta = data.get("meta", None)
+        files = data.get("files", None)
+        assert tables or files, "`tables` and `files` could not be `None` at the same time."
+        assert meta is not None, "`meta` should not be `None`."
+        return data
+
+
+class BaseTabularOutputDataModel(BaseModel):
+    """
+    Base class for tabular output data with AiCOCO format.
+    """
+
+    tables: Optional[Sequence[AiTable]] = None
+    categories: Optional[Sequence[InferCategory]] = None
+    regressions: Optional[Sequence[InferRegression]] = None
+    instances: Optional[Sequence[AiInstance]] = None
+    meta: Optional[AiMeta] = None
+
+
+class BaseTabularInferenceModel(BaseAiCOCOInferenceModel):
+    """
+    Base class for defining inference model with AiCOCO format response. (tabular version)
+
+    This class serves as a template for implementing inference functionality for various machine learning or deep learning models.
+    Subclasses must override abstract methods to define model-specific behavior.
+
+    Attributes:
+        network (Callable): The inference network or model.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        self.tables = None
+        self.instances = None
+        self.meta = None
+
+    def data_reader(
+        self, files: Sequence[str], tables: Sequence[AiTable] = None, meta: AiMeta = None, **kwargs
+    ):
+        """
+        Read data for inference model.
+
+        Args:
+            files (Sequence[str]): List of input file_names. Defaults to None.
+            tables (Sequence[AiTable]): Sequence of AiTable objects. Defaults to None.
+            mata (AiMeta): AiMeta object. Defaults to None.
+
+        Returns:
+            List[pd.DataFrame]: A list of dataframes.
+
+        """
+        assert "window_size" in meta, "`meta` should have `window_size` field."
+        self.meta = meta
+        self.window_size = meta["window_size"]
+
+        df_tables = []
+        for file_name in files:
+            # Get the file extension
+            ext = os.path.splitext(file_name)[-1].lower()
+
+            if ext == ".csv":
+                df = pd.read_csv(file_name)
+            elif ext == ".parquet":
+                df = pd.read_parquet(file_name)
+            elif ext in [".xls", ".xlsx"]:
+                df = pd.read_excel(file_name)
+            elif ext == ".zip":
+                # Read the first CSV file from the zip archive
+                import zipfile
+
+                with zipfile.ZipFile(file_name, "r") as z:
+                    # Assuming the zip contains only one CSV file
+                    with z.open(z.namelist()[0]) as f:
+                        df = pd.read_csv(f)
+            else:
+                raise ValueError(f"Unsupported file extension: {ext}")
+
+            df_tables.append(df)
+
+        return df_tables
+
+    @abstractmethod
+    def output_formatter(
+        self,
+        model_out: Any,
+        tables: Optional[Sequence[AiTable]] = None,
+        categories: Optional[Sequence[InferCategory]] = None,
+        regressions: Optional[Sequence[InferRegression]] = None,
+        instances: Optional[Sequence[AiInstance]] = None,
+        **kwargs,
+    ) -> Any:
+        """
+        Abstract method to format the output of image inference model.
+        To respond results in AiCOCO format, users should adopt output strategy specifying for various tasks.
+
+        Args:
+            model_out (Any): Inference output.
+            tables (Optional[Sequence[AiTable]], optional): List of tables. Defaults to None.
+            categories (Optional[Sequence[InferCategory]], optional): List of inference categories. Defaults to None.
+            regressions (Optional[Sequence[InferRegression]], optional): List of inference regressions. Defaults to None.
+            instances (Optional[Sequence[AiInstance]], optional): List of inference instances. Defaults to None
+
+        Returns:
+            Any: AiCOCO formatted output.
+        """
+        pass
+
+    def __call__(self, **net_input) -> Any:
+        df_tables = self.data_reader(**net_input)
+
+        x = self.preprocess(df_tables)
+        out = self.inference(x)
+        out = self.postprocess(out)
+
+        result = self.output_formatter(
+            out,
+            tables=self.tables,
+            categories=self.categories,
+            regressions=self.regressions,
+            instances=self.instances,
         )
 
         return result
