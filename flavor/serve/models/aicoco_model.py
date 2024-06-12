@@ -83,7 +83,8 @@ class AiInstance(BaseModel):
     id: str
     table_id: str
     row_indexes: Sequence[int]
-    category_ids: Sequence[str] = None
+    category_ids: Sequence[AiCategory] = None
+    regressions: Sequence[AiRegressionItem] = None
 
 
 class AiCOCOTableFormat(BaseModel, extra="forbid"):
