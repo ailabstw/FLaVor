@@ -1,6 +1,6 @@
 import ctypes
 import logging
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import tritonclient
@@ -12,18 +12,19 @@ class BaseTritonClient:
     """
     BaseTritonClient is a base class that sets up connections with Triton Inference Server.
     """
+
     DTYPES = {
         "TYPE_FP32": "FP32",
     }
     NP_DTYPES = {"FP32": np.float32}
 
-    def __init__(self, triton_url):
+    def __init__(self, triton_url: str):
         self.triton_url = triton_url
 
         self.client = self._init_triton_client(triton_url)
         self.model_configs = self._load_model_configs()
 
-    def _init_triton_client(self, triton_url):
+    def _init_triton_client(self, triton_url: str) -> tritonclient.http.InferenceServerClient:
         """
         Make connection with Triton Inference Server.
         """
@@ -34,7 +35,7 @@ class BaseTritonClient:
         except Exception:
             raise ConnectionError(f"cannot connect to triton inference server at {triton_url}")
 
-    def _load_model_configs(self):
+    def _load_model_configs(self) -> Dict[str, Any]:
         """
         Read current model configurations from Triton Inference Server.
         """
@@ -52,7 +53,7 @@ class BaseTritonClient:
             models[name] = {**model, **config}
         return models
 
-    def get_model_states(self):
+    def get_model_states(self) -> Dict[str, Dict[str, Any]]:
         """
         Read all model states.
         """
@@ -88,7 +89,7 @@ class BaseTritonClient:
             )
         return states
 
-    def get_model_state(self, model_name):
+    def get_model_state(self, model_name: str) -> Dict[str, Any]:
         """
         Read model state of given model.
         """
@@ -100,6 +101,7 @@ class TritonInferenceModel(BaseTritonClient):
     """
     TritonInferenceModel is a class that handles request inputs and response outputs.
     """
+
     def __init__(
         self,
         triton_url: str,
@@ -115,7 +117,7 @@ class TritonInferenceModel(BaseTritonClient):
         self.refresh_model_state()
 
     @property
-    def model_state(self):
+    def model_state(self) -> Dict[str, Any]:
         return self.get_model_state(self.model_name)
 
     def refresh_model_state(self):
@@ -142,14 +144,13 @@ class TritonInferenceModel(BaseTritonClient):
             data_type = input_struct["data_type"]
             data_type = BaseTritonClient.DTYPES[data_type]
             dims = input_struct["dims"]
-
             if name in data_dict:
+                if not isinstance(data_dict[name], np.ndarray):
+                    data_dict[name] = np.asarray(data_dict[name])
                 item: np.ndarray = data_dict[name]
                 dims = item.shape
             else:
-                # TODO: this can be discussed.
-                logging.warning(f"cannot find expected key {name}. init with `np.zero`")
-                item = np.zeros(dims)
+                raise KeyError(f"cannot find expected key {name}.")
 
             item = item.astype(self.NP_DTYPES[data_type])
             buffer = tritonclient.http.InferInput(name, dims, data_type)
@@ -181,7 +182,7 @@ class TritonInferenceModel(BaseTritonClient):
 
         return result
 
-    def forward(self, data_dict: Dict[str, np.ndarray], *args, **kwargs):
+    def forward(self, data_dict: Dict[str, np.ndarray], *args, **kwargs) -> Dict[str, np.ndarray]:
         """
         inference steps for triton inference server, including:
         1. register input data: convert `np.ndarray` to `triton.http.inferInputs`
@@ -208,6 +209,7 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
     To utilize shared memory, input shape must be specified, hence size of shared memory could be registered correctly.
     If output shape is not provided, response will be sent through http.
     """
+
     def __init__(
         self,
         triton_url: str,
@@ -295,7 +297,9 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
 
         return list(self.infer_inputs.values())
 
-    def set_output_data(self, output_shapes: Optional[Dict[str, List[int]]] = None):
+    def set_output_data(
+        self, output_shapes: Optional[Dict[str, List[int]]] = None
+    ) -> List[tritonclient.http.InferInput]:
         """
         Similar logic to input data: we tend to reuse shared memory buffers unless shapes does not match.
         If `output_shapes` is not provided, we do not use share memory for outputs.
@@ -366,7 +370,7 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
         self,
         data_dict: Dict[str, np.ndarray],
         output_shapes: Optional[Dict[str, List[int]]] = None,
-    ):
+    ) -> Dict[str, np.ndarray]:
         """
         Arguments
             data_dict: dict[str, np.ndarray]
