@@ -5,3 +5,12 @@ from .aicoco_strategy import (
     AiCOCOSegmentationOutputStrategy,
 )
 from .gradio_strategy import GradioDetectionStrategy, GradioSegmentationStrategy
+
+__all__ = [
+    "AiCOCOClassificationOutputStrategy",
+    "AiCOCODetectionOutputStrategy",
+    "AiCOCORegressionOutputStrategy",
+    "AiCOCOSegmentationOutputStrategy",
+    "GradioDetectionStrategy",
+    "GradioSegmentationStrategy",
+]

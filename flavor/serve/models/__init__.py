@@ -20,3 +20,24 @@ from .flavor_infer_model import (
     ModelOut,
     NpArray,
 )
+
+__all__ = [
+    "AiAnnotation",
+    "AiCategory",
+    "AiCOCOFormat",
+    "AiImage",
+    "AiMeta",
+    "AiObject",
+    "AiRegression",
+    "AiRegressionItem",
+    "DetModelOut",
+    "InferCategory",
+    "InferClassificationOutput",
+    "InferDetectionOutput",
+    "InferOutput",
+    "InferRegression",
+    "InferRegressionOutput",
+    "InferSegmentationOutput",
+    "ModelOut",
+    "NpArray",
+]

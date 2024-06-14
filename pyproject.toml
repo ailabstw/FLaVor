@@ -5,6 +5,7 @@ description = "AILabs Federated Learning and Validation Framework"
 authors = ["Stanley Huang <ding3820@gmail.com>", "Keng-Chi Liu <calvin89029@gmail.com>"]
 readme = "README.md"
 exclude = ["examples*"]
+include = ["scripts/*"]
 
 [tool.poetry.dependencies]
 python = ">=3.8, <3.11"
@@ -89,12 +90,12 @@ url = "https://download.pytorch.org/whl/cu117"
 priority = "explicit"
 
 [tool.poetry.scripts]
-flavor-fl = "flavor.runs.flavor_fl:main"
-flavor-fv = "flavor.runs.flavor_fv:main"
-flavor-agg = "flavor.runs.flavor_agg:main"
-check-fl = "flavor.runs.check_fl:main"
-check-fv = "flavor.runs.check_fv:main"
-check-agg = "flavor.runs.check_agg:main"
+flavor-fl = "scripts.flavor_fl:main"
+flavor-fv = "scripts.flavor_fv:main"
+flavor-agg = "scripts.flavor_agg:main"
+check-fl = "scripts.check_fl:main"
+check-fv = "scripts.check_fv:main"
+check-agg = "scripts.check_agg:main"
 
 [build-system]
 requires = ["poetry-core"]

@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from .invocations import InferInvocationAPP
 from .strategies.gradio_strategy import BaseGradioStrategy
 
+__all__ = ["InferAPP", "GradioInferAPP"]
+
 
 class BaseAPP(object):
     def __init__(self):
