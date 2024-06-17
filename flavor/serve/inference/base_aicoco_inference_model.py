@@ -310,7 +310,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         return result
 
 
-class BaseTabularInputDataModel(BaseModel):
+class BaseAiCOCOTabularInputDataModel(BaseModel):
     """
     Base class for tabular input data with AiCOCO format.
 
@@ -336,7 +336,7 @@ class BaseTabularInputDataModel(BaseModel):
         return data
 
 
-class BaseTabularOutputDataModel(BaseModel):
+class BaseAiCOCOTabularOutputDataModel(BaseModel):
     """
     Base class for tabular output data with AiCOCO format.
     """
@@ -348,7 +348,7 @@ class BaseTabularOutputDataModel(BaseModel):
     meta: Optional[AiMeta] = None
 
 
-class BaseTabularInferenceModel(BaseAiCOCOInferenceModel):
+class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
     """
     Base class for defining inference model with AiCOCO format response. (tabular version)
 
@@ -381,7 +381,9 @@ class BaseTabularInferenceModel(BaseAiCOCOInferenceModel):
             List[pd.DataFrame]: A list of dataframes.
 
         """
+        assert len(files) == len(tables), "`files` and `tables` should have same length."
         assert "window_size" in meta, "`meta` should have `window_size` field."
+        self.table = tables
         self.meta = meta
         self.window_size = meta["window_size"]
 
@@ -411,7 +413,6 @@ class BaseTabularInferenceModel(BaseAiCOCOInferenceModel):
 
         return df_tables
 
-    @abstractmethod
     def output_formatter(
         self,
         model_out: Any,
