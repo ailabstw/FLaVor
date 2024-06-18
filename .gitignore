@@ -21,5 +21,4 @@ dist
 # mac
 .DS_Store
 
-chexpert
 *.pt
