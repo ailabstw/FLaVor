@@ -20,9 +20,9 @@ def main():
         os.path.dirname(os.path.realpath(__file__)), "../schema/FVresult.json"
     )
 
-    from flavor.taste.servicer import EdgeEvalServicer
+    from flavor.taste.app import EdgeEvalApp
 
-    eval_service = EdgeEvalServicer(mainProcess=args.main, preProcess=args.preprocess)
+    eval_service = EdgeEvalApp(mainProcess=args.main, preProcess=args.preprocess)
     eval_service.start()
 
 

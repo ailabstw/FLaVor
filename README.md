@@ -1,10 +1,11 @@
 
 # AILabs FLaVor
-![Python Version](https://img.shields.io/badge/python-3.7%20%7C%203.8%20%7C%203.9-blue)
 
 AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows multiple parties to collaboratively build and evaluate AI models without compromising data privacy. **FLaVor** also provides a python package for users to join us, even if your code is implemented in other programming languages. It enables users to make modifications to their program codes by simply adding certain signals and importing/exporting the necessary files, as demonstrated in the examples.
 
 > ***If you combine good FLaVors, model turns into an orchestra.***
+
+**Note: gRPC dependency will be removed after 2.0.0, please install 1.0.7 if necessary.**
 
 ## Installation
 

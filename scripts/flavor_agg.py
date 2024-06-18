@@ -21,10 +21,10 @@ def main():
     os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
     os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
 
-    from flavor.cook.servicer import AggregateServerAppServicer, serve
+    from flavor.cook.app import AggregatorApp, run_app
 
-    app_service = AggregateServerAppServicer(mainProcess=args.main, init_once=args.init_once)
-    serve(app_service, stype="server")
+    app = AggregatorApp(mainProcess=args.main, init_once=args.init_once)
+    run_app(app)
 
 
 if __name__ == "__main__":

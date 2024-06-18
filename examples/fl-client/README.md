@@ -72,7 +72,7 @@ def main():
 ```
 
 #### Json Example
-```json
+```python
   {
      "metadata":{
         # (Required, int)

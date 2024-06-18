@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 import argparse
+import json
+import multiprocessing as mp
 import os
 import shutil
+import time
+from platform import python_version
 
-from flavor.cook.service_pb2 import AggregateParams
-from flavor.cook.utils import IsSetEvent
+from flavor.cook.model import AggregateRequest
+from flavor.cook.utils import compareVersion
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
@@ -12,27 +16,83 @@ os.environ["FLAVOR"] = "true"
 os.environ["CHECK_AGG"] = "true"
 
 
-def parse_list(values, message):
-    if isinstance(values[0], dict):
-        for v in values:
-            cmd = message.add()
-            parse_dict(v, cmd)
+def set_env_var(key, default, force_default=False):
+    if force_default:
+        os.environ[key] = default
     else:
-        message.extend(values)
+        os.environ[key] = (
+            input(f"Set ${key} (Press ENTER if using default env - {default}): ") or default
+        )
 
 
-def parse_dict(values, message):
-    for k, v in values.items():
-        if isinstance(v, dict):
-            parse_dict(v, getattr(message, k))
-        elif isinstance(v, list):
-            parse_list(v, getattr(message, k))
-        else:
-            setattr(message, k, v)
+def run_app(edge_app, aggregator_app, n_epochs):
 
+    try:
+        for state in ["data_validate", "train_init"]:
+            getattr(edge_app, state)({})
 
-def dict_to_protobuf(value, message):
-    parse_dict(value, message)
+            if edge_app.is_error.value != 0:
+                return
+
+        for epoch in range(n_epochs + 1):
+
+            getattr(edge_app, "local_train")({})
+            if edge_app.is_error.value != 0:
+                aggregator_app.close_process()
+                return
+
+            if epoch == n_epochs:
+                break
+
+            shutil.move(
+                os.environ["LOCAL_MODEL_PATH"],
+                os.path.join(os.environ["REPO_ROOT"], "weights.ckpt"),
+            )
+            shutil.move(
+                os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json"),
+                os.path.join(os.environ["REPO_ROOT"], "info.json"),
+            )
+
+            request = {"LocalModels": [{"path": ""}], "AggregatedModel": {"path": ""}}
+            with open(
+                os.path.join(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), "info.json")
+            ) as json_file:
+                info = json.load(json_file)
+            request["LocalModels"][0].update(info)
+
+            getattr(aggregator_app, "aggregate")(AggregateRequest(**request))
+            if aggregator_app.is_error.value != 0:
+                edge_app.close_process()
+                return
+
+            shutil.move(
+                os.path.join(os.environ["REPO_ROOT"], "merged.ckpt"),
+                os.environ["GLOBAL_MODEL_PATH"],
+            )
+            shutil.move(
+                os.path.join(os.environ["REPO_ROOT"], "merged-info.json"),
+                os.path.join(os.path.dirname(os.environ["GLOBAL_MODEL_PATH"]), "merged-info.json"),
+            )
+
+        getattr(edge_app, "train_finish")({})
+        if edge_app.is_error.value != 0:
+            aggregator_app.close_process()
+            return
+
+        getattr(aggregator_app, "train_finish")({})
+        if aggregator_app.is_error.value != 0:
+            edge_app.close_process()
+            return
+
+    except Exception as err:
+
+        edge_app.close_process()
+        aggregator_app.close_process()
+
+        edge_app.is_error.value = 1
+        edge_app.AliveEvent.set()
+
+        raise Exception(f"Error occurred: {err}")
 
 
 def main():
@@ -52,48 +112,17 @@ def main():
     parser.add_argument("-y", "--yes", action="store_true", help="skip setting env", default=False)
     args, unparsed = parser.parse_known_args()
 
-    input_path_default = os.getenv("INPUT_PATH", "/data")
-    output_path_default = os.getenv("OUTPUT_PATH", "/output")
-    local_path_default = os.getenv("LOCAL_MODEL_PATH", "/weight/local.ckpt")
-    global_path_default = os.getenv("GLOBAL_MODEL_PATH", "/weight/global.ckpt")
-    log_path_default = os.getenv("LOG_PATH", "/log")
-
-    if not args.yes:
-        input_path = input(
-            "Set $INPUT_PATH: (Press ENTER if using default env - {})".format(input_path_default)
-        )
-        output_path = input(
-            "Set $OUTPUT_PATH: (Press ENTER if using default env - {})".format(output_path_default)
-        )
-        local_path = input(
-            "Set $LOCAL_MODEL_PATH: (Press ENTER if using default env - {})".format(
-                local_path_default
-            )
-        )
-        global_path = input(
-            "Set $GLOBAL_MODEL_PATH: (Press ENTER if using default env - {})".format(
-                global_path_default
-            )
-        )
-        log_path = input(
-            "Set $LOG_PATH: (Press ENTER if using default env - {})".format(log_path_default)
-        )
-
-        os.environ["INPUT_PATH"] = input_path if input_path else input_path_default
-        os.environ["OUTPUT_PATH"] = output_path if output_path else output_path_default
-        os.environ["LOCAL_MODEL_PATH"] = local_path if local_path else local_path_default
-        os.environ["GLOBAL_MODEL_PATH"] = global_path if global_path else global_path_default
-        os.environ["LOG_PATH"] = log_path if log_path else log_path_default
-    else:
-        os.environ["INPUT_PATH"] = input_path_default
-        os.environ["OUTPUT_PATH"] = output_path_default
-        os.environ["LOCAL_MODEL_PATH"] = local_path_default
-        os.environ["GLOBAL_MODEL_PATH"] = global_path_default
-        os.environ["LOG_PATH"] = log_path_default
-
-    os.environ["SCHEMA_PATH"] = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "../schema/FLresult.json"
+    force_default = args.yes
+    set_env_var("INPUT_PATH", os.getenv("INPUT_PATH", "/data"), force_default)
+    set_env_var("OUTPUT_PATH", os.getenv("OUTPUT_PATH", "/output"), force_default)
+    set_env_var(
+        "LOCAL_MODEL_PATH", os.getenv("LOCAL_MODEL_PATH", "/weight/local.ckpt"), force_default
     )
+    set_env_var(
+        "GLOBAL_MODEL_PATH", os.getenv("GLOBAL_MODEL_PATH", "/weight/global.ckpt"), force_default
+    )
+    set_env_var("LOG_PATH", os.getenv("LOG_PATH", "/log"), force_default)
+
     os.environ["REPO_ROOT"] = os.path.dirname(os.environ["LOCAL_MODEL_PATH"])
 
     os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
@@ -104,72 +133,37 @@ def main():
         os.remove(os.environ["GLOBAL_MODEL_PATH"])
     os.makedirs(os.path.dirname(os.environ["GLOBAL_MODEL_PATH"]), exist_ok=True)
 
-    from flavor.cook.servicer import AggregateServerAppServicer, EdgeAppServicer
+    from flavor.cook.app import AggregatorApp, EdgeApp
 
-    edge_service = EdgeAppServicer(
+    edge_app = EdgeApp(
         mainProcess=args.client_main, preProcess=args.client_preprocess, debugMode=True
     )
-    agg_service = AggregateServerAppServicer(
-        mainProcess=args.main, init_once=args.init_once, debugMode=True
+    aggregator_app = AggregatorApp(mainProcess=args.main, init_once=args.init_once, debugMode=True)
+
+    server_process = mp.Process(
+        target=run_app,
+        args=(
+            edge_app,
+            aggregator_app,
+            args.epochs,
+        ),
     )
-    for state in ["DataValidate", "TrainInit"]:
-        getattr(edge_service, state)({}, {})
-        if IsSetEvent("Error"):
-            edge_service.close_service()
-            agg_service.close_service()
-            raise Exception("Refer to ERROR log message")
-            os._exit(os.EX_OK)
+    server_process.start()
 
-    for epoch in range(args.epochs + 1):
+    while not (edge_app.AliveEvent.is_set() or aggregator_app.AliveEvent.is_set()):
+        time.sleep(1)
 
-        for state in ["LocalTrain"]:
-            getattr(edge_service, state)({}, {})
-            if IsSetEvent("Error"):
-                edge_service.close_service()
-                agg_service.close_service()
-                raise Exception("Refer to ERROR log message")
-                os._exit(os.EX_OK)
+    print("Wait for terminating ...")
+    time.sleep(3)
 
-        if epoch == args.epochs:
-            break
+    server_process.terminate()
+    server_process.join()
+    if compareVersion(python_version(), "3.7") >= 0:
+        server_process.close()
 
-        shutil.move(
-            os.environ["LOCAL_MODEL_PATH"], os.path.join(os.environ["REPO_ROOT"], "weights.ckpt")
-        )
+    if edge_app.is_error.value != 0 or aggregator_app.is_error.value != 0:
+        raise Exception("Refer to ERROR log message")
 
-        request = AggregateParams()
-        dict_to_protobuf({"localModels": [{"path": ""}], "AggregatedModel": {"path": ""}}, request)
-
-        for state in ["Aggregate"]:
-            getattr(agg_service, state)(request, {})
-            if IsSetEvent("Error"):
-                edge_service.close_service()
-                agg_service.close_service()
-                raise Exception("Refer to ERROR log message")
-                os._exit(os.EX_OK)
-
-        shutil.move(
-            os.path.join(os.environ["REPO_ROOT"], "merged.ckpt"), os.environ["GLOBAL_MODEL_PATH"]
-        )
-
-    for state in ["TrainFinish"]:
-        getattr(edge_service, state)({}, {})
-        if IsSetEvent("Error"):
-            edge_service.close_service()
-            agg_service.close_service()
-            raise Exception("Refer to ERROR log message")
-            os._exit(os.EX_OK)
-
-    for state in ["TrainFinish"]:
-        getattr(agg_service, state)({}, {})
-        if IsSetEvent("Error"):
-            edge_service.close_service()
-            agg_service.close_service()
-            raise Exception("Refer to ERROR log message")
-            os._exit(os.EX_OK)
-
-    edge_service.close_service()
-    agg_service.close_service()
     print("Run Successfullly !!!")
 
 

@@ -27,13 +27,17 @@ class FedAvg(object):
 
         # Get Path
         localModelPaths = GetPaths("localModels")
-        localInfoPaths = GetPaths("localInfos")  # noqa F841
+        localInfoPaths = GetPaths("localInfos")
         globalModelPath = GetPaths("globalModel")[0]
-        globalInfoPath = GetPaths("globalInfo")[0]
+        globalInfoPath = GetPaths("globalInfo")[0]  # noqa 841
 
         # Caluculate aggregation factors
-        with open(globalInfoPath, "r") as openfile:
-            datasetSize = json.load(openfile)["metadata"]["datasetSize"]
+        datasetSize = []
+        for localInfoPath in localInfoPaths:
+            with open(localInfoPath, "r") as openfile:
+                localInfo = json.load(openfile)
+            datasetSize.append(float(localInfo["metadata"]["datasetSize"]))
+
         factors = [d / sum(datasetSize) for d in datasetSize]
 
         # Aggregate weights

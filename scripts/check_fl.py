@@ -8,9 +8,12 @@ try:
 except ImportError:
     pass
 
+import multiprocessing as mp
+from platform import python_version
+
 import numpy as np
 
-from flavor.cook.utils import IsSetEvent
+from flavor.cook.utils import compareVersion
 
 os.environ["PYTHONWARNINGS"] = "ignore"
 os.environ["LOGLEVEL"] = "ERROR"
@@ -63,6 +66,31 @@ def load_checkpoint(path):
         return transfer_data_to_tensor(ckpt)
 
 
+def set_env_var(key, default, force_default=False):
+    if force_default:
+        os.environ[key] = default
+    else:
+        os.environ[key] = (
+            input(f"Set ${key} (Press ENTER if using default env - {default}): ") or default
+        )
+
+
+def run_app(app):
+
+    states = ["data_validate", "train_init", "local_train", "train_finish"]
+
+    for state in states:
+        try:
+            method = getattr(app, state)
+            method({})
+            if app.is_error.value != 0:
+                return
+        except Exception as err:
+            app.close_process()
+            app.AliveEvent.set()
+            raise Exception(f"Error occurred: {err}")
+
+
 def main():
 
     parser = argparse.ArgumentParser()
@@ -79,69 +107,37 @@ def main():
     )
     args, unparsed = parser.parse_known_args()
 
-    input_path_default = os.getenv("INPUT_PATH", "/data")
-    output_path_default = os.getenv("OUTPUT_PATH", "/output")
-    local_path_default = os.getenv("LOCAL_MODEL_PATH", "/weight/local.ckpt")
-    global_path_default = os.getenv("GLOBAL_MODEL_PATH", "/weight/global.ckpt")
-    log_path_default = os.getenv("LOG_PATH", "/log")
-
-    if not args.yes:
-        input_path = input(
-            "Set $INPUT_PATH: (Press ENTER if using default env - {})".format(input_path_default)
-        )
-        output_path = input(
-            "Set $OUTPUT_PATH: (Press ENTER if using default env - {})".format(output_path_default)
-        )
-        local_path = input(
-            "Set $LOCAL_MODEL_PATH: (Press ENTER if using default env - {})".format(
-                local_path_default
-            )
-        )
-        global_path = input(
-            "Set $GLOBAL_MODEL_PATH: (Press ENTER if using default env - {})".format(
-                global_path_default
-            )
-        )
-        log_path = input(
-            "Set $LOG_PATH: (Press ENTER if using default env - {})".format(log_path_default)
-        )
-
-        os.environ["INPUT_PATH"] = input_path if input_path else input_path_default
-        os.environ["OUTPUT_PATH"] = output_path if output_path else output_path_default
-        os.environ["LOCAL_MODEL_PATH"] = local_path if local_path else local_path_default
-        os.environ["GLOBAL_MODEL_PATH"] = global_path if global_path else global_path_default
-        os.environ["LOG_PATH"] = log_path if log_path else log_path_default
-    else:
-        os.environ["INPUT_PATH"] = input_path_default
-        os.environ["OUTPUT_PATH"] = output_path_default
-        os.environ["LOCAL_MODEL_PATH"] = local_path_default
-        os.environ["GLOBAL_MODEL_PATH"] = global_path_default
-        os.environ["LOG_PATH"] = log_path_default
-
-    os.environ["SCHEMA_PATH"] = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)), "../schema/FLresult.json"
+    force_default = args.yes
+    set_env_var("INPUT_PATH", os.getenv("INPUT_PATH", "/data"), force_default)
+    set_env_var("OUTPUT_PATH", os.getenv("OUTPUT_PATH", "/output"), force_default)
+    set_env_var(
+        "LOCAL_MODEL_PATH", os.getenv("LOCAL_MODEL_PATH", "/weight/local.ckpt"), force_default
     )
+    set_env_var(
+        "GLOBAL_MODEL_PATH", os.getenv("GLOBAL_MODEL_PATH", "/weight/global.ckpt"), force_default
+    )
+    set_env_var("LOG_PATH", os.getenv("LOG_PATH", "/log"), force_default)
 
     os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
     os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
     os.makedirs(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), exist_ok=True)
 
-    from flavor.cook.servicer import EdgeAppServicer
+    from flavor.cook.app import EdgeApp
 
-    app_service = EdgeAppServicer(mainProcess=args.main, preProcess=args.preprocess, debugMode=True)
+    app = EdgeApp(mainProcess=args.main, preProcess=args.preprocess, debugMode=True)
 
-    states = ["DataValidate", "TrainInit", "LocalTrain", "TrainFinish"]
+    server_process = mp.Process(target=run_app, args=(app,))
+    server_process.start()
 
-    for state in states:
-        getattr(app_service, state)({}, {})
-        if IsSetEvent("Error"):
-            app_service.close_service()
-            raise Exception("Refer to ERROR log message")
-            os._exit(os.EX_OK)
-    app_service.close_service()
+    app.AliveEvent.wait()
 
-    if IsSetEvent("TrainStarted"):
-        raise AssertionError("TrainStarted event should be cleared")
+    server_process.terminate()
+    server_process.join()
+    if compareVersion(python_version(), "3.7") >= 0:
+        server_process.close()
+
+    if app.is_error.value != 0:
+        raise Exception("Refer to ERROR log message")
 
     if not args.ignore_ckpt:
         print("Check Checkpoint")
