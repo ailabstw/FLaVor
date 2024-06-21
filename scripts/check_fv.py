@@ -1,0 +1,49 @@
+#!/usr/bin/env python
+import argparse
+import os
+
+os.environ["PYTHONWARNINGS"] = "ignore"
+os.environ["LOGLEVEL"] = "ERROR"
+os.environ["FLAVOR"] = "true"
+os.environ["CHECK_FV"] = "true"
+
+
+def set_env_var(key, default, force_default=False):
+    if force_default:
+        os.environ[key] = default
+    else:
+        os.environ[key] = (
+            input(f"Set ${key} (Press ENTER if using default env - {default}): ") or default
+        )
+
+
+def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-p", "--preprocess", type=str, help="data preprocess command", default=None
+    )
+    parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
+    parser.add_argument("-y", "--yes", action="store_true", help="skip setting env", default=False)
+    args, unparsed = parser.parse_known_args()
+
+    force_default = args.yes
+    set_env_var("INPUT_PATH", os.getenv("INPUT_PATH", "/data"), force_default)
+    set_env_var("OUTPUT_PATH", os.getenv("OUTPUT_PATH", "/output"), force_default)
+    set_env_var("WEIGHT_PATH", os.getenv("WEIGHT_PATH", "/weight/weight.ckpt"), force_default)
+    set_env_var("LOG_PATH", os.getenv("LOG_PATH", "/log"), force_default)
+
+    os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
+    os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
+
+    from flavor.taste.app import EdgeEvalApp
+
+    eval_app = EdgeEvalApp(mainProcess=args.main, preProcess=args.preprocess)
+    eval_app.start()
+
+    print("Run Successfullly !!!")
+
+
+if __name__ == "__main__":
+
+    main()

@@ -6,7 +6,7 @@ from sklearn.metrics import top_k_accuracy_score
 from sklearn.model_selection import train_test_split
 
 from flavor.cook.utils import SaveInfoJson, SetEvent, WaitEvent
-from flavor.gadget.xgboost import load_update_xgbmodel, save_update_xgbmodel
+from flavor.gadget.xgboost import load_global_xgbmodel, save_local_xgbmodel
 
 total_round = 10
 
@@ -47,10 +47,7 @@ for round_idx in range(total_round):
         bst = xgb.train(param, dtrain, num_boost_round=1)
     else:
         # Load checkpoint sent from the server
-        load_update_xgbmodel(bst, os.environ["GLOBAL_MODEL_PATH"])
-
-        # Save latest checkpoints
-        bst.save_model(os.path.join(os.environ["OUTPUT_PATH"], "latest.json"))
+        load_global_xgbmodel(bst, os.environ["GLOBAL_MODEL_PATH"])
 
         # Eval global model
         y_pred = bst.predict(dval_X)
@@ -72,7 +69,7 @@ for round_idx in range(total_round):
     SaveInfoJson(output_dict)
 
     # Save newly added tree by slicing instead of the entire tree
-    save_update_xgbmodel(bst, os.environ["LOCAL_MODEL_PATH"])
+    save_local_xgbmodel(bst, os.environ["LOCAL_MODEL_PATH"])
 
     # Tell the server that this round of training work has ended.
     SetEvent("TrainFinished")

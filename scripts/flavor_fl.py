@@ -20,10 +20,10 @@ def main():
         os.path.dirname(os.path.realpath(__file__)), "../schema/FLresult.json"
     )
 
-    from flavor.cook.servicer import EdgeAppServicer, serve
+    from flavor.cook.app import EdgeApp, run_app
 
-    app_service = EdgeAppServicer(mainProcess=args.main, preProcess=args.preprocess)
-    serve(app_service, stype="client")
+    app = EdgeApp(mainProcess=args.main, preProcess=args.preprocess)
+    run_app(app)
 
 
 if __name__ == "__main__":
