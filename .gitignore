@@ -20,3 +20,5 @@ dist
 
 # mac
 .DS_Store
+
+*.pt

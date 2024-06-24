@@ -2,7 +2,7 @@
 
 ignore = W, E501
 extend-ignore = E203
-per-file-ignores = **/__init__.py:F401, F841
+per-file-ignores = **/__init__.py:F841, F401
 max-line-length = 100
 
 ## File
