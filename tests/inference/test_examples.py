@@ -2,12 +2,13 @@ import json
 from pathlib import Path
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.mark.asyncio
 async def test_seg():
-    from test_tasks.seg_example import app as seg_app
+    seg_example = pytest.importorskip("test_tasks.seg_example")
+    seg_app = seg_example.app
 
     files = []
     filepath = "examples/inference/test_data/seg/0.dcm"
@@ -21,14 +22,17 @@ async def test_seg():
     for k in data:
         data[k] = json.dumps(data[k])
 
-    async with AsyncClient(app=seg_app.app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=seg_app.app), base_url="http://test"
+    ) as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_cls():
-    from test_tasks.cls_example import app as cls_app
+    cls_example = pytest.importorskip("test_tasks.cls_example")
+    cls_app = cls_example.app
 
     files = []
     filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
@@ -42,14 +46,17 @@ async def test_cls():
     for k in data:
         data[k] = json.dumps(data[k])
 
-    async with AsyncClient(app=cls_app.app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=cls_app.app), base_url="http://test"
+    ) as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_reg():
-    from test_tasks.reg_example import app as reg_app
+    reg_example = pytest.importorskip("test_tasks.reg_example")
+    reg_app = reg_example.app
 
     files = []
     filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
@@ -63,14 +70,17 @@ async def test_reg():
     for k in data:
         data[k] = json.dumps(data[k])
 
-    async with AsyncClient(app=reg_app.app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=reg_app.app), base_url="http://test"
+    ) as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200
 
 
 @pytest.mark.asyncio
 async def test_det():
-    from test_tasks.det_example import app as det_app
+    det_example = pytest.importorskip("test_tasks.det_example")
+    det_app = det_example.app
 
     files = []
     filepath = "examples/inference/test_data/det/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg"
@@ -84,6 +94,8 @@ async def test_det():
     for k in data:
         data[k] = json.dumps(data[k])
 
-    async with AsyncClient(app=det_app.app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=det_app.app), base_url="http://test"
+    ) as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200

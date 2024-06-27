@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 import requests
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 
 def download_file_from_google_drive(file_id, destination):
@@ -43,7 +43,8 @@ def save_response_content(response, destination):
 
 @pytest.mark.asyncio
 async def test_seg3d():
-    from test_tasks.seg3d_example import app
+    seg3d_example = pytest.importorskip("test_tasks.seg3d_example")
+    seg3d_app = seg3d_example.app
 
     src = "examples/inference/test_data/seg/img0062"
     input_files = glob.glob(src + "/*")
@@ -70,6 +71,8 @@ async def test_seg3d():
     for k in data:
         data[k] = json.dumps(data[k])
 
-    async with AsyncClient(app=app.app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=seg3d_app.app), base_url="http://test"
+    ) as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200

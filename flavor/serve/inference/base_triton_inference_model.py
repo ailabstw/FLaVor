@@ -13,10 +13,37 @@ class BaseTritonClient:
     BaseTritonClient is a base class that sets up connections with Triton Inference Server.
     """
 
-    DTYPES = {
+    DTYPES_CONFIG_TO_API = {
+        "TYPE_BOOL": "BOOL",
+        "TYPE_UINT8": "UINT8",
+        "TYPE_UINT16": "UINT16",
+        "TYPE_UINT32": "UINT32",
+        "TYPE_UINT64": "UINT64",
+        "TYPE_INT8": "INT8",
+        "TYPE_INT16": "INT16",
+        "TYPE_INT32": "INT32",
+        "TYPE_INT64": "INT64",
+        "TYPE_FP16": "FP16",
         "TYPE_FP32": "FP32",
+        "TYPE_FP64": "FP64",
+        "TYPE_STRING": "BYTES",
     }
-    NP_DTYPES = {"FP32": np.float32}
+
+    DTYPES_API_TO_NUMPY = {
+      "BOOL": bool,
+      "UINT8": np.uint8,
+      "UINT16": np.uint16,
+      "UINT32": np.uint32,
+      "UINT64": np.uint64,
+      "INT8": np.int8,
+      "INT16": np.int16,
+      "INT32": np.int32,
+      "INT64": np.int64,
+      "FP16": np.float16,
+      "FP32": np.float32,
+      "FP64": np.float64,
+      "BYTES": np.object_,
+    }
 
     def __init__(self, triton_url: str):
         self.triton_url = triton_url
@@ -142,7 +169,7 @@ class TritonInferenceModel(BaseTritonClient):
         for input_struct in self.input_structs:
             name = input_struct["name"]
             data_type = input_struct["data_type"]
-            data_type = BaseTritonClient.DTYPES[data_type]
+            data_type = BaseTritonClient.DTYPES_CONFIG_TO_API[data_type]
             dims = input_struct["dims"]
             if name in data_dict:
                 if not isinstance(data_dict[name], np.ndarray):
@@ -152,7 +179,7 @@ class TritonInferenceModel(BaseTritonClient):
             else:
                 raise KeyError(f"cannot find expected key {name}.")
 
-            item = item.astype(self.NP_DTYPES[data_type])
+            item = item.astype(self.DTYPES_API_TO_NUMPY[data_type])
             buffer = tritonclient.http.InferInput(name, dims, data_type)
             buffer.set_data_from_numpy(item)
 
@@ -178,7 +205,11 @@ class TritonInferenceModel(BaseTritonClient):
         result = {}
         for output_struct in self.output_structs:
             name = output_struct["name"]
-            result[name] = infer_results.as_numpy(name)
+            dtype = output_struct['data_type']
+            res = infer_results.as_numpy(name)
+            if dtype == 'TYPE_STRING':
+                res = np.array([i.decode() for i in res.reshape(res.size)])
+            result[name] = res
 
         return result
 
@@ -264,14 +295,14 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
         for input_struct in self.input_structs:
             name = input_struct["name"]
             data_type = input_struct["data_type"]
-            data_type = BaseTritonClient.DTYPES[data_type]
+            data_type = BaseTritonClient.DTYPES_CONFIG_TO_API[data_type]
             dims = input_struct["dims"]
 
             item = data_dict.get(name, None)
             if item is None:
                 raise KeyError(f"cannot find required object {name} of dimension {dims}")
 
-            item = item.astype(self.NP_DTYPES[data_type])
+            item = item.astype(self.DTYPES_API_TO_NUMPY[data_type])
 
             if name not in self.infer_inputs or list(item.shape) != self.infer_inputs[name].shape():
                 dims = list(item.shape)
@@ -310,7 +341,7 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
         for output_struct in self.output_structs:
             name = output_struct["name"]
             data_type = output_struct["data_type"]
-            data_type = BaseTritonClient.DTYPES[data_type]
+            data_type = BaseTritonClient.DTYPES_CONFIG_TO_API[data_type]
             dims = output_shapes.get(name, None)
 
             if dims is None:
@@ -318,7 +349,8 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
 
             if name not in self.infer_outputs or dims != self.infer_outputs[name].shape():
                 item = np.zeros(dims)
-                item = item.astype(self.NP_DTYPES[data_type])
+                item = item.astype(self.DTYPES_API_TO_NUMPY[data_type])
+                # TODO: handle byte string
 
                 byte_size = item.size * item.itemsize
                 output_handle = shm.create_shared_memory_region(
