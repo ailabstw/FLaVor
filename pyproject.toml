@@ -18,7 +18,6 @@ gradio = "^4.0.0"
 requests = "^2.28.0"
 opencv-python-headless = "^4.5.3.56"
 tritonclient = {version = "^2.17.0", extras = ["http"]}
-numpy = "<2.0.0"
 
 [tool.poetry.group.test]
 optional = true
@@ -39,6 +38,7 @@ torchvision = {version = "0.14.0", source = "torch-cu117"}
 lungmask = "^0.2.20"
 monai = {version = "~1.1.0", extras = ["einops"]}
 ultralytics = "^8.2.16"
+numpy = "<2.0.0"
 
 [tool.poetry.group.cls_example]
 optional = true
@@ -46,12 +46,14 @@ optional = true
 [tool.poetry.group.cls_example.dependencies]
 torch = {version = "1.13.0", source = "torch-cu117"}
 torchvision = {version = "0.14.0", source = "torch-cu117"}
+numpy = "<2.0.0"
 
 [tool.poetry.group.det_example]
 optional = true
 
 [tool.poetry.group.det_example.dependencies]
 ultralytics = "^8.2.16"
+numpy = "<2.0.0"
 
 [tool.poetry.group.reg_example]
 optional = true
@@ -59,6 +61,7 @@ optional = true
 [tool.poetry.group.reg_example.dependencies]
 torch = {version = "1.13.0", source = "torch-cu117"}
 torchvision = {version = "0.14.0", source = "torch-cu117"}
+numpy = "<2.0.0"
 
 [tool.poetry.group.seg_example]
 optional = true
@@ -66,6 +69,7 @@ optional = true
 [tool.poetry.group.seg_example.dependencies]
 simpleitk = "^2.3.1"
 lungmask = "^0.2.20"
+numpy = "<2.0.0"
 
 [tool.poetry.group.seg3d_example]
 optional = true
@@ -75,6 +79,7 @@ torch = {version = "1.13.0", source = "torch-cu117"}
 scipy = "^1.9.2"
 monai = {version = "~1.1.0", extras = ["einops"]}
 simpleitk = "^2.3.1"
+numpy = "<2.0.0"
 
 [tool.poetry.group.dev]
 optional = true
@@ -82,7 +87,6 @@ optional = true
 [tool.poetry.group.dev.dependencies]
 pre-commit = "^3.5.0"
 ipykernel = "^6.29.4"
-
 
 [[tool.poetry.source]]
 name = "torch-cu117"
