@@ -1,7 +1,7 @@
 from enum import Enum
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class Iscrowd(Enum):
@@ -89,8 +89,14 @@ class AiInstance(BaseModel):
 
 class AiCOCOTableFormat(BaseModel, extra="forbid"):
     tables: Sequence[AiTable]
-    categories: Sequence[AiCategory]
-    regressions: Sequence[AiRegression]
+    categories: Union[Sequence[AiCategory], None]
+    regressions: Union[Sequence[AiRegression], None]
     instances: Sequence[AiInstance]
-    objects: Sequence[AiObject]
     meta: AiMeta
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_id_and_name(cls, values):
+        if values.get("categories") is None and values.get("regressions") is None:
+            raise ValueError("Either id or name must be provided.")
+        return values

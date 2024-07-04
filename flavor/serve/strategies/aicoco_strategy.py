@@ -10,22 +10,31 @@ from ..models import (
     AiAnnotation,
     AiCategory,
     AiCOCOFormat,
+    AiCOCOTableFormat,
     AiImage,
     AiMeta,
     AiObject,
     AiRegression,
+    AiTable,
     InferCategory,
     InferClassificationOutput,
     InferDetectionOutput,
+    InferInstance,
     InferRegression,
     InferRegressionOutput,
     InferSegmentationOutput,
+    InferTabularClassificationOutput,
+    InferTabularRegressionOutput,
     ModelOut,
 )
 from .base_strategy import BaseStrategy
 
 AiCOCOOut = Dict[
     str, Union[Sequence[AiImage], Sequence[AiCategory], Sequence[AiRegression], AiMeta]
+]
+
+AiCOCOTabularOut = Dict[
+    str, Union[Sequence[AiCategory], Sequence[AiRegression], Sequence[InferInstance], AiMeta]
 ]
 
 
@@ -47,6 +56,9 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         Returns:
             List[InferCategory]: AiCOCO `categories` field.
         """
+        if not categories:
+            return None
+
         res = list()
         supercategory_id_table = dict()
 
@@ -77,6 +89,9 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         Returns:
             List[InferRegression]: AiCOCO `regressions` field.
         """
+        if not regressions:
+            return None
+
         res = list()
         superregression_id_table = dict()
 
@@ -681,3 +696,117 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
                 )
 
         return images, meta
+
+
+class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
+    def prepare_aicoco(
+        self,
+        model_out: ModelOut,
+        tables: Sequence[AiTable],
+        categories: Optional[Sequence[InferCategory]] = None,
+        regressions: Optional[Sequence[InferRegression]] = None,
+        instances: Optional[Sequence[InferInstance]] = None,
+        meta: AiMeta = {},
+    ) -> Tuple[AiCOCOTabularOut, ModelOut]:
+
+        if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
+            # only activate at first run
+            self.aicoco_categories = self.generate_categories(copy.deepcopy(categories))
+            self.aicoco_regressions = self.generate_regressions(copy.deepcopy(regressions))
+
+        aicoco_out = {
+            "tables": tables,
+            "categories": self.aicoco_categories,
+            "regressions": self.aicoco_regressions,
+            "instances": instances,
+            "meta": copy.deepcopy(meta),
+        }
+
+        return aicoco_out, model_out
+
+
+class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy):
+    def __call__(
+        self,
+        model_out: np.ndarray,
+        tables: Sequence[AiTable],
+        categories: Sequence[InferCategory],
+        instances: Sequence[InferInstance],
+        meta: AiMeta = {},
+        **kwargs,
+    ) -> AiCOCOTableFormat:
+        aicoco_out, model_out = self.prepare_aicoco(
+            model_out=model_out,
+            tables=tables,
+            categories=categories,
+            instances=instances,
+            meta=meta,
+        )
+        response = self.model_to_aicoco(aicoco_out, model_out)
+        AiCOCOTableFormat.model_validate(response)
+        return response
+
+    def prepare_aicoco(
+        self, **infer_output: InferTabularClassificationOutput
+    ) -> Tuple[AiCOCOTabularOut, ModelOut]:
+        InferTabularClassificationOutput.model_validate(infer_output)
+        return super().prepare_aicoco(**infer_output)
+
+    def model_to_aicoco(
+        self,
+        aicoco_out: AiCOCOTabularOut,
+        model_out: ModelOut,
+    ) -> AiCOCOTableFormat:
+
+        categories = aicoco_out["categories"]
+        instances = aicoco_out["instances"]
+
+        for instance, pred in zip(instances, model_out):
+            instance["category_ids"] = [categories[p] for p in pred]
+
+        return {**aicoco_out}
+
+
+class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
+    def __call__(
+        self,
+        model_out: np.ndarray,
+        tables: Sequence[AiTable],
+        regressions: Sequence[InferRegression],
+        instances: Sequence[InferInstance],
+        meta: AiMeta = {},
+        **kwargs,
+    ) -> AiCOCOTableFormat:
+        aicoco_out, model_out = self.prepare_aicoco(
+            model_out=model_out,
+            tables=tables,
+            regressions=regressions,
+            instances=instances,
+            meta=meta,
+        )
+        response = self.model_to_aicoco(aicoco_out, model_out)
+        AiCOCOTableFormat.model_validate(response)
+        return response
+
+    def prepare_aicoco(
+        self, **infer_output: InferTabularRegressionOutput
+    ) -> Tuple[AiCOCOTabularOut, ModelOut]:
+        InferTabularRegressionOutput.model_validate(infer_output)
+        return super().prepare_aicoco(**infer_output)
+
+    def model_to_aicoco(
+        self,
+        aicoco_out: AiCOCOTabularOut,
+        model_out: ModelOut,
+    ) -> AiCOCOTableFormat:
+
+        regressions = aicoco_out["regressions"]
+        instances = aicoco_out["instances"]
+
+        for instance, pred in zip(instances, model_out):
+            instance["regressions"] = [
+                {"regression_id": regressions[i]["id"], "value": pred[i]}
+                for i in range(len(regressions))
+            ]
+
+        return {**aicoco_out}

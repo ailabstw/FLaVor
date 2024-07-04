@@ -78,6 +78,19 @@ class InferRegression(BaseModel):
     unit: Optional[str] = None
 
 
+class InferTabularRegression(BaseModel):
+    regression_id: str
+    value: float
+
+
+class InferInstance(BaseModel):
+    id: str
+    table_id: str
+    row_indexes: Sequence[int]
+    category_ids: Union[Sequence[int], None]
+    regressions: Union[Sequence[InferTabularRegression], None]
+
+
 class InferClassificationOutput(BaseModel, arbitrary_types_allowed=True, protected_namespaces=()):
     images: Sequence[AiImage]
     categories: Sequence[InferCategory]
@@ -196,6 +209,22 @@ class InferSegmentationOutput(BaseModel, arbitrary_types_allowed=True, protected
             )
 
         return data
+
+
+class InferTabularClassificationOutput(
+    BaseModel, arbitrary_types_allowed=True, protected_namespaces=()
+):
+    model_out: np.ndarray
+    categories: Sequence[InferCategory]
+    instances: Sequence[InferInstance]
+
+
+class InferTabularRegressionOutput(
+    BaseModel, arbitrary_types_allowed=True, protected_namespaces=()
+):
+    model_out: np.ndarray
+    regressions: Sequence[InferRegression]
+    instances: Sequence[InferInstance]
 
 
 InferOutput = Union[

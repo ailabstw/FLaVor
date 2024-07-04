@@ -366,6 +366,25 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         self.instances = None
         self.meta = None
 
+    def set_instances(self, df_tables) -> List[AiInstance]:
+        self.instances = []
+        for table_idx, df in enumerate(df_tables):
+            table_length = len(df)
+            num_instances = table_length // self.window_size
+            for i in range(num_instances):
+                start_index = i * self.window_size
+                end_index = start_index + self.window_size
+                row_indexes = list(range(start_index, end_index))
+
+                instance = {
+                    "id": generate(),
+                    "table_id": self.tables[table_idx]["id"],
+                    "row_indexes": row_indexes,
+                    "category_ids": None,
+                    "regressions": None,
+                }
+                self.instances.append(instance)
+
     def data_reader(
         self, files: Sequence[str], tables: Sequence[AiTable] = None, meta: AiMeta = None, **kwargs
     ):
@@ -383,7 +402,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
         assert len(files) == len(tables), "`files` and `tables` should have same length."
         assert "window_size" in meta, "`meta` should have `window_size` field."
-        self.table = tables
+        self.tables = tables
         self.meta = meta
         self.window_size = meta["window_size"]
 
@@ -413,6 +432,20 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
 
         return df_tables
 
+    def preprocess(self, data: Any) -> Any:
+        """
+        A default operation for transformations which is identical transformation.
+
+        Override it if you need other transformations like resizing or cropping, etc.
+
+        Args:
+            data (Any): Input data.
+
+        Returns:
+            Any: Preprocessed data.
+        """
+        return data
+
     def output_formatter(
         self,
         model_out: Any,
@@ -420,6 +453,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         categories: Optional[Sequence[InferCategory]] = None,
         regressions: Optional[Sequence[InferRegression]] = None,
         instances: Optional[Sequence[AiInstance]] = None,
+        meta: Optional[AiMeta] = None,
         **kwargs,
     ) -> Any:
         """
@@ -451,6 +485,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             categories=self.categories,
             regressions=self.regressions,
             instances=self.instances,
+            meta=self.meta,
         )
 
         return result
