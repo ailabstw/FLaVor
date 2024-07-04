@@ -731,6 +731,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
         model_out: np.ndarray,
         tables: Sequence[AiTable],
         categories: Sequence[InferCategory],
+        regressions: Sequence[InferRegression],
         instances: Sequence[InferInstance],
         meta: AiMeta = {},
         **kwargs,
@@ -739,6 +740,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
             model_out=model_out,
             tables=tables,
             categories=categories,
+            regressions=regressions,
             instances=instances,
             meta=meta,
         )
@@ -772,6 +774,7 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
         self,
         model_out: np.ndarray,
         tables: Sequence[AiTable],
+        categories: Sequence[InferCategory],
         regressions: Sequence[InferRegression],
         instances: Sequence[InferInstance],
         meta: AiMeta = {},
@@ -780,6 +783,7 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
         aicoco_out, model_out = self.prepare_aicoco(
             model_out=model_out,
             tables=tables,
+            categories=categories,
             regressions=regressions,
             instances=instances,
             meta=meta,
