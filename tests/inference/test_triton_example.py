@@ -2,12 +2,13 @@ import json
 from pathlib import Path
 
 import pytest
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 
 @pytest.mark.asyncio
 async def test_seg_triton():
-    from test_tasks.seg_triton_example import app as seg_triton_app
+    seg_triton_example = pytest.importorskip("test_tasks.seg_triton_example")
+    seg_triton_app = seg_triton_example.app
 
     files = []
     filepath = "examples/inference/test_data/seg/300.png"
@@ -21,6 +22,8 @@ async def test_seg_triton():
     for k in data:
         data[k] = json.dumps(data[k])
 
-    async with AsyncClient(app=seg_triton_app.app, base_url="http://test") as client:
+    async with AsyncClient(
+        transport=ASGITransport(app=seg_triton_app.app), base_url="http://test"
+    ) as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200

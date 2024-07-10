@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flavor"
-version = "2.0.0"
+version = "2.1.0"
 description = "AILabs Federated Learning and Validation Framework"
 authors = ["Stanley Huang <ding3820@gmail.com>", "Keng-Chi Liu <calvin89029@gmail.com>"]
 readme = "README.md"
@@ -38,6 +38,7 @@ torchvision = {version = "0.14.0", source = "torch-cu117"}
 lungmask = "^0.2.20"
 monai = {version = "~1.1.0", extras = ["einops"]}
 ultralytics = "^8.2.16"
+numpy = "<2.0.0"
 
 [tool.poetry.group.cls_example]
 optional = true
@@ -45,12 +46,14 @@ optional = true
 [tool.poetry.group.cls_example.dependencies]
 torch = {version = "1.13.0", source = "torch-cu117"}
 torchvision = {version = "0.14.0", source = "torch-cu117"}
+numpy = "<2.0.0"
 
 [tool.poetry.group.det_example]
 optional = true
 
 [tool.poetry.group.det_example.dependencies]
 ultralytics = "^8.2.16"
+numpy = "<2.0.0"
 
 [tool.poetry.group.reg_example]
 optional = true
@@ -58,6 +61,7 @@ optional = true
 [tool.poetry.group.reg_example.dependencies]
 torch = {version = "1.13.0", source = "torch-cu117"}
 torchvision = {version = "0.14.0", source = "torch-cu117"}
+numpy = "<2.0.0"
 
 [tool.poetry.group.seg_example]
 optional = true
@@ -65,6 +69,7 @@ optional = true
 [tool.poetry.group.seg_example.dependencies]
 simpleitk = "^2.3.1"
 lungmask = "^0.2.20"
+numpy = "<2.0.0"
 
 [tool.poetry.group.seg3d_example]
 optional = true
@@ -74,6 +79,7 @@ torch = {version = "1.13.0", source = "torch-cu117"}
 scipy = "^1.9.2"
 monai = {version = "~1.1.0", extras = ["einops"]}
 simpleitk = "^2.3.1"
+numpy = "<2.0.0"
 
 [tool.poetry.group.dev]
 optional = true
