@@ -6,7 +6,7 @@ import cv2  # type: ignore
 import numpy as np
 from nanoid import generate  # type: ignore
 
-from ..models import (
+from ..data_models.functional import (
     AiAnnotation,
     AiCategory,
     AiCOCOFormat,
@@ -59,7 +59,6 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             category["supercategory_id"] = supercategory_id_table.get(
                 category.pop("supercategory_name", None), None
             )
-
             res.append(category)
 
         for sup_class_name, n_id in supercategory_id_table.items():
@@ -89,7 +88,6 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             regression["superregression_id"] = superregression_id_table.get(
                 regression.pop("superregression_name", None), None
             )
-
             res.append(regression)
 
         for sup_regression_name, n_id in superregression_id_table.items():

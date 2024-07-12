@@ -6,13 +6,13 @@ import SimpleITK as sitk
 from lungmask import LMInferer
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import (
-    BaseAiCOCOImageInferenceModel,
+from flavor.serve.inference.data_models.api import (
     BaseAiCOCOImageInputDataModel,
     BaseAiCOCOImageOutputDataModel,
 )
-from flavor.serve.models import AiImage, InferCategory
-from flavor.serve.strategies import AiCOCOSegmentationOutputStrategy
+from flavor.serve.inference.data_models.functional import AiImage, InferCategory
+from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
+from flavor.serve.inference.strategies import AiCOCOSegmentationOutputStrategy
 
 
 class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):

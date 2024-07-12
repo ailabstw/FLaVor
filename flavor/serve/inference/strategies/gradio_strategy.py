@@ -9,11 +9,26 @@ from .base_strategy import BaseStrategy
 
 
 class BaseGradioStrategy(BaseStrategy):
+    """
+    Base class for Gradio strategies.
+
+    This class defines the structure for strategies that apply different
+    types of inference models using Gradio.
+
+    Please refer to examples/inference/gradio_example.ipynb for more detail.
+    """
+
     @abc.abstractmethod
     async def apply(self, *args, **kwargs):
         raise NotImplementedError
 
     def generate_rgb(self):
+        """
+        Generate a random RGB color with specific ranges for each component.
+
+        Returns:
+            Tuple[int, int, int]: A tuple containing the RGB values.
+        """
         components = ["r", "g", "b"]
         random.shuffle(components)
 
@@ -30,8 +45,24 @@ class BaseGradioStrategy(BaseStrategy):
 
 
 class GradioSegmentationStrategy(BaseGradioStrategy):
-    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+    """
+    Strategy for applying segmentation models using Gradio.
 
+    Methods:
+        apply(result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+            Apply the segmentation strategy to the given result.
+    """
+
+    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+        """
+        Apply the segmentation strategy to the given result.
+
+        Args:
+            result (Dict[str, Any]): The input result containing the data and model output.
+
+        Returns:
+            Tuple[List[Any], List[Any], None, str]: The processed data, mask, None, and status message.
+        """
         data = result["data"]  # shape: (c, z, y, x) or (c, y, x)
         data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
         if data.ndim == 3:
@@ -66,8 +97,24 @@ class GradioSegmentationStrategy(BaseGradioStrategy):
 
 
 class GradioDetectionStrategy(BaseGradioStrategy):
-    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+    """
+    Strategy for applying detection models using Gradio.
 
+    Methods:
+        apply(result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+            Apply the detection strategy to the given result.
+    """
+
+    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+        """
+        Apply the detection strategy to the given result.
+
+        Args:
+            result (Dict[str, Any]): The input result containing the data and model output.
+
+        Returns:
+            Tuple[List[Any], List[Any], None, str]: The processed data, bounding box visualization, None, and status message.
+        """
         data = result["data"]  # shape: (c, y, x)
         data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
         data = np.repeat(data, 3, axis=0) if data.shape[0] == 1 else data

@@ -1,88 +1,11 @@
 import logging
-import warnings
 from abc import abstractmethod
 from typing import Any, List, Optional, Sequence, Tuple
 
-from fastapi import UploadFile
-from nanoid import generate
-from pydantic import BaseModel, ValidationError, model_validator
+from pydantic import ValidationError
 
-from flavor.serve.models import AiCOCOFormat, AiImage, InferCategory, InferRegression
-
+from ..data_models.functional import AiImage, InferCategory, InferRegression
 from .base_inference_model import BaseAiCOCOInferenceModel
-
-
-class BaseAiCOCOImageInputDataModel(BaseModel):
-    """
-    Base class for defining input data model with AiCOCO format.
-
-    Inherit it if you need extra fields.
-
-    Note that `images` and `files` could not be `None` at the same time.
-
-    Attributes:
-        images (Optional[Sequence[AiImage]]): Sequence of AiImage objects. Defaults to None.
-        files (Optional[Sequence[UploadFile]]): Sequence of UploadFile objects. Defaults to None.
-
-    Example:
-    ```
-    class InputDataModel(BaseAiCOCOImageInputDataModel):
-        image_embeddings: NpArray
-
-    InputDataModel(
-        {
-            "images": ...,
-            "image_embeddings": ...
-        }
-    )
-    ```
-    """
-
-    images: Optional[Sequence[AiImage]] = None
-    files: Optional[Sequence[UploadFile]] = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_images_files(cls, data: Any) -> Any:
-        images = data.get("images", None)
-        files = data.get("files", None)
-        assert images or files, "`images` and `files` could not be `None` at the same time."
-        return data
-
-
-class BaseAiCOCOImageOutputDataModel(AiCOCOFormat):
-    """
-    Base class for defining output data model with AiCOCO format.
-
-    Inherit it if you need extra fields.
-
-    Attributes:
-        images (Sequence[AiImage]): Sequence of AiImage objects. Defaults to None.
-        annotations (Sequence[AiAnnotation]): Sequence of AiAnnotation objects. Defaults to None.
-        categories (Sequence[AiCategory]): Sequence of AiCategory objects. Defaults to None.
-        regressions (Sequence[AiRegression]): Sequence of AiRegression objects. Defaults to None.
-        objects (Sequence[AiObject]): Sequence of AiObject objects. Defaults to None.
-        meta (AiMeta): AiMeta object. Defaults to None.
-
-    Example:
-    ```
-    class OutputDataModel(BaseAiCOCOImageOutputDataModel):
-        mask_bin: NpArray
-
-    OutputDataModel(
-        {
-            "images": ...,
-            "annotations": ...,
-            "categories": ...,
-            "objects": ...,
-            "meta": ...,
-            "mask_bin": ...
-        }
-    )
-    ```
-    """
-
-    pass
 
 
 class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
@@ -130,21 +53,11 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
                     f"Input number of `files`({len(files)}) and `images`({len(images)}) not supported."
                 )
         elif files and not images:
-            # Not sure if we should handle this
-            for file in files:
-                self.images.append(
-                    {
-                        "id": generate(),
-                        "index": 0,
-                        "file_name": file,
-                        "category_ids": None,
-                        "regressions": None,
-                    }
-                )
+            raise ValueError("`images` are not provided.")
         elif not files and images:
             self.images = images
         else:
-            warnings.warn("`files` and `images` not specified.")
+            raise ValueError("Both `files` and `images` are not provided.")
 
     @abstractmethod
     def data_reader(
@@ -163,7 +76,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         Returns:
             Tuple[Any, Optional[List[str]], Optional[Any]]: A tuple containing data, modified filenames, and metadata.
         """
-        pass
+        raise NotImplementedError
 
     def _update_images(
         self, files: Sequence[str] = [], modified_filenames: Sequence[str] = None, **kwargs
@@ -256,7 +169,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         Returns:
             Any: AiCOCO formatted output.
         """
-        pass
+        raise NotImplementedError
 
     def check_images(self):
         """
@@ -275,19 +188,19 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             else:
                 raise TypeError("`self.images` should have type of `Sequence[AiImage]`.")
 
-    def __call__(self, **net_input) -> Any:
+    def __call__(self, **inputs: dict) -> Any:
         """
         Run the inference model.
         """
-        self._set_images(**net_input)
+        self._set_images(**inputs)
         self.check_images()
 
-        data, modified_filenames, metadata = self.data_reader(**net_input)
+        data, modified_filenames, metadata = self.data_reader(**inputs)
         if modified_filenames is not None:
             if not isinstance(modified_filenames, Sequence):
                 raise TypeError("`modified_filenames` should have type of `Sequence`.")
 
-        self._update_images(modified_filenames=modified_filenames, **net_input)
+        self._update_images(modified_filenames=modified_filenames, **inputs)
 
         x = self.preprocess(data)
         out = self.inference(x)

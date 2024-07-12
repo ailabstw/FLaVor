@@ -4,9 +4,20 @@ from pathlib import Path
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from flavor.serve.inference.inference_models import BaseTritonClient
+
+
+@pytest.fixture(scope="session", autouse=True)
+def triton_client():
+    try:
+        BaseTritonClient(triton_url="localhost:8000")
+    except ConnectionError:
+        pytest.skip("No connection to Triton server")
+
 
 @pytest.mark.asyncio
 async def test_seg_triton():
+
     seg_triton_example = pytest.importorskip("test_tasks.seg_triton_example")
     seg_triton_app = seg_triton_example.app
 

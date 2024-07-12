@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any, Callable, List, Optional, Sequence
 
-from flavor.serve.models import InferCategory, InferRegression
+from ..data_models.functional import InferCategory, InferRegression
 
 
 class BaseInferenceModel(ABC):
     @abstractmethod
     def __call__(self) -> Any:
-        pass
+        raise NotImplementedError
 
 
 class BaseAiCOCOInferenceModel(BaseInferenceModel):
@@ -52,7 +52,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
             Callable: The defined inference network instance.
                 The return value would be assigned to `self.network`.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def set_categories(self) -> Optional[List[InferCategory]]:
@@ -62,7 +62,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         Returns:
             List[InferCategory]: A list defining inference categories.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def set_regressions(self) -> Optional[List[InferRegression]]:
@@ -72,11 +72,10 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         Returns:
             List[InferRegression]: A list defining inference regressions.
         """
-        pass
+        raise NotImplementedError
 
     @abstractmethod
     def preprocess(self, net_input: Any) -> Any:
-        pass
         """
         Abstract method to preprocess the input data where transformations like resizing and cropping operated.
 
@@ -86,10 +85,10 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         Returns:
             Any: Preprocessed data.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def inference(self, x: Any) -> Any:
-        pass
         """
         Abstract method to perform inference.
 
@@ -101,10 +100,10 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         Returns:
             Any: Inference result.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def postprocess(self, out: Any) -> Any:
-        pass
         """
         Abstract method to post-process the inference result where activations like softmax or sigmoid performed.
 
@@ -114,6 +113,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         Returns:
             Any: Post-processed result.
         """
+        raise NotImplementedError
 
     @abstractmethod
     def output_formatter(
@@ -123,7 +123,6 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         regressions: Optional[Sequence[InferRegression]] = None,
         **kwargs,
     ) -> Any:
-        pass
         """
         Abstract method to format the output of inference model.
         This is just a template for you to make sure you make use of `categories` and `regressions`.
@@ -137,9 +136,10 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         Returns:
             Any: Formatted output.
         """
+        raise NotImplementedError
 
     @abstractmethod
-    def __call__(self, **net_input) -> Any:
+    def __call__(self, **inputs: dict) -> Any:
         """
         Abstract method to run inference model.
 
@@ -150,12 +150,12 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
             Any: The formatted inference result.
         """
 
-        x = self.preprocess(**net_input)
+        x = self.preprocess(**inputs)
         out = self.inference(x)
         out = self.postprocess(out)
 
         result = self.output_formatter(
-            out, categories=self.categories, regressions=self.regressions, **net_input
+            out, categories=self.categories, regressions=self.regressions, **inputs
         )
 
         return result

@@ -7,8 +7,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from nanoid import generate
 from pydantic import BaseModel
 
+from .inference.strategies.gradio_strategy import BaseGradioStrategy
 from .invocations import InferInvocationAPP
-from .strategies.gradio_strategy import BaseGradioStrategy
 
 __all__ = ["InferAPP", "GradioInferAPP"]
 

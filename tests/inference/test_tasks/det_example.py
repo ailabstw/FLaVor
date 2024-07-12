@@ -6,13 +6,18 @@ import numpy as np
 from ultralytics import YOLO
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import (
-    BaseAiCOCOImageInferenceModel,
+from flavor.serve.inference.data_models.api import (
     BaseAiCOCOImageInputDataModel,
     BaseAiCOCOImageOutputDataModel,
 )
-from flavor.serve.models import AiImage, DetModelOut, InferCategory, InferRegression
-from flavor.serve.strategies import AiCOCODetectionOutputStrategy
+from flavor.serve.inference.data_models.functional import (
+    AiImage,
+    DetModelOut,
+    InferCategory,
+    InferRegression,
+)
+from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
+from flavor.serve.inference.strategies import AiCOCODetectionOutputStrategy
 
 
 class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):

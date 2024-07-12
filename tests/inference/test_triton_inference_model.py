@@ -1,19 +1,29 @@
 import numpy as np
 import pytest
 
-from flavor.serve.inference.base_triton_inference_model import (
-    TritonInferenceModel,
-    TritonInferenceModelSharedSystemMemory,
+from flavor.serve.inference.inference_models import (
     BaseTritonClient,
+    TritonInferenceModelSharedSystemMemory,
 )
 
-client = BaseTritonClient(triton_url="localhost:8000")
+
+@pytest.fixture(scope="session", autouse=True)
+def triton_client():
+    try:
+        client = BaseTritonClient(triton_url="localhost:8000")
+    except ConnectionError:
+        pytest.skip("No connection to Triton server")
+    return client
 
 
-@pytest.mark.skipif(
-    client.model_configs.get("echo", {}).get("state") != "READY", reason=f"model: echo is not READY"
-)
-def test_triton_inference_model():
+def check_model(client, model_name):
+    if client.model_configs.get(model_name, {}).get("state") != "READY":
+        pytest.skip(f"Model {model_name} is not in READY state")
+    return model_name
+
+
+def test_triton_inference_model(triton_client):
+    check_model(triton_client, "echo")
     model = TritonInferenceModelSharedSystemMemory(
         triton_url="localhost:8000",
         model_name="echo",
@@ -34,11 +44,7 @@ def test_triton_inference_model():
     del model
 
 
-@pytest.mark.skipif(
-    client.model_configs.get("resnet50", {}).get("state") != "READY",
-    reason=f"model: resnet50 is not READY",
-)
-def test_triton_shm_inference_model():
+def test_triton_shm_inference_model(triton_client):
     """
     resnet50 is onnx model of a torchvision model converted with torch.
     Loaded to Triton inference server with minimal config.pbtxt:
@@ -70,6 +76,7 @@ def test_triton_shm_inference_model():
 
     In this test case, client instance is deleted and tests are repeated to ensure shm destructor works properly.
     """
+    check_model(triton_client, "resnet50")
     for _ in range(2):
         model = TritonInferenceModelSharedSystemMemory(
             triton_url="localhost:8000",
