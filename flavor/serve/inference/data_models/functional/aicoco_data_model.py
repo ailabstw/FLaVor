@@ -65,13 +65,10 @@ class AiImage(BaseModel, extra="allow"):
     regressions: Union[Sequence[AiRegressionItem], None]
 
 
-class AiCOCOFormat(BaseModel, extra="forbid"):
+class AiCOCOImageFormat(BaseModel, extra="forbid"):
     images: Sequence[AiImage]
     annotations: Sequence[AiAnnotation]
     categories: Sequence[AiCategory]
     regressions: Sequence[AiRegression]
     objects: Sequence[AiObject]
     meta: AiMeta
-
-
-# TODO add Image predix

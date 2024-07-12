@@ -9,7 +9,7 @@ from nanoid import generate  # type: ignore
 from ..data_models.functional import (
     AiAnnotation,
     AiCategory,
-    AiCOCOFormat,
+    AiCOCOImageFormat,
     AiImage,
     AiMeta,
     AiObject,
@@ -31,7 +31,9 @@ AiCOCOOut = Dict[
 
 class BaseAiCOCOOutputStrategy(BaseStrategy):
     @abstractmethod
-    def model_to_aicoco(self, aicoco_out: AiCOCOOut, model_out: ModelOut, **kwargs) -> AiCOCOFormat:
+    def model_to_aicoco(
+        self, aicoco_out: AiCOCOOut, model_out: ModelOut, **kwargs
+    ) -> AiCOCOImageFormat:
         """
         Abstract method to convert model output to AiCOCO compatible format.
         """
@@ -169,7 +171,7 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
         categories: Sequence[InferCategory],
         model_out: np.ndarray,
         **kwargs,
-    ) -> AiCOCOFormat:
+    ) -> AiCOCOImageFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
@@ -179,13 +181,13 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (np.ndarray): Inference model output.
 
         Returns:
-            AiCOCOFormat: Result in complete AiCOCO format.
+            AiCOCOImageFormat: Result in complete AiCOCO format.
         """
         aicoco_out, model_out = self.prepare_aicoco(
             images=images, categories=categories, model_out=model_out
         )
         response = self.model_to_aicoco(aicoco_out, model_out)
-        AiCOCOFormat.model_validate(response)
+        AiCOCOImageFormat.model_validate(response)
         return response
 
     def prepare_aicoco(
@@ -199,7 +201,7 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
         InferSegmentationOutput.model_validate(infer_output)
         return super().prepare_aicoco(**infer_output)
 
-    def model_to_aicoco(self, aicoco_out: AiCOCOOut, model_out: ModelOut) -> AiCOCOFormat:
+    def model_to_aicoco(self, aicoco_out: AiCOCOOut, model_out: ModelOut) -> AiCOCOImageFormat:
         """
         Convert segmentation inference model output to AiCOCO compatible format.
 
@@ -208,7 +210,7 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (ModelOut): Segmentation inference model output.
 
         Returns:
-            AiCOCOFormat: Result in AiCOCO compatible format.
+            AiCOCOImageFormat: Result in AiCOCO compatible format.
         """
         annot_obj = self.generate_annotations_objects(model_out)
 
@@ -306,7 +308,7 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
         categories: Sequence[InferCategory],
         model_out: np.ndarray,
         **kwargs,
-    ) -> AiCOCOFormat:
+    ) -> AiCOCOImageFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
@@ -316,13 +318,13 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (np.ndarray): Inference model output.
 
         Returns:
-            AiCOCOFormat: Result in complete AiCOCO format.
+            AiCOCOImageFormat: Result in complete AiCOCO format.
         """
         aicoco_out, model_out = self.prepare_aicoco(
             images=images, categories=categories, model_out=model_out
         )
         response = self.model_to_aicoco(aicoco_out, model_out)
-        AiCOCOFormat.model_validate(response)
+        AiCOCOImageFormat.model_validate(response)
         return response
 
     def prepare_aicoco(
@@ -340,7 +342,7 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
         self,
         aicoco_out: AiCOCOOut,
         model_out: ModelOut,
-    ) -> AiCOCOFormat:
+    ) -> AiCOCOImageFormat:
         """
         Convert classification inference model output to AiCOCO compatible format.
 
@@ -349,7 +351,7 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (ModelOut): Classification inference model output.
 
         Returns:
-            AiCOCOFormat: Result in AiCOCO compatible format.
+            AiCOCOImageFormat: Result in AiCOCO compatible format.
         """
         aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(
             model_out, aicoco_out["images"], aicoco_out["meta"]
@@ -421,7 +423,7 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         regressions: Sequence[InferRegression],
         model_out: np.ndarray,
         **kwargs,
-    ) -> AiCOCOFormat:
+    ) -> AiCOCOImageFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
@@ -432,13 +434,13 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (np.ndarray): Inference model output.
 
         Returns:
-            AiCOCOFormat: Result in complete AiCOCO format.
+            AiCOCOImageFormat: Result in complete AiCOCO format.
         """
         aicoco_out, model_out = self.prepare_aicoco(
             images=images, categories=categories, regressions=regressions, model_out=model_out
         )
         response = self.model_to_aicoco(aicoco_out, model_out)
-        AiCOCOFormat.model_validate(response)
+        AiCOCOImageFormat.model_validate(response)
         return response
 
     def prepare_aicoco(self, **infer_output: InferDetectionOutput) -> Tuple[AiCOCOOut, np.ndarray]:
@@ -454,7 +456,7 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         self,
         aicoco_out: AiCOCOOut,
         model_out: ModelOut,
-    ) -> AiCOCOFormat:
+    ) -> AiCOCOImageFormat:
         """
         Convert detection inference model output to AiCOCO compatible format.
 
@@ -463,7 +465,7 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (ModelOut): Detection inference model output.
 
         Returns:
-            AiCOCOFormat: Result in AiCOCO compatible format.
+            AiCOCOImageFormat: Result in AiCOCO compatible format.
         """
         annot_obj = self.generate_annotations_objects(model_out)
 
@@ -567,7 +569,7 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
         regressions: Sequence[InferRegression],
         model_out: np.ndarray,
         **kwargs,
-    ) -> AiCOCOFormat:
+    ) -> AiCOCOImageFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
@@ -577,13 +579,13 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (np.ndarray): Inference model output.
 
         Returns:
-            AiCOCOFormat: Result in complete AiCOCO format.
+            AiCOCOImageFormat: Result in complete AiCOCO format.
         """
         aicoco_out, model_out = self.prepare_aicoco(
             images=images, regressions=regressions, model_out=model_out
         )
         response = self.model_to_aicoco(aicoco_out, model_out)
-        AiCOCOFormat.model_validate(response)
+        AiCOCOImageFormat.model_validate(response)
         return response
 
     def prepare_aicoco(self, **infer_output: InferRegressionOutput) -> Tuple[AiCOCOOut, np.ndarray]:
@@ -599,7 +601,7 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
         self,
         aicoco_out: AiCOCOOut,
         model_out: ModelOut,
-    ) -> AiCOCOFormat:
+    ) -> AiCOCOImageFormat:
         """
         Convert regression inference model output to AiCOCO compatible format.
 
@@ -608,7 +610,7 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
             model_out (ModelOut): Regression inference model output.
 
         Returns:
-            AiCOCOFormat: Result in AiCOCO compatible format.
+            AiCOCOImageFormat: Result in AiCOCO compatible format.
         """
         aicoco_out["images"], aicoco_out["meta"] = self.update_images_meta(
             model_out, aicoco_out["images"], aicoco_out["meta"]

@@ -6,7 +6,7 @@ import numpy as np
 from fastapi import UploadFile
 from pydantic import BaseModel, model_serializer, model_validator
 
-from ..functional import AiCOCOFormat, AiImage
+from ..functional import AiCOCOImageFormat, AiImage
 
 
 class NpArray(BaseModel, arbitrary_types_allowed=True):
@@ -100,7 +100,7 @@ class BaseAiCOCOImageInputDataModel(BaseModel):
         return data
 
 
-class BaseAiCOCOImageOutputDataModel(AiCOCOFormat):
+class BaseAiCOCOImageOutputDataModel(AiCOCOImageFormat):
     """
     Base class for defining output data model with AiCOCO format.
 
