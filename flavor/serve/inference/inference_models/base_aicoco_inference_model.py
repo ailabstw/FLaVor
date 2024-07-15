@@ -31,33 +31,35 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             images (Sequence[AiImage], optional): List of AiCOCO image elements. Defaults to [].
 
         """
-        self.images = []
-        if files and images:
-            if len(files) == len(images):
-                # check if `files` in formdata is matched with `file_name` in AiCOCO input
-                for file in files:
-                    try:
-                        self.images.append(
-                            next(
-                                format_image
-                                for format_image in images
-                                if format_image["file_name"].replace("/", "_") in file
-                            )
-                        )
-                    except StopIteration:
-                        raise Exception(f"Filename {file} not matched.")
-            elif len(files) == 1 and len(images) > 1:
-                self.images = images
-            else:
-                raise ValueError(
-                    f"Input number of `files`({len(files)}) and `images`({len(images)}) not supported."
-                )
-        elif files and not images:
+        if not images:
             raise ValueError("`images` are not provided.")
-        elif not files and images:
+
+        self.images = []
+
+        if not files:
             self.images = images
-        else:
-            raise ValueError("Both `files` and `images` are not provided.")
+            return
+
+        # 3D input
+        if len(files) == 1 and len(images) > 1:
+            self.images = images
+            return
+
+        if len(files) != len(images):
+            raise ValueError(
+                f"Input number of `files`({len(files)}) and `images`({len(images)}) are not matched."
+            )
+
+        for file in files:
+            matched_image = next(
+                (img for img in images if img["file_name"].replace("/", "_") in file), None
+            )
+            if matched_image:
+                self.images.append(matched_image)
+            else:
+                raise Exception(f"Filename {file} not matched.")
+
+        self.check_images()
 
     @abstractmethod
     def data_reader(
@@ -89,10 +91,14 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             modified_filenames (Sequence[str]): List of modified filenames.
         """
         if modified_filenames is not None and files:
+            if not isinstance(modified_filenames, Sequence):
+                raise TypeError("`modified_filenames` should have type of `Sequence`.")
+
             if len(self.images) != len(modified_filenames):
                 raise ValueError(
                     "`self.images` and `modified_filenames` have different amount of elements."
                 )
+
             updated_indices = []
             for file in modified_filenames:
                 updated_indices.append(files.index(file))
@@ -193,12 +199,8 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         Run the inference model.
         """
         self._set_images(**inputs)
-        self.check_images()
 
         data, modified_filenames, metadata = self.data_reader(**inputs)
-        if modified_filenames is not None:
-            if not isinstance(modified_filenames, Sequence):
-                raise TypeError("`modified_filenames` should have type of `Sequence`.")
 
         self._update_images(modified_filenames=modified_filenames, **inputs)
 

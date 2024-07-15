@@ -1,3 +1,4 @@
+import traceback
 from typing import Callable, Optional, Sequence, Type
 
 import gradio as gr
@@ -7,7 +8,6 @@ from fastapi.middleware.gzip import GZipMiddleware
 from nanoid import generate
 from pydantic import BaseModel
 
-from .inference.strategies.gradio_strategy import BaseGradioStrategy
 from .invocations import InferInvocationAPP
 
 __all__ = ["InferAPP", "GradioInferAPP"]
@@ -71,11 +71,11 @@ class CustomAPP(BaseAPP):
         self.app.add_middleware(GZipMiddleware)
 
 
-class GradioInferAPP(object):
+class GradioInferAPP:
     def __init__(
         self,
         infer_function: Callable,
-        output_strategy: Type[BaseGradioStrategy] = None,
+        output_strategy: Type[BaseModel] = None,
     ):
 
         self.infer_function = infer_function
@@ -99,15 +99,16 @@ class GradioInferAPP(object):
         try:
             result = self.infer_function(**data_dict)
             if self.output_strategy:
-                response = await self.output_strategy.apply(result)
+                response = self.output_strategy(**result)
             else:
                 response = result
-        except Exception as e:
-            return None, None, None, f"error: {e}"
+        except Exception:
+            err_msg = traceback.format_exc()
+            return None, None, None, err_msg
 
         return response
 
-    def run(self, port=9000, **kwargs):
+    def run(self, port=9111, **kwargs):
 
         iface = gr.Interface(
             fn=self.invocations,

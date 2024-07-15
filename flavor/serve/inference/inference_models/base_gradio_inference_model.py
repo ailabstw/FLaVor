@@ -1,3 +1,8 @@
+from typing import Any, Optional, Sequence
+
+import numpy as np
+
+from ..data_models.functional import InferCategory, InferRegression
 from .base_aicoco_inference_model import BaseAiCOCOImageInferenceModel
 
 
@@ -9,17 +14,35 @@ class GradioInferenceModel(BaseAiCOCOImageInferenceModel):
     to perform the complete inference pipeline, especially for `output_formatter` taking extra argument `x`.
     """
 
+    def __init__(self):
+        super().__init__()
+
+    def output_formatter(
+        self,
+        model_out: np.ndarray,
+        data: np.ndarray,
+        categories: Optional[Sequence[InferCategory]] = None,
+        regressions: Optional[Sequence[InferRegression]] = None,
+        **kwargs
+    ) -> Any:
+        output = {
+            "model_out": model_out,
+            "data": data,
+            "categories": categories,
+            "regressions": regressions,
+        }
+        return output
+
     def __call__(self, **inputs: dict):
-        self.categories = self.set_categories()
-        self.regressions = self.set_regressions()
 
         data, _, metadata = self.data_reader(**inputs)
 
         x = self.preprocess(data)
         out = self.inference(x)
         out = self.postprocess(out, metadata=metadata)
+
         result = self.output_formatter(
-            out, categories=self.categories, regressions=self.regressions, data=x, **inputs
+            model_out=out, data=data, categories=self.categories, regressions=self.regressions
         )
 
         return result

@@ -1,10 +1,10 @@
-import abc
 import random
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
 from PIL import Image, ImageDraw
 
+from ..data_models.functional import AiImage, InferCategory, InferRegression
 from .base_strategy import BaseStrategy
 
 
@@ -17,10 +17,6 @@ class BaseGradioStrategy(BaseStrategy):
 
     Please refer to examples/inference/gradio_example.ipynb for more detail.
     """
-
-    @abc.abstractmethod
-    async def apply(self, *args, **kwargs):
-        raise NotImplementedError
 
     def generate_rgb(self):
         """
@@ -43,27 +39,43 @@ class BaseGradioStrategy(BaseStrategy):
 
         return rgb["r"], rgb["g"], rgb["b"]
 
+    def __call__(
+        self,
+        images: Sequence[AiImage],
+        categories: Sequence[InferCategory],
+        regressions: Sequence[InferRegression],
+        model_out: np.ndarray,
+        **kwargs,
+    ) -> Tuple[List, List, None, str]:
+
+        return self.apply(images, categories, regressions, model_out)
+
 
 class GradioSegmentationStrategy(BaseGradioStrategy):
     """
     Strategy for applying segmentation models using Gradio.
 
-    Methods:
-        apply(result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
-            Apply the segmentation strategy to the given result.
     """
 
-    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+    def __call__(
+        self,
+        categories: Sequence[InferCategory],
+        model_out: np.ndarray,
+        data: np.ndarray,
+        **kwargs,
+    ) -> Tuple[List, List, None, str]:
         """
         Apply the segmentation strategy to the given result.
 
         Args:
-            result (Dict[str, Any]): The input result containing the data and model output.
+            categories (Sequence[InferCategory]): List of unprocessed categories.
+            model_out (np.ndarray): Inference model output.
+            data (np.ndarray): Raw input data.
 
         Returns:
             Tuple[List[Any], List[Any], None, str]: The processed data, mask, None, and status message.
         """
-        data = result["data"]  # shape: (c, z, y, x) or (c, y, x)
+        # shape: (c, z, y, x) or (c, y, x)
         data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
         if data.ndim == 3:
             data = np.expand_dims(data, axis=1)
@@ -71,18 +83,18 @@ class GradioSegmentationStrategy(BaseGradioStrategy):
 
         mask = np.zeros_like(data)
 
-        for cls_idx in range(result["model_out"].shape[0]):
-            if not result["categories"][cls_idx]["display"]:
+        for cls_idx in range(model_out.shape[0]):
+            if not categories[cls_idx]["display"]:
                 continue
 
-            if "color" in result["categories"][cls_idx]:
+            if "color" in categories[cls_idx]:
                 rgb_tuple = tuple(
-                    int(result["categories"][cls_idx]["color"][i : i + 2], 16) for i in (1, 3, 5)
+                    int(categories[cls_idx]["color"][i : i + 2], 16) for i in (1, 3, 5)
                 )
             else:
                 rgb_tuple = self.generate_rgb()
 
-            cls_volume = result["model_out"][cls_idx]
+            cls_volume = model_out[cls_idx]
 
             mask[0][cls_volume != 0] = rgb_tuple[0]
             mask[1][cls_volume != 0] = rgb_tuple[1]
@@ -100,34 +112,37 @@ class GradioDetectionStrategy(BaseGradioStrategy):
     """
     Strategy for applying detection models using Gradio.
 
-    Methods:
-        apply(result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
-            Apply the detection strategy to the given result.
     """
 
-    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
+    def __call__(
+        self,
+        categories: Sequence[InferCategory],
+        model_out: np.ndarray,
+        data: np.ndarray,
+        **kwargs,
+    ) -> Tuple[List, List, None, str]:
         """
         Apply the detection strategy to the given result.
 
         Args:
-            result (Dict[str, Any]): The input result containing the data and model output.
+            categories (Sequence[InferCategory]): List of unprocessed categories.
+            model_out (np.ndarray): Inference model output.
+            data (np.ndarray): Raw input data.
 
         Returns:
             Tuple[List[Any], List[Any], None, str]: The processed data, bounding box visualization, None, and status message.
         """
-        data = result["data"]  # shape: (c, y, x)
+        # shape: (c, y, x)
         data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
         data = np.repeat(data, 3, axis=0) if data.shape[0] == 1 else data
 
         img = Image.fromarray(data.transpose((1, 2, 0))).convert("RGB")
         draw = ImageDraw.Draw(img)
 
-        bbox_pred = result["model_out"]["bbox_pred"]
-        cls_pred = result["model_out"]["cls_pred"]
+        bbox_pred = model_out["bbox_pred"]
+        cls_pred = model_out["cls_pred"]
         confidence_score = (
-            result["model_out"]["confidence_score"]
-            if "confidence_score" in result["model_out"]
-            else None
+            model_out["confidence_score"] if "confidence_score" in model_out else None
         )
 
         for i in range(len(bbox_pred)):
@@ -135,14 +150,14 @@ class GradioDetectionStrategy(BaseGradioStrategy):
             cls_idx = np.argmax(cls_pred[i])
             confidence = confidence_score[i] if confidence_score is not None else ""
 
-            if "color" in result["categories"][cls_idx]:
+            if "color" in categories[cls_idx]:
                 rgb_tuple = tuple(
-                    int(result["categories"][cls_idx]["color"][i : i + 2], 16) for i in (1, 3, 5)
+                    int(categories[cls_idx]["color"][i : i + 2], 16) for i in (1, 3, 5)
                 )
             else:
                 rgb_tuple = self.generate_rgb()
 
-            name = result["categories"][cls_idx]["name"]
+            name = categories[cls_idx]["name"]
             draw.rectangle(tuple([x_min, y_min, x_max, y_max]), outline=rgb_tuple, width=1)
             draw.text((x_min, y_min), f"{name} {confidence:.4f}", fill=rgb_tuple, align="left")
 
