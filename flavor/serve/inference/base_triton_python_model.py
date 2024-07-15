@@ -7,7 +7,9 @@ import triton_python_backend_utils as pb_utils
 
 class BaseTritonPythonModel(metaclass=abc.ABCMeta):
     """
-    This class aims to simplify python backend model implementation. A valid python backend model must be name `TritonPythonModel`. You can inherit this `BaseTritonPythonModel` to handle the complex communication to Triton model server for you.
+    This class aims to simplify python backend model implementations on Triton inference servers.
+    A valid python backend model must be name `TritonPythonModel`.
+    You can inherit this `BaseTritonPythonModel` to handle the complex communication to Triton model server for you.
 
     A `TritonPythonModel` have three abstract methods:
     - initialize: called on model load
