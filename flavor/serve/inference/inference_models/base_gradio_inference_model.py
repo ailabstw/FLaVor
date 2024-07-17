@@ -1,8 +1,7 @@
-from typing import Any, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 
-from ..data_models.functional import InferCategory, InferRegression
 from .base_aicoco_inference_model import BaseAiCOCOImageInferenceModel
 
 
@@ -21,8 +20,8 @@ class GradioInferenceModel(BaseAiCOCOImageInferenceModel):
         self,
         model_out: np.ndarray,
         data: np.ndarray,
-        categories: Optional[Sequence[InferCategory]] = None,
-        regressions: Optional[Sequence[InferRegression]] = None,
+        categories: Optional[Sequence[Dict[str, Any]]] = None,
+        regressions: Optional[Sequence[Dict[str, Any]]] = None,
         **kwargs
     ) -> Any:
         output = {
@@ -33,7 +32,7 @@ class GradioInferenceModel(BaseAiCOCOImageInferenceModel):
         }
         return output
 
-    def __call__(self, **inputs: dict):
+    def __call__(self, **inputs: Dict):
 
         data, _, metadata = self.data_reader(**inputs)
 

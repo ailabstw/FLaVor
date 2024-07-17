@@ -1,36 +1,30 @@
-from enum import Enum
-from typing import Optional, Sequence, Union
+"""
+This module defines a set of Pydantic models for handling AICOCO format.
+"""
+from typing import Literal, Optional, Sequence
 
 from pydantic import BaseModel
 
 
-class Iscrowd(Enum):
-    number_0 = 0
-    number_1 = 1
-
-
-class AiAnnotation(BaseModel):
+class AiAnnotation(BaseModel, extra="allow"):
     id: str
     image_id: str
-    iscrowd: Iscrowd
+    iscrowd: Literal[0, 1]
     object_id: str
-    bbox: Union[Sequence[Sequence[int]], None]
-    segmentation: Union[Sequence[Sequence[int]], None]
+    bbox: Optional[Sequence[Sequence[int]]]
+    segmentation: Optional[Sequence[Sequence[int]]]
 
 
-class AiCategory(BaseModel):
+class AiCategory(BaseModel, extra="allow"):
     id: str
     name: str
-    supercategory_id: Union[str, None]
-    color: Optional[str] = None
+    supercategory_id: Optional[str]
 
 
-class AiRegression(BaseModel):
+class AiRegression(BaseModel, extra="allow"):
     id: str
     name: str
-    superregression_id: Union[str, None]
-    unit: Optional[str] = None
-    threshold: Optional[str] = None
+    superregression_id: Optional[str]
 
 
 class AiRegressionItem(BaseModel, extra="forbid"):
@@ -38,31 +32,23 @@ class AiRegressionItem(BaseModel, extra="forbid"):
     value: float
 
 
-class AiObject(BaseModel):
+class AiObject(BaseModel, extra="allow"):
     id: str
-    category_ids: Union[Sequence[str], None]
-    regressions: Union[Sequence[AiRegressionItem], None]
-    confidence: Optional[float] = None
+    category_ids: Optional[Sequence[str]]
+    regressions: Optional[Sequence[AiRegressionItem]]
 
 
-class TaskType(Enum):
-    binary = "binary"
-    multilabel = "multilabel"
-    multiclass = "multiclass"
-
-
-class AiMeta(BaseModel):
-    category_ids: Union[Sequence[str], None]
-    regressions: Union[Sequence[AiRegressionItem], None]
-    task_type: Optional[TaskType] = None
+class AiMeta(BaseModel, extra="allow"):
+    category_ids: Optional[Sequence[str]]
+    regressions: Optional[Sequence[AiRegressionItem]]
 
 
 class AiImage(BaseModel, extra="allow"):
     file_name: str
     id: str
     index: int
-    category_ids: Union[Sequence[str], None]
-    regressions: Union[Sequence[AiRegressionItem], None]
+    category_ids: Optional[Sequence[str]]
+    regressions: Optional[Sequence[AiRegressionItem]]
 
 
 class AiCOCOImageFormat(BaseModel, extra="forbid"):
