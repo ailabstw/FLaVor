@@ -13,6 +13,7 @@ class BaseTritonClient:
     BaseTritonClient is a base class that sets up connections with Triton Inference Server.
     """
 
+    # for more details regarding data types, see: https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/model_configuration.html#datatypes
     DTYPES_CONFIG_TO_API = {
         "TYPE_BOOL": "BOOL",
         "TYPE_UINT8": "UINT8",
@@ -57,7 +58,10 @@ class BaseTritonClient:
         """
         client = tritonclient.http.InferenceServerClient(triton_url)
         try:
-            client.is_server_ready()
+            # client.is_server_ready() would raise timeout error if failed
+            if not client.is_server_ready():
+                # client.is_server_ready() would return false if not ready
+                raise ConnectionError
             return client
         except Exception:
             raise ConnectionError(f"cannot connect to triton inference server at {triton_url}")
