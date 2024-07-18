@@ -12,7 +12,7 @@ class BaseTritonPythonModel(metaclass=abc.ABCMeta):
     You can inherit this `BaseTritonPythonModel` to handle the complex communication to Triton model server for you.
 
     A `TritonPythonModel` have three abstract methods:
-    - initialize: called on model load
+    - initialize: called on model load. you should **initialize your model here**.
     - execute: handle requests
     - finalize: called on model unload
 
