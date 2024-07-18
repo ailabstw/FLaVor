@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 import cv2
 import numpy as np
@@ -10,12 +10,7 @@ from flavor.serve.inference.data_models.api import (
     BaseAiCOCOImageInputDataModel,
     BaseAiCOCOImageOutputDataModel,
 )
-from flavor.serve.inference.data_models.functional import (
-    AiImage,
-    DetModelOut,
-    InferCategory,
-    InferRegression,
-)
+from flavor.serve.inference.data_models.functional import AiImage
 from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
 from flavor.serve.inference.strategies import AiCOCODetectionOutputStrategy
 
@@ -25,7 +20,7 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
         self.formatter = AiCOCODetectionOutputStrategy()
         super().__init__()
 
-    def define_inference_network(self):
+    def define_inference_network(self) -> Callable:
         ckpt_path = os.path.join(os.getcwd(), "best.pt")
         if not os.path.exists(ckpt_path):
             from urllib.request import urlretrieve
@@ -36,7 +31,7 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
             )
         return YOLO(ckpt_path)
 
-    def set_categories(self):
+    def set_categories(self) -> List[Dict[str, Any]]:
         categories = [
             {"name": "RBC", "display": True},
             {"name": "WBC", "display": True},
@@ -44,7 +39,7 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
         ]
         return categories
 
-    def set_regressions(self):
+    def set_regressions(self) -> None:
         return None
 
     def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
@@ -53,10 +48,10 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
 
         return image, None, None
 
-    def inference(self, x: np.ndarray) -> np.ndarray:
+    def inference(self, x: np.ndarray) -> Any:
         return self.network.predict(x, conf=0.7)[0]
 
-    def postprocess(self, model_out: Any, **kwargs) -> DetModelOut:
+    def postprocess(self, model_out: Any, **kwargs) -> Dict[str, Any]:
 
         format_output = {
             "bbox_pred": [],
@@ -76,12 +71,12 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
 
     def output_formatter(
         self,
-        model_out: DetModelOut,
+        model_out: Dict[str, Any],
         images: Sequence[AiImage],
-        categories: List[InferCategory],
-        regressions: List[InferRegression],
+        categories: Sequence[Dict[str, Any]],
+        regressions: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> Any:
+    ) -> BaseAiCOCOImageOutputDataModel:
         output = self.formatter(
             model_out=model_out, images=images, categories=categories, regressions=regressions
         )

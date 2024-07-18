@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 import numpy as np
 import scipy.ndimage as ndimage
@@ -14,7 +14,7 @@ from flavor.serve.inference.data_models.api import (
     BaseAiCOCOImageInputDataModel,
     BaseAiCOCOImageOutputDataModel,
 )
-from flavor.serve.inference.data_models.functional import AiImage, InferCategory
+from flavor.serve.inference.data_models.functional import AiImage
 from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
 from flavor.serve.inference.strategies import AiCOCOSegmentationOutputStrategy
 
@@ -25,7 +25,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
 
-    def define_inference_network(self):
+    def define_inference_network(self) -> Callable:
         model = SwinUNETR(
             img_size=(96, 96, 96),
             in_channels=1,
@@ -50,7 +50,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
 
         return model
 
-    def set_categories(self) -> List[InferCategory]:
+    def set_categories(self) -> List[Dict[str, Any]]:
         categories = [
             {"name": "Background", "display": False},
             {"name": "Spleen", "display": True},
@@ -74,7 +74,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
 
     def data_reader(
         self, files: Sequence[str], **kwargs
-    ) -> Tuple[np.ndarray, List[str], Tuple[int]]:
+    ) -> Tuple[np.ndarray, List[str], Tuple[int, ...]]:
         def sort_images_by_z_axis(filenames):
 
             sorted_reader_filename_pairs = []
@@ -128,7 +128,18 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
             )
         return out
 
-    def postprocess(self, out: torch.Tensor, metadata: Tuple[int]) -> np.ndarray:
+    def postprocess(self, out: torch.Tensor, metadata: Tuple[int, ...]) -> np.ndarray:
+        """
+        Apply softmax and perform inverse resample back to original image size.
+
+        Args:
+            out (torch.Tensor): Inference model output.
+            metadata (Tuple[int, ...]): Original image size.
+
+        Returns:
+            np.ndarray: Prediction output.
+        """
+
         def resample_3d(img, target_size):
             imx, imy, imz = img.shape
             tx, ty, tz = target_size
@@ -150,9 +161,9 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
         self,
         model_out: np.ndarray,
         images: Sequence[AiImage],
-        categories: Sequence[InferCategory],
+        categories: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> Any:
+    ) -> BaseAiCOCOImageOutputDataModel:
 
         output = self.formatter(model_out=model_out, images=images, categories=categories)
 

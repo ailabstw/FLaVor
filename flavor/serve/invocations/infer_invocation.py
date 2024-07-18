@@ -4,7 +4,7 @@ import pathlib
 import traceback
 from collections.abc import Iterable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import Callable
+from typing import Callable, Dict
 
 import aiofile
 from fastapi import FastAPI, Request, status
@@ -46,16 +46,16 @@ class InferInvocationAPP:
         self.input_data_model = input_data_model
         self.output_data_model = output_data_model
 
-    async def save_temp_files(self, input_dict: dict, tempdir: TemporaryDirectory) -> dict:
+    async def save_temp_files(self, input_dict: Dict, tempdir: TemporaryDirectory) -> Dict:
         """
         Save uploaded files as temporary files and update the input dictionary with the file paths.
 
         Args:
-            input_dict (dict): The input data dictionary.
+            input_dict (Dict): The input data dictionary.
             tempdir (TemporaryDirectory): The temporary directory to save the files.
 
         Returns:
-            dict: The updated input dictionary with file paths.
+            Dict: The updated input dictionary with file paths.
         """
         for k in input_dict:
             if isinstance(input_dict[k], Iterable) and all(
@@ -76,12 +76,12 @@ class InferInvocationAPP:
 
         return input_dict
 
-    def deserialize(self, form_data: dict) -> dict:
+    def deserialize(self, form_data: Dict) -> Dict:
         """
         Deserialize the form data into a dictionary.
 
         Args:
-            form_data (dict): The form data from the request.
+            form_data (Dict): The form data from the request.
 
         Returns:
             dict: The deserialized input dictionary.
@@ -116,7 +116,7 @@ class InferInvocationAPP:
             tempdir: TemporaryDirectory = TemporaryDirectory()
             input_dict = await self.save_temp_files(input_dict, tempdir)
             response = self.infer_function(**input_dict)
-            self.output_data_model.model_validate(response)
+            response = self.output_data_model.model_validate(response)
 
         except Exception:
             err_msg = traceback.format_exc()

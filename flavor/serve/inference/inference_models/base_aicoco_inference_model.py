@@ -1,11 +1,164 @@
-import logging
 from abc import abstractmethod
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
-from pydantic import ValidationError
+from pydantic import BaseModel
 
-from ..data_models.functional import AiImage, InferCategory, InferRegression
-from .base_inference_model import BaseAiCOCOInferenceModel
+from ..data_models.functional import AiImage
+from .base_inference_model import BaseInferenceModel
+
+
+class InferCategory(BaseModel):
+    name: str
+    supercategory_name: Optional[str] = None
+
+
+class InferRegression(BaseModel):
+    name: str
+    superregression_name: Optional[str] = None
+
+
+class BaseAiCOCOInferenceModel(BaseInferenceModel):
+    def __init__(self):
+        self.network = self.define_inference_network()
+        self.categories = self.set_categories()
+        self.check_categories()
+
+        self.regressions = self.set_regressions()
+        self.check_regressions()
+
+    def check_categories(self):
+        """
+        Check if defined categories field is valid for AiCOCO format.
+        """
+        if self.categories is not None:
+            if isinstance(self.categories, Sequence):
+                if not all(InferCategory.model_validate(c) for c in self.categories):
+                    raise ValueError(
+                        "Not all elements in `self.categories` is valid for category structure."
+                    )
+            else:
+                raise TypeError("`categories` should have type of `Sequence[InferCategory]`.")
+
+    def check_regressions(self):
+        """
+        Check if defined regressions field is valid for AiCOCO format.
+        """
+        if self.regressions is not None:
+            if isinstance(self.regressions, Sequence):
+                if not all(InferRegression.model_validate(c) for c in self.regressions):
+                    raise ValueError(
+                        "Not all elements in `self.regressions` is valid for regression structure."
+                    )
+            else:
+                raise TypeError("`regressions` should have type of `Sequence[InferRegression]`.")
+
+    @abstractmethod
+    def define_inference_network(self) -> Callable:
+        """
+        Abstract method to define the inference network.
+
+        Returns:
+            Callable: The defined inference network instance.
+                The return value would be assigned to `self.network`.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_categories(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Abstract method to set inference categories. Return `None` if no categories.
+
+        Returns:
+            List[Dict[str, Any]]: A list defining inference categories.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_regressions(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Abstract method to set inference regressions. Return `None` if no regressions.
+
+        Returns:
+            List[Dict[str, Any]]: A list defining inference regressions.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def preprocess(self, net_input: Any) -> Any:
+        """
+        Abstract method to preprocess the input data where transformations like resizing and cropping operated.
+
+        Args:
+            data (Any): Input data.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def inference(self, x: Any) -> Any:
+        """
+        Abstract method to perform inference.
+
+        Override it if needed.
+
+        Args:
+            x (Any): Input data.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def postprocess(self, out: Any) -> Any:
+        """
+        Abstract method to post-process the inference result where activations like softmax or sigmoid performed.
+
+        Args:
+            out (Any): Inference result.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def output_formatter(
+        self,
+        model_out: Any,
+        categories: Optional[Sequence[Dict[str, Any]]] = None,
+        regressions: Optional[Sequence[Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Any:
+        """
+        Abstract method to format the output of inference model.
+        This is just a template for you to make sure you make use of `categories` and `regressions`.
+        Override it with your additional arguments such as `images`.
+
+        Args:
+            model_out (Any): Inference output.
+            categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
+            regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def __call__(self, **inputs) -> Any:
+        """
+        Abstract method to run inference model.
+
+        This method orchestrates the entire inference process: preprocessing,
+        inference, postprocessing, and output formatting.
+
+        For example:
+
+        ```
+        x = self.preprocess(**inputs)
+        out = self.inference(x)
+        out = self.postprocess(out)
+
+        # generate result in specific format
+        result = self.output_formatter(
+            out, categories=self.categories, regressions=self.regressions, **inputs
+        )
+
+        return result
+        ```
+        """
+        raise NotImplementedError
 
 
 class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
@@ -19,16 +172,18 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         network (Callable): The inference network or model.
     """
 
-    def _set_images(self, files: Sequence[str] = [], images: Sequence[AiImage] = [], **kwargs):
+    def _set_images(
+        self, images: Sequence[Dict[str, Any]], files: Optional[Sequence[str]] = None, **kwargs
+    ):
         """
         Set `self.images` attribute for AiCOCO format.
-        This method takes `files` and `images` as inputs and we expect at least one of them should not be empty list.
-        It is not recommended to have both values empty list as it would result in an empty list for `self.image`.
+        This method takes `files` and `images` as inputs and we expect `images` is always provided.
+        It is not recommended to have both `files` and `images` empty as it would result in an empty list for `self.image`.
         Users must be aware of this behavior and handle `self.images` afterwards if AiCOCO format is desired.
 
         Args:
-            files (Sequence[str]): List of input filenames. Defaults to [].
-            images (Sequence[AiImage], optional): List of AiCOCO image elements. Defaults to [].
+            images (Sequence[AiImage]): List of AiCOCO image elements.
+            files (Optional[Sequence[str]]): List of input filenames. Default: None.
 
         """
         if not images:
@@ -36,41 +191,49 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         self.images = []
 
+        # if no files and only images is given, e.g., request with image embedding and corresponding images field
+        # we directly assign `images` to `self.images`
         if not files:
-            self.images = images
+            self.images = [AiImage.model_validate(img) for img in images]
             return
 
-        # 3D input
-        if len(files) == 1 and len(images) > 1:
-            self.images = images
-            return
+        images_file_name = [img["file_name"] for img in images]
 
-        if len(files) != len(images):
+        # 3D : 1 files & n images; n files & n images
+        # 2D : 1 files & 1 images
+        m = len(set(files))
+        n = len(set(images_file_name))
+        if m == n:
+            for file in files:
+                matched_index = next(
+                    (
+                        i
+                        for i in range(len(images_file_name))
+                        if images_file_name[i].replace("/", "_") in file
+                    ),
+                    None,
+                )
+
+                if matched_index is not None:
+                    images_file_name.pop(matched_index)
+                    self.images.append(AiImage.model_validate(images[matched_index]))
+                else:
+                    raise ValueError(f"File {file} is not matched with `file_name` in `images`.")
+        else:
             raise ValueError(
-                f"Input number of `files`({len(files)}) and `images`({len(images)}) are not matched."
+                f"The number of `files` and `file_name` in `images` is not valid. `files` has {m} elements but file_name in `images` has {n} elements."
             )
-
-        for file in files:
-            matched_image = next(
-                (img for img in images if img["file_name"].replace("/", "_") in file), None
-            )
-            if matched_image:
-                self.images.append(matched_image)
-            else:
-                raise Exception(f"Filename {file} not matched.")
-
-        self.check_images()
 
     @abstractmethod
     def data_reader(
-        self, files: Sequence[str], **kwargs
+        self, files: Optional[Sequence[str]] = None, **kwargs
     ) -> Tuple[Any, Optional[List[str]], Optional[Any]]:
         """
         Abstract method to read data for inference model.
         This method should return three things:
         1. data: in np.ndarray or torch.Tensor for inference model.
-        2. modified_filenames: modified list of filenames if the order of `files` is altered.
-        3. metadata: useful metadata for the following steps.
+        2. modified_filenames: modified list of filenames if the order of `files` is altered (e.g., 3D multiple slices input).
+        3. metadata: necessary metadata for the post-processing.
 
         Args:
             files (Sequence[str]): List of input filenames.
@@ -81,27 +244,39 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         raise NotImplementedError
 
     def _update_images(
-        self, files: Sequence[str] = [], modified_filenames: Sequence[str] = None, **kwargs
+        self,
+        files: Optional[Sequence[str]] = None,
+        modified_filenames: Optional[Sequence[str]] = None,
+        **kwargs,
     ):
         """
         Update the images based on modified filenames.
 
         Args:
-            files (Sequence[str]): List of input filenames.
-            modified_filenames (Sequence[str]): List of modified filenames.
+            files (Sequence[str]): List of input filenames. Default: None.
+            modified_filenames (Optional[Sequence[str]]): List of modified filenames. Default: None.
         """
-        if modified_filenames is not None and files:
-            if not isinstance(modified_filenames, Sequence):
-                raise TypeError("`modified_filenames` should have type of `Sequence`.")
+
+        if modified_filenames is not None and files is not None:
+
+            if len(files) != len(modified_filenames):
+                raise ValueError(
+                    f"The number of `files` ({len(files)}) and `modified_filenames` ({len(modified_filenames)}) is not matched."
+                )
 
             if len(self.images) != len(modified_filenames):
                 raise ValueError(
-                    "`self.images` and `modified_filenames` have different amount of elements."
+                    f"The number of `self.images` ({len(self.images)}) and `modified_filenames` ({len(modified_filenames)}) is not matched."
                 )
 
+            images_file_name = [img.file_name for img in self.images]
             updated_indices = []
+
             for file in modified_filenames:
-                updated_indices.append(files.index(file))
+                for i, file_name in enumerate(images_file_name):
+                    if file_name.replace("/", "_") in file:
+                        updated_indices.append(i)
+
             if len(self.images) != len(updated_indices):
                 raise ValueError(
                     "Each element of `images` and `modified_filenames` should be matched."
@@ -145,7 +320,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         Args:
             out (Any): Inference result.
-            metadata (Any, optional): Additional metadata. Defaults to None.
+            metadata (Any, optional): Additional metadata. Default: None.
 
         Returns:
             Any: Post-processed result.
@@ -157,9 +332,9 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
     def output_formatter(
         self,
         model_out: Any,
+        categories: Optional[Sequence[Dict[str, Any]]] = None,
+        regressions: Optional[Sequence[Dict[str, Any]]] = None,
         images: Optional[Sequence[AiImage]] = None,
-        categories: Optional[Sequence[InferCategory]] = None,
-        regressions: Optional[Sequence[InferRegression]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -168,33 +343,16 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         Args:
             model_out (Any): Inference output.
-            images (Optional[Sequence[AiImage]], optional): List of images. Defaults to None.
-            categories (Optional[Sequence[InferCategory]], optional): List of inference categories. Defaults to None.
-            regressions (Optional[Sequence[InferRegression]], optional): List of inference regressions. Defaults to None.
+            categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
+            regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
+            images (Optional[Sequence[AiImage]]): List of images. Default: None.
 
         Returns:
             Any: AiCOCO formatted output.
         """
         raise NotImplementedError
 
-    def check_images(self):
-        """
-        Check if defined images field is valid for AiCOCO format.
-        """
-        if self.images is None:
-            raise ValueError("`self.images` should not be None.")
-        else:
-            if isinstance(self.images, Sequence):
-                try:
-                    for i in self.images:
-                        AiImage.model_validate(i)
-                except ValidationError:
-                    logging.error("Each element of `self.images` should have format of `AiImage`.")
-                    raise
-            else:
-                raise TypeError("`self.images` should have type of `Sequence[AiImage]`.")
-
-    def __call__(self, **inputs: dict) -> Any:
+    def __call__(self, **inputs) -> Any:
         """
         Run the inference model.
         """
@@ -209,7 +367,10 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         out = self.postprocess(out, metadata=metadata)
 
         result = self.output_formatter(
-            out, images=self.images, categories=self.categories, regressions=self.regressions
+            out,
+            categories=self.categories,
+            regressions=self.regressions,
+            images=self.images,
         )
 
         return result

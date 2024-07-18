@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Sequence, Tuple
 import numpy as np
 from PIL import Image, ImageDraw
 
-from ..data_models.functional import AiImage, InferCategory, InferRegression
+from ..data_models.functional import AiImage
 from .base_strategy import BaseStrategy
 
 
@@ -42,8 +42,8 @@ class BaseGradioStrategy(BaseStrategy):
     def __call__(
         self,
         images: Sequence[AiImage],
-        categories: Sequence[InferCategory],
-        regressions: Sequence[InferRegression],
+        categories: Sequence[Dict[str, Any]],
+        regressions: Sequence[Dict[str, Any]],
         model_out: np.ndarray,
         **kwargs,
     ) -> Tuple[List, List, None, str]:
@@ -59,21 +59,21 @@ class GradioSegmentationStrategy(BaseGradioStrategy):
 
     def __call__(
         self,
-        categories: Sequence[InferCategory],
+        categories: Sequence[Dict[str, Any]],
         model_out: np.ndarray,
         data: np.ndarray,
         **kwargs,
-    ) -> Tuple[List, List, None, str]:
+    ) -> Tuple[List[np.ndarray], List[np.ndarray], None, str]:
         """
         Apply the segmentation strategy to the given result.
 
         Args:
-            categories (Sequence[InferCategory]): List of unprocessed categories.
+            categories (Sequence[Dict[str, Any]]): List of unprocessed categories.
             model_out (np.ndarray): Inference model output.
             data (np.ndarray): Raw input data.
 
         Returns:
-            Tuple[List[Any], List[Any], None, str]: The processed data, mask, None, and status message.
+            Tuple[List[np.ndarray], List[np.ndarray], None, str]: The processed data, mask, None, and status message.
         """
         # shape: (c, z, y, x) or (c, y, x)
         data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
@@ -116,21 +116,21 @@ class GradioDetectionStrategy(BaseGradioStrategy):
 
     def __call__(
         self,
-        categories: Sequence[InferCategory],
+        categories: Sequence[Dict[str, Any]],
         model_out: np.ndarray,
         data: np.ndarray,
         **kwargs,
-    ) -> Tuple[List, List, None, str]:
+    ) -> Tuple[List[np.ndarray], List[np.ndarray], None, str]:
         """
         Apply the detection strategy to the given result.
 
         Args:
-            categories (Sequence[InferCategory]): List of unprocessed categories.
+            categories (Sequence[Dict[str, Any]]): List of unprocessed categories.
             model_out (np.ndarray): Inference model output.
             data (np.ndarray): Raw input data.
 
         Returns:
-            Tuple[List[Any], List[Any], None, str]: The processed data, bounding box visualization, None, and status message.
+            Tuple[List[np.ndarray], List[np.ndarray], None, str]: The processed data, bounding box visualization, None, and status message.
         """
         # shape: (c, y, x)
         data = ((data - np.min(data)) / (np.max(data) - np.min(data)) * 255).astype(np.uint8)
