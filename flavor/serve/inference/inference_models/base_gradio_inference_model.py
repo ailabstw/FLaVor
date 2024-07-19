@@ -2,10 +2,10 @@ from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 
-from .base_aicoco_inference_model import BaseAiCOCOImageInferenceModel
+from .base_aicoco_inference_model import BaseAiCOCOInferenceModel
 
 
-class GradioInferenceModel(BaseAiCOCOImageInferenceModel):
+class GradioInferenceModel(BaseAiCOCOInferenceModel):
     """
     A model for performing inference on images using Gradio.
 

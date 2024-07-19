@@ -172,11 +172,42 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         network (Callable): The inference network or model.
     """
 
-    def _set_images(
-        self, images: Sequence[Dict[str, Any]], files: Optional[Sequence[str]] = None, **kwargs
-    ):
+    @abstractmethod
+    def define_inference_network(self) -> Callable:
         """
-        Set `self.images` attribute for AiCOCO format.
+        Abstract method to define the inference network.
+
+        Returns:
+            Callable: The defined inference network instance.
+                The return value would be assigned to `self.network`.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_categories(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Abstract method to set inference categories. Return `None` if no categories.
+
+        Returns:
+            List[Dict[str, Any]]: A list defining inference categories.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_regressions(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Abstract method to set inference regressions. Return `None` if no regressions.
+
+        Returns:
+            List[Dict[str, Any]]: A list defining inference regressions.
+        """
+        raise NotImplementedError
+
+    def _set_images(
+        self, images: Sequence[Dict[str, Any]], files: Optional[Sequence[str]] = None
+    ) -> List[AiImage]:
+        """
+        Initialize `self.images` attribute for AiCOCO format.
         This method takes `files` and `images` as inputs and we expect `images` is always provided.
         It is not recommended to have both `files` and `images` empty as it would result in an empty list for `self.image`.
         Users must be aware of this behavior and handle `self.images` afterwards if AiCOCO format is desired.
@@ -184,45 +215,59 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         Args:
             images (Sequence[AiImage]): List of AiCOCO image elements.
             files (Optional[Sequence[str]]): List of input filenames. Default: None.
-
         """
-        if not images:
-            raise ValueError("`images` are not provided.")
+        if files:
+            images_file_name = [img["file_name"] for img in images]
 
-        self.images = []
+            m = len(set(files))
+            n = len(set(images_file_name))
 
-        # if no files and only images is given, e.g., request with image embedding and corresponding images field
-        # we directly assign `images` to `self.images`
-        if not files:
-            self.images = [AiImage.model_validate(img) for img in images]
-            return
+            if m == n:
+                if len(files) == 1 and len(images) >= 1:
+                    # 1 file  & 1 images
+                    # 1 files & n images
+                    # order by index in images
+                    updated_images = [
+                        AiImage.model_validate(sorted_img)
+                        for sorted_img in sorted(images, key=lambda x: x["index"])
+                    ]
+                    self.images = updated_images
 
-        images_file_name = [img["file_name"] for img in images]
+                elif len(files) > 1 and len(files) == len(images):
+                    # n files & n images
+                    # order by files
+                    updated_images = []
+                    for file in files:
+                        matched_index = next(
+                            (
+                                i
+                                for i in range(len(images_file_name))
+                                if images_file_name[i].replace("/", "_") in file
+                            ),
+                            None,
+                        )
+                        if matched_index is not None:
+                            updated_images.append(AiImage.model_validate(images[matched_index]))
+                        else:
+                            raise ValueError(
+                                f"File {file} is not matched with `file_name` in `images`."
+                            )
+                    self.images = updated_images
 
-        # 3D : 1 files & n images; n files & n images
-        # 2D : 1 files & 1 images
-        m = len(set(files))
-        n = len(set(images_file_name))
-        if m == n:
-            for file in files:
-                matched_index = next(
-                    (
-                        i
-                        for i in range(len(images_file_name))
-                        if images_file_name[i].replace("/", "_") in file
-                    ),
-                    None,
-                )
-
-                if matched_index is not None:
-                    images_file_name.pop(matched_index)
-                    self.images.append(AiImage.model_validate(images[matched_index]))
                 else:
-                    raise ValueError(f"File {file} is not matched with `file_name` in `images`.")
+                    raise ValueError(
+                        f"The number of `files` and `file_name` in `images` is not expected. `files` has {len(files)} elements but file_name in `images` has {len(images)} elements."
+                    )
+            else:
+                raise ValueError(
+                    f"The number of `files` and `file_name` in `images` is not valid. `files` has {m} unique elements but file_name in `images` has {n} unique elements."
+                )
         else:
-            raise ValueError(
-                f"The number of `files` and `file_name` in `images` is not valid. `files` has {m} elements but file_name in `images` has {n} elements."
-            )
+            updated_images = [
+                AiImage.model_validate(sorted_img)
+                for sorted_img in sorted(images, key=lambda x: x["index"])
+            ]
+            self.images = updated_images
 
     @abstractmethod
     def data_reader(
@@ -242,46 +287,6 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             Tuple[Any, Optional[List[str]], Optional[Any]]: A tuple containing data, modified filenames, and metadata.
         """
         raise NotImplementedError
-
-    def _update_images(
-        self,
-        files: Optional[Sequence[str]] = None,
-        modified_filenames: Optional[Sequence[str]] = None,
-        **kwargs,
-    ):
-        """
-        Update the images based on modified filenames.
-
-        Args:
-            files (Sequence[str]): List of input filenames. Default: None.
-            modified_filenames (Optional[Sequence[str]]): List of modified filenames. Default: None.
-        """
-
-        if modified_filenames is not None and files is not None:
-
-            if len(files) != len(modified_filenames):
-                raise ValueError(
-                    f"The number of `files` ({len(files)}) and `modified_filenames` ({len(modified_filenames)}) is not matched."
-                )
-
-            if len(self.images) != len(modified_filenames):
-                raise ValueError(
-                    f"The number of `self.images` ({len(self.images)}) and `modified_filenames` ({len(modified_filenames)}) is not matched."
-                )
-
-            images_file_name = [img.file_name for img in self.images]
-            updated_indices = []
-
-            for file in modified_filenames:
-                for i, file_name in enumerate(images_file_name):
-                    if file_name.replace("/", "_") in file:
-                        updated_indices.append(i)
-
-            if len(self.images) != len(updated_indices):
-                raise ValueError(
-                    "Each element of `images` and `modified_filenames` should be matched."
-                )
-            self.images = [self.images[i] for i in updated_indices]
 
     def preprocess(self, data: Any) -> Any:
         """
@@ -312,7 +317,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         return self.network(x)
 
-    def postprocess(self, out: Any, metadata: Any = None) -> Any:
+    def postprocess(self, out: Any, metadata: Optional[Any] = None) -> Any:
         """
         A default operation for post-processing which is identical transformation.
 
@@ -356,11 +361,9 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         """
         Run the inference model.
         """
-        self._set_images(**inputs)
+        data, files, metadata = self.data_reader(**inputs)
 
-        data, modified_filenames, metadata = self.data_reader(**inputs)
-
-        self._update_images(modified_filenames=modified_filenames, **inputs)
+        self._set_images(images=inputs["images"], files=files)
 
         x = self.preprocess(data)
         out = self.inference(x)

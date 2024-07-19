@@ -75,37 +75,45 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def data_reader(
         self, files: Sequence[str], **kwargs
     ) -> Tuple[np.ndarray, List[str], Tuple[int, ...]]:
-        def sort_images_by_z_axis(filenames):
+        if len(files) > 1:
+            # read multiple dicom
+            def sort_images_by_z_axis(filenames):
 
-            sorted_reader_filename_pairs = []
+                sorted_reader_filename_pairs = []
 
-            for f in filenames:
-                dicom_reader = sitk.ImageFileReader()
-                dicom_reader.SetFileName(f)
-                dicom_reader.ReadImageInformation()
+                for f in filenames:
+                    dicom_reader = sitk.ImageFileReader()
+                    dicom_reader.SetFileName(f)
+                    dicom_reader.ReadImageInformation()
 
-                sorted_reader_filename_pairs.append((dicom_reader, f))
+                    sorted_reader_filename_pairs.append((dicom_reader, f))
 
-            zs = [
-                float(r.GetMetaData(key="0020|0032").split("\\")[-1])
-                for r, _ in sorted_reader_filename_pairs
-            ]
+                zs = [
+                    float(r.GetMetaData(key="0020|0032").split("\\")[-1])
+                    for r, _ in sorted_reader_filename_pairs
+                ]
 
-            sort_inds = np.argsort(zs)[::-1]
-            sorted_reader_filename_pairs = [sorted_reader_filename_pairs[s] for s in sort_inds]
+                sort_inds = np.argsort(zs)[::-1]
+                sorted_reader_filename_pairs = [sorted_reader_filename_pairs[s] for s in sort_inds]
 
-            return sorted_reader_filename_pairs
+                return sorted_reader_filename_pairs
 
-        pairs = sort_images_by_z_axis(files)
+            pairs = sort_images_by_z_axis(files)
 
-        readers, sorted_filenames = zip(*pairs)
-        sorted_filenames = list(sorted_filenames)
+            readers, sorted_filenames = zip(*pairs)
+            sorted_filenames = list(sorted_filenames)
 
-        simages = [sitk.GetArrayFromImage(r.Execute()).squeeze() for r in readers]
-        volume = np.stack(simages)
-        volume = np.expand_dims(volume, axis=0)
+            simages = [sitk.GetArrayFromImage(r.Execute()).squeeze() for r in readers]
+            volume = np.stack(simages)
+            volume = np.expand_dims(volume, axis=0)
 
-        return volume, sorted_filenames, volume.shape[1:]
+            return volume, sorted_filenames, volume.shape[1:]
+
+        else:
+            # read nifti file
+            sitk_reader = sitk.ReadImage(files)
+            volume = sitk.GetArrayFromImage(sitk_reader)
+            return volume, None, volume.shape[1:]
 
     def preprocess(self, data: np.ndarray) -> torch.Tensor:
         infer_transform = transforms.Compose(
