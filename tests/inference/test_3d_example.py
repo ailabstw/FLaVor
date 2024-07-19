@@ -50,9 +50,9 @@ async def test_seg3d():
     src = "examples/inference/test_data/seg/img0062"
     input_files = glob.glob(src + "/*")
     if not input_files:
-        print("Testing input files are not found. Downloading...")
+        print("Multiple dicom testing files are not found. Downloading...")
         download_file_from_google_drive("1h23vhCuUIKJkFw6jC7VV2XU9lGFuxrLw", src + ".zip")
-        print("Download complete")
+        print("Multiple dicom download complete")
         os.makedirs(src, exist_ok=True)
         import zipfile
 
@@ -78,6 +78,10 @@ async def test_seg3d():
 
     # single nifti file
     input_volumetric_files = "examples/inference/test_data/seg/img0062.nii.gz"
+    if not os.path.exists(input_volumetric_files):
+        print("Nifti testing file is not found. Downloading...")
+        download_file_from_google_drive("1dgvHBlNtuzRON2NsTvykSQjtOG7KBuyX", input_volumetric_files)
+        print("Nifti file download complete")
 
     files_volume = []
     filepath = Path(input_volumetric_files)

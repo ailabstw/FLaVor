@@ -216,58 +216,28 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             images (Sequence[AiImage]): List of AiCOCO image elements.
             files (Optional[Sequence[str]]): List of input filenames. Default: None.
         """
-        if files:
-            images_file_name = [img["file_name"] for img in images]
+        # make sure `files` has no duplicate
+        assert len(files) == len(set(files)), "Each element of `files` should be unique."
 
-            m = len(set(files))
-            n = len(set(images_file_name))
+        self.images = []
+        files = files if files else []
 
-            if m == n:
-                if len(files) == 1 and len(images) >= 1:
-                    # 1 file  & 1 images
-                    # 1 files & n images
-                    # order by index in images
-                    updated_images = [
-                        AiImage.model_validate(sorted_img)
-                        for sorted_img in sorted(images, key=lambda x: x["index"])
-                    ]
-                    self.images = updated_images
-
-                elif len(files) > 1 and len(files) == len(images):
-                    # n files & n images
-                    # order by files
-                    updated_images = []
-                    for file in files:
-                        matched_index = next(
-                            (
-                                i
-                                for i in range(len(images_file_name))
-                                if images_file_name[i].replace("/", "_") in file
-                            ),
-                            None,
-                        )
-                        if matched_index is not None:
-                            updated_images.append(AiImage.model_validate(images[matched_index]))
-                        else:
-                            raise ValueError(
-                                f"File {file} is not matched with `file_name` in `images`."
-                            )
-                    self.images = updated_images
-
-                else:
-                    raise ValueError(
-                        f"The number of `files` and `file_name` in `images` is not expected. `files` has {len(files)} elements but file_name in `images` has {len(images)} elements."
-                    )
-            else:
-                raise ValueError(
-                    f"The number of `files` and `file_name` in `images` is not valid. `files` has {m} unique elements but file_name in `images` has {n} unique elements."
-                )
+        if len(files) <= 1:
+            # only 1 image or 1 file and n images
+            for sorted_img in sorted(images, key=lambda x: x["index"]):
+                self.images.append(AiImage.model_validate(sorted_img))
         else:
-            updated_images = [
-                AiImage.model_validate(sorted_img)
-                for sorted_img in sorted(images, key=lambda x: x["index"])
-            ]
-            self.images = updated_images
+            images_file_name = [img["file_name"].replace("/", "_") for img in images]
+            if len(files) != len(set(images_file_name)):
+                raise ValueError(
+                    f"The number of `files` and `file_name` in `images` is not valid. `files` has {len(files)} unique elements but file_name in `images` has {set(images_file_name)} unique elements."
+                )
+            # n files and n images
+            for file in files:
+                for i, file_name in enumerate(images_file_name):
+                    if file_name in file:
+                        self.images.append(AiImage.model_validate(images[i]))
+                        break
 
     @abstractmethod
     def data_reader(
@@ -357,13 +327,12 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         """
         raise NotImplementedError
 
-    def __call__(self, **inputs) -> Any:
+    def __call__(self, images: Dict[str, Any], files: Optional[str] = None, **kwargs) -> Any:
         """
         Run the inference model.
         """
-        data, files, metadata = self.data_reader(**inputs)
-
-        self._set_images(images=inputs["images"], files=files)
+        data, modified_files, metadata = self.data_reader(files=files, **kwargs)
+        self._set_images(images=images, files=modified_files if modified_files else files)
 
         x = self.preprocess(data)
         out = self.inference(x)

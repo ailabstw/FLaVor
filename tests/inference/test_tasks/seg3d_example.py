@@ -93,7 +93,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
                     for r, _ in sorted_reader_filename_pairs
                 ]
 
-                sort_inds = np.argsort(zs)[::-1]
+                sort_inds = np.argsort(zs)
                 sorted_reader_filename_pairs = [sorted_reader_filename_pairs[s] for s in sort_inds]
 
                 return sorted_reader_filename_pairs
