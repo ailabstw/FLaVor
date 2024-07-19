@@ -215,29 +215,33 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         Args:
             images (Sequence[AiImage]): List of AiCOCO image elements.
             files (Optional[Sequence[str]]): List of input filenames. Default: None.
+
+        1. len(files) == len(set(files))
+        2. set(files) == set(images_file_name)
+        3. sort by index
+        4. sort by files
         """
-        # make sure `files` has no duplicate
-        assert len(files) == len(set(files)), "Each element of `files` should be unique."
-
         self.images = []
-        files = files if files else []
 
-        if len(files) <= 1:
-            # only 1 image or 1 file and n images
+        if not files:
             for sorted_img in sorted(images, key=lambda x: x["index"]):
                 self.images.append(AiImage.model_validate(sorted_img))
-        else:
-            images_file_name = [img["file_name"].replace("/", "_") for img in images]
-            if len(files) != len(set(images_file_name)):
-                raise ValueError(
-                    f"The number of `files` and `file_name` in `images` is not valid. `files` has {len(files)} unique elements but file_name in `images` has {set(images_file_name)} unique elements."
-                )
-            # n files and n images
-            for file in files:
-                for i, file_name in enumerate(images_file_name):
-                    if file_name in file:
-                        self.images.append(AiImage.model_validate(images[i]))
-                        break
+            return
+
+        assert len(files) == len(set(files)), "Each element of `files` should be unique."
+        m = len(set(files))
+        n = len(set([img["file_name"] for img in images]))
+        assert (
+            m == n
+        ), f"The number of `files` and `file_name` in `images` is not valid. `files` has {m} unique elements but file_name in `images` has {n} unique elements."
+
+        sorted_images = sorted(images, key=lambda x: x["index"])
+
+        for target_file in files:
+            for image in sorted_images:
+                if image["file_name"].replace("/", "_") in target_file:
+                    self.images.append(AiImage.model_validate(image))
+                    break
 
     @abstractmethod
     def data_reader(

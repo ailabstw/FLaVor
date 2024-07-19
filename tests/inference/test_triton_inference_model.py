@@ -23,10 +23,10 @@ def check_model(client, model_name):
 
 
 def test_triton_inference_model(triton_client):
-    check_model(triton_client, "echo")
+    model_name = check_model(triton_client, "echo")
     model = TritonInferenceModelSharedSystemMemory(
         triton_url="localhost:8000",
-        model_name="echo",
+        model_name=model_name,
         model_version=1,
     )
 
@@ -76,11 +76,11 @@ def test_triton_shm_inference_model(triton_client):
 
     In this test case, client instance is deleted and tests are repeated to ensure shm destructor works properly.
     """
-    check_model(triton_client, "resnet50")
+    model_name = check_model(triton_client, "resnet50")
     for _ in range(2):
         model = TritonInferenceModelSharedSystemMemory(
             triton_url="localhost:8000",
-            model_name="resnet50",
+            model_name=model_name,
             model_version=1,
         )
 

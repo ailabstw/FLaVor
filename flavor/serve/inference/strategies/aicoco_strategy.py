@@ -58,9 +58,8 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         """
         res = list()
         supercategory_id_table = dict()
-        self.class_id_table = dict()
 
-        for class_id, category in enumerate(categories):
+        for category in categories:
             supercategory_name = category.pop("supercategory_name", None)
             if supercategory_name:
                 supercategory_id_table[supercategory_name] = supercategory_id_table.get(
@@ -69,8 +68,6 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             category["id"] = generate()
             category["supercategory_id"] = supercategory_id_table.get(supercategory_name)
             res.append(AiCategory.model_validate(category))
-            if category.get("display", True):
-                self.class_id_table[class_id] = category["id"]
 
         for sup_class_name, n_id in supercategory_id_table.items():
             supercategory = {"id": n_id, "name": sup_class_name, "supercategory_id": None}
@@ -90,9 +87,8 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         """
         res = list()
         superregression_id_table = dict()
-        self.regression_id_table = dict()
 
-        for regression_id, regression in enumerate(regressions):
+        for regression in regressions:
             superregression_name = regression.pop("superregression_name", None)
             if superregression_name:
                 superregression_id_table[superregression_name] = superregression_id_table.get(
@@ -101,8 +97,6 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             regression["id"] = generate()
             regression["superregression_id"] = superregression_id_table.get(superregression_name)
             res.append(AiRegression.model_validate(regression))
-
-            self.regression_id_table[regression_id] = regression["id"]
 
         for sup_regression_name, n_id in superregression_id_table.items():
             superregression = {"id": n_id, "name": sup_regression_name, "superregression_id": None}
@@ -135,7 +129,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
 
         if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
             # only activate at first run
-            self.images_id_table = {idx: image.id for idx, image in enumerate(images)}
+            self.images_ids = [image.id for image in images]
             self.aicoco_categories = self.generate_categories(categories)
             self.aicoco_regressions = self.generate_regressions(regressions)
 
@@ -227,16 +221,20 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
 
         classes, slices = out.shape[:2]
 
-        res = dict()
-        res["annotations"] = list()
-        res["objects"] = list()
+        res = {
+            "annotations": [],
+            "objects": [],
+        }
 
         # Traverse classes
         for cls_idx in range(classes):
-            if cls_idx not in self.class_id_table:
+            if (
+                hasattr(self.aicoco_categories[cls_idx], "display")
+                and not self.aicoco_categories[cls_idx].display
+            ):
                 continue
 
-            class_nano_id = self.class_id_table[cls_idx]
+            class_nano_id = self.aicoco_categories[cls_idx].id
 
             cls_volume = out[cls_idx]
             unique_labels = np.unique(cls_volume)[1:]  # Ignore index 0
@@ -250,7 +248,7 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
                 # Traverse slices
                 for slice_idx in range(slices):
                     label_slice = np.array(cls_volume[slice_idx])
-                    image_nano_id = self.images_id_table[slice_idx]
+                    image_nano_id = self.images_ids[slice_idx]
 
                     the_label_slice = np.array(label_slice == label_idx, dtype=np.uint8)
                     if the_label_slice.sum() == 0:
@@ -375,33 +373,24 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
             For 2D input data, it updates the last element of the images field list.
             For 3D input data, it updates meta field.
         """
-        n_classes = len(out)
+        assert len(out) == len(
+            self.aicoco_categories
+        ), f"The number of categories is not matched with the inference model output (shape: {out.shape})."
 
-        assert n_classes == len(
-            self.class_id_table
-        ), f"The number of categories is not matched with the inference model output {out.shape}."
-
-        for cls_idx in range(n_classes):
-            if cls_idx not in self.class_id_table:
-                raise ValueError(
-                    f"Category {cls_idx} cannot be found. Please specify every category in counting numbers starting with 0."
-                )
-            class_nano_id = self.class_id_table[cls_idx]
-            cls_pred = out[cls_idx]
-
-            # For 2D case, handle `images`
-            if len(self.images_id_table) == 1:
+        for cls_pred, category in zip(out, self.aicoco_categories):
+            if len(images) == 1:
+                # For 2D case, handle `images`
                 if images[-1].category_ids is None:
                     images[-1].category_ids = list()
                 if cls_pred:
-                    images[-1].category_ids.append(class_nano_id)
+                    images[-1].category_ids.append(category.id)
 
-            # For 3D case, handle `meta`
             else:
+                # For 3D case, handle `meta`
                 if meta.category_ids is None:
                     meta.category_ids = list()
                 if cls_pred:
-                    meta.category_ids.append(class_nano_id)
+                    meta.category_ids.append(category.id)
 
         return images, meta
 
@@ -517,53 +506,56 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
             - The 'bbox' in annotations is in the format [[x_min, y_min, x_max, y_max]].
             - The 'segmentation' in annotations is set to None for detection tasks.
         """
-        res = dict()
-        res["annotations"] = list()
-        res["objects"] = list()
+        res = {"annotations": [], "objects": []}
 
         for i, (bbox_pred, cls_pred) in enumerate(zip(out["bbox_pred"], out["cls_pred"])):
-            if isinstance(bbox_pred, np.ndarray):
-                bbox_pred = bbox_pred.tolist()
-            y_min, x_min, y_max, x_max = bbox_pred
-
-            image_nano_id = self.images_id_table[0]
+            image_nano_id = self.images_ids[0]  # detection only support in 2D
 
             # handle objects
             object_nano_id = generate()
             obj = {
                 "id": object_nano_id,
                 "category_ids": [],
+                "regressions": [] if "regressions" in out else None,
             }
 
-            for c in range(len(cls_pred)):
-                if cls_pred[c] == 0 or c not in self.class_id_table:
-                    continue
-                obj["category_ids"].append(self.class_id_table[c])
+            # category
+            for cls_idx in range(len(cls_pred)):
+                # support multi-label
+                category_id = self.aicoco_categories[cls_idx].id
+                if (
+                    category_id == 1
+                    and hasattr(self.aicoco_categories[cls_idx], "display")
+                    and self.aicoco_categories[cls_idx].display
+                ):
+                    obj["category_ids"].append(category_id)
 
             if not obj["category_ids"]:
-                # all the `display` flag in the predicted classes are false
                 continue
 
+            # confidence_score
             confidence_score = out.get("confidence_score")
             if confidence_score is not None:
                 cs = confidence_score[i]
                 obj["confidence"] = cs.item() if isinstance(cs, np.ndarray) else cs
 
+            # regression
             regression_value = out.get("regression_value")
             if regression_value is not None:
-                obj["regressions"] = list()
-                for i, value in enumerate(regression_value[i]):
+                for value, regression in zip(regression_value[i], self.aicoco_regressions):
                     regression_item = {
-                        "regression_id": self.regression_id_table[i],
+                        "regression_id": regression.id,
                         "value": value.item() if isinstance(value, np.ndarray) else value,
                     }
                     obj["regressions"].append(AiRegressionItem(**regression_item))
-            else:
-                obj["regressions"] = None
 
             res["objects"].append(AiObject(**obj))
 
             # handle annotations
+            if isinstance(bbox_pred, np.ndarray):
+                bbox_pred = bbox_pred.tolist()
+            y_min, x_min, y_max, x_max = bbox_pred
+
             annot = {
                 "id": generate(),
                 "image_id": image_nano_id,
@@ -659,37 +651,28 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
             For 2D input data, it updates the last element of the images field list.
             For 3D input data, it updates meta.
         """
-        n_regression = len(out)
+        assert len(out) == len(
+            self.aicoco_regressions
+        ), f"The number of regression values is not matched with the inference model output (shape: {out.shape})."
 
-        assert n_regression == len(
-            self.regression_id_table
-        ), f"The number of regression values is not matched with the inference model output {out.shape}."
-
-        for reg_idx in range(n_regression):
-            if reg_idx not in self.regression_id_table:
-                raise ValueError(
-                    f"Regression {reg_idx} cannot be found. Please specify every regression value in counting numbers starting with 0."
-                )
-            pred_value = out[reg_idx].item()
-            regression_nano_id = self.regression_id_table[reg_idx]
-
-            # For 2D case, handle `images`
-            if len(self.images_id_table) == 1:
+        for pred_value, regression in zip(out, self.aicoco_regressions):
+            if len(images) == 1:
+                # For 2D case, handle `images`
                 if images[-1].regressions is None:
                     images[-1].regressions = list()
                 regression_item = {
-                    "regression_id": regression_nano_id,
-                    "value": pred_value,
+                    "regression_id": regression.id,
+                    "value": pred_value.item(),
                 }
                 images[-1].regressions.append(AiRegressionItem(**regression_item))
 
-            # For 3D case, handle `meta`
             else:
+                # For 3D case, handle `meta`
                 if meta.regressions is None:
                     meta.regressions = list()
                 regression_item = {
-                    "regression_id": regression_nano_id,
-                    "value": pred_value,
+                    "regression_id": regression.id,
+                    "value": pred_value.item(),
                 }
                 meta.regressions.append(AiRegressionItem(**regression_item))
 

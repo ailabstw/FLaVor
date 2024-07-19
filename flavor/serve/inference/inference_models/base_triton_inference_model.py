@@ -137,7 +137,7 @@ class TritonInferenceModel(BaseTritonClient):
         self,
         triton_url: str,
         model_name: str,
-        model_version=str,
+        model_version: str,
     ):
         super().__init__(triton_url)
         self.model_name = model_name
@@ -235,6 +235,7 @@ class TritonInferenceModel(BaseTritonClient):
         infer_results = self.client.infer(
             model_name=self.model_name,
             inputs=infer_inputs,
+            model_version=self.model_version,
         )
         outputs = self.get_output_data(infer_results)
         return outputs
