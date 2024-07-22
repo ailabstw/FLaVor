@@ -1,632 +1,632 @@
 {
     "images": [
         {
-            "id": "o-zMIl6kUHew9RaJNQbIy",
+            "id": "Nhn8WKDSpuoS_pS8zTGQl",
             "index": 0,
-            "file_name": "img0062/image.0001.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "5BBJVzTx6OHy2pAkBQ4o3",
+            "id": "61R-1dAfjfyRyY-X_suMq",
             "index": 1,
-            "file_name": "img0062/image.0002.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "URZOAA4cWj0bwAlAQWsDz",
+            "id": "IUpYr9hQGoCg3PJLEzd-I",
             "index": 2,
-            "file_name": "img0062/image.0003.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "AuoP3zbW28ZkHuyFfpmLo",
+            "id": "TbrdSQBQlqEcHahT3L94_",
             "index": 3,
-            "file_name": "img0062/image.0004.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "jU6CtX4NSxweAHBt22O82",
+            "id": "wt1wCnLqUQUe-tQV6Oh5z",
             "index": 4,
-            "file_name": "img0062/image.0005.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "oToaivWMRSAH4UyXPEt3b",
+            "id": "cNSzjWaXgieChk6PzkjS5",
             "index": 5,
-            "file_name": "img0062/image.0006.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "vrWPySSCyGgAcj1qlyLZg",
+            "id": "BAKujmSvqeGioZsZiRboI",
             "index": 6,
-            "file_name": "img0062/image.0007.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "FmMl3Jv5BfybFNG91J3fY",
+            "id": "36prB3DnXGADPbvl7heMJ",
             "index": 7,
-            "file_name": "img0062/image.0008.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "KMEm28OgeSxkeTwSnP-Nz",
+            "id": "5JFuGzLbLk2MmN_0D1Y3Q",
             "index": 8,
-            "file_name": "img0062/image.0009.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "JNY8mM35tYLGqA48ZLPkI",
+            "id": "i2UUa6KfV0SgVRG_OYS_j",
             "index": 9,
-            "file_name": "img0062/image.0010.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "U0RL9N2NvhmuA5JFEVyuU",
+            "id": "eeRh7-r1wIZw6rA0i6lTx",
             "index": 10,
-            "file_name": "img0062/image.0011.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "4ua-un5PJneKA3bAh_8tK",
+            "id": "yrqOJQt_fX6nrHfZsG6Ia",
             "index": 11,
-            "file_name": "img0062/image.0012.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "vnneart_haHw4fbkRSClt",
+            "id": "U6MCQPOYgPMI6cuvtM7bf",
             "index": 12,
-            "file_name": "img0062/image.0013.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "pJh2En-54outBG5rlTDTY",
+            "id": "5g98ziGeBw8RQyGjKcum2",
             "index": 13,
-            "file_name": "img0062/image.0014.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "Zul4DvhIYUW8lNqQjj0gU",
+            "id": "RitivAeKOq2PIex3mqyev",
             "index": 14,
-            "file_name": "img0062/image.0015.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "rjsnK_PQS1LicFBod6g6f",
+            "id": "p-SQYU1xAgSacnAe3bBya",
             "index": 15,
-            "file_name": "img0062/image.0016.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "vozqw68cuX04mCt7bg33z",
+            "id": "1V5UkHsvwDjeVmZVXmH9L",
             "index": 16,
-            "file_name": "img0062/image.0017.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "gX5xZZOka1LNvTvQuot3i",
+            "id": "3rWOmJYoTr-BL89DLihVN",
             "index": 17,
-            "file_name": "img0062/image.0018.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "-JhwIduQq2SosSjC5ZSaH",
+            "id": "dJWQPt7SkCIpYjR_E0sel",
             "index": 18,
-            "file_name": "img0062/image.0019.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "YPcKsbAT1ro1xOIvdbINw",
+            "id": "wlTa0EKcKrgbQtWbLYc2Z",
             "index": 19,
-            "file_name": "img0062/image.0020.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "pgYAYqxFsXZBL5gvDTBjt",
+            "id": "yQD-EEheTxCB0F7h2gr8C",
             "index": 20,
-            "file_name": "img0062/image.0021.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "1teeX7iFN1DVqx-1D_gkn",
+            "id": "JO_6VdQBBpqm68xN9GXc_",
             "index": 21,
-            "file_name": "img0062/image.0022.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "Upa0ngFxq88y2g8TEnxUy",
+            "id": "uBMuJd5EncnMm_P1dLNfq",
             "index": 22,
-            "file_name": "img0062/image.0023.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "kgSjwFfNbrBKhhnEWdZea",
+            "id": "HVjREZu0Mu9J3oh8z3y5W",
             "index": 23,
-            "file_name": "img0062/image.0024.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "Rjc0G4xRP7CxMWuSSVEfH",
+            "id": "hh2jYt_-IppwSS0xACyDK",
             "index": 24,
-            "file_name": "img0062/image.0025.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "wDNzpXPgrfVOZAUY9wBcQ",
+            "id": "9NPzQMWK6kdNTDmDUhv7Q",
             "index": 25,
-            "file_name": "img0062/image.0026.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "ng8TfxBPq6bbasvrSiAMk",
+            "id": "3PFsfnZBVVO1mB8jzwnQk",
             "index": 26,
-            "file_name": "img0062/image.0027.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "-3lz3aB_fgUfr9hRoyLY_",
+            "id": "Xnvw0Rga2-_Yrh65kjeFD",
             "index": 27,
-            "file_name": "img0062/image.0028.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "0LC6czwHzyCUlnJvbfKMI",
+            "id": "eBwg7NtJoxTIr8ookApre",
             "index": 28,
-            "file_name": "img0062/image.0029.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "PraFaYtkBr3Gmgtae-PtC",
+            "id": "H0CP4tkHe37wvG2PwfX-P",
             "index": 29,
-            "file_name": "img0062/image.0030.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "OqK2FXKAvMFJvhU5XRKiZ",
+            "id": "_iIQo6QfvFx5AuCazo9MH",
             "index": 30,
-            "file_name": "img0062/image.0031.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "JMeirK9JSL9YgQkSaeEnp",
+            "id": "qri0oIfyWAAbZuBvIrRra",
             "index": 31,
-            "file_name": "img0062/image.0032.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "fQGk0Pk9qsSqqisXkhYZK",
+            "id": "MAmsrIiMJrZNNWgI_bzgW",
             "index": 32,
-            "file_name": "img0062/image.0033.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "fFnHxVAzGO5GLMmNhIZNO",
+            "id": "97AiUKnQoV1kUU_lR3LxL",
             "index": 33,
-            "file_name": "img0062/image.0034.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "ITr4n7-3sWyfy2PwMf0ik",
+            "id": "BsDu2P6PYIQybGlJbibnn",
             "index": 34,
-            "file_name": "img0062/image.0035.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "X1q3XAHeKfVk4MuDm0AoM",
+            "id": "nzkRUO93h5-Ynray1LdHJ",
             "index": 35,
-            "file_name": "img0062/image.0036.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "o18KUQpSkkWV_tp1xFUPK",
+            "id": "2P8jWRncBovESAcnzHc11",
             "index": 36,
-            "file_name": "img0062/image.0037.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "CVQ4Wov6my9jnVVuxO0v9",
+            "id": "WdIP2l9fjR52RD_Bf8td6",
             "index": 37,
-            "file_name": "img0062/image.0038.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "tXRqgvG6oZUNxFOuK0Uue",
+            "id": "K7ND1UFoDf3AkhtAb6tBf",
             "index": 38,
-            "file_name": "img0062/image.0039.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "8OgUt500kP4TN8bZxYIyg",
+            "id": "G-ThAPUUBTCyzASMSi4xU",
             "index": 39,
-            "file_name": "img0062/image.0040.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "NHoSvVNXPCfsFVQXJAshK",
+            "id": "ck3IVCUAbmCN9QkAQxGZw",
             "index": 40,
-            "file_name": "img0062/image.0041.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "UjO9C66Ct9tkug12EjKb8",
+            "id": "7pqQYM92LOJPz1qh7elRA",
             "index": 41,
-            "file_name": "img0062/image.0042.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "7-7f9XqWeZq1OSurYLxEd",
+            "id": "t9U9_sD8bEbSr9-VTy2s_",
             "index": 42,
-            "file_name": "img0062/image.0043.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "r8icAa5m8riHkyoMjviYC",
+            "id": "8in2khOhx_q4z8hJKm-JD",
             "index": 43,
-            "file_name": "img0062/image.0044.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "ZsiH4kJVqJ6Mwvl6WWVJv",
+            "id": "Pbz8QZkck0BgO5Nf731Pl",
             "index": 44,
-            "file_name": "img0062/image.0045.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "wvjUyhbHVsX1xYDvEertT",
+            "id": "tJAGMxEqyHin86YUntdEq",
             "index": 45,
-            "file_name": "img0062/image.0046.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "YKDE1a3BPq83_EIjdR9hN",
+            "id": "MIYoyTzky0uM85kfdRT7f",
             "index": 46,
-            "file_name": "img0062/image.0047.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "Yjqu6om6Tpz0_js4RriQ2",
+            "id": "BkvTIKSzSH6GR7OtbfjLU",
             "index": 47,
-            "file_name": "img0062/image.0048.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "-AYF5wKoAqAp4IpG5Ic1K",
+            "id": "B3OhmbtYUQqPzhpBDToUh",
             "index": 48,
-            "file_name": "img0062/image.0049.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "3G3K2luj1aak3t80njU8Y",
+            "id": "9E1SA6tQKqNipJK0S5h5H",
             "index": 49,
-            "file_name": "img0062/image.0050.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "qv2M-WO6dVLVNTKxLpifI",
+            "id": "YAPEdxhug_sitz-3E_74n",
             "index": 50,
-            "file_name": "img0062/image.0051.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "qfHJD2MJDQjL-P18LBFTb",
+            "id": "5cHrt00cfxHjMRMqSY3-r",
             "index": 51,
-            "file_name": "img0062/image.0052.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "qEepajK5DP_4jWBUhlOd6",
+            "id": "HFwgpQmGWWrHI9U6xxGqA",
             "index": 52,
-            "file_name": "img0062/image.0053.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "-IWNIniq0YsogSipjhbxk",
+            "id": "2vra-p2od4jMuOkKoKwgK",
             "index": 53,
-            "file_name": "img0062/image.0054.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "Gmk_J9tzxysPZrBjNoj-3",
+            "id": "oWWUQiwFyuL0v1bKn5Vr0",
             "index": 54,
-            "file_name": "img0062/image.0055.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "hLTHIabTmu_hJfIpZ9V6j",
+            "id": "dsE5pzzDnWrdEQhSx4zhJ",
             "index": 55,
-            "file_name": "img0062/image.0056.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "PB3QTzXgOCsID3j219Ve9",
+            "id": "TvuMh9EM5Sbu1FKzqAqJt",
             "index": 56,
-            "file_name": "img0062/image.0057.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "Sk7AwN6nCZ_lvi1O7IZoG",
+            "id": "iaWYgKGGQbKSgxNRr8pUr",
             "index": 57,
-            "file_name": "img0062/image.0058.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "z9v5SZKX5rO0aPBONhhOo",
+            "id": "moaozAZl9tZFdOFNPYn9z",
             "index": 58,
-            "file_name": "img0062/image.0059.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "zTjKnLdh7kt3Oien9LqiS",
+            "id": "sPIv6-Q6RHGn7-xVXZKVO",
             "index": 59,
-            "file_name": "img0062/image.0060.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "idCZpQ0bIK_kGWAhlgsWT",
+            "id": "gz4KAfUlr6QhMlKGmDo2A",
             "index": 60,
-            "file_name": "img0062/image.0061.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "C0YUp5YpRJbxMSNsaOrtf",
+            "id": "cj3ociBPQ8xjE642rpl5i",
             "index": 61,
-            "file_name": "img0062/image.0062.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "XTtBgoLVaKvxSSASQ6mN7",
+            "id": "r7Y946KjBLfK00CjQXX49",
             "index": 62,
-            "file_name": "img0062/image.0063.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "HFa6fk4uz1vMzK3RGiNuQ",
+            "id": "tK-3OY3xzdCfBW8qc973t",
             "index": 63,
-            "file_name": "img0062/image.0064.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "5vBfjnQV83CNVSipFa4qV",
+            "id": "maRukeSFiEtfY_VEeBiCj",
             "index": 64,
-            "file_name": "img0062/image.0065.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "t_qZHVi8duUbSI32h51z3",
+            "id": "iC_RiD7PWXVzNql8izaUd",
             "index": 65,
-            "file_name": "img0062/image.0066.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "-KyMjf4lBLudvEU7UcYYU",
+            "id": "JibB9g9sEp7xyGRfcg-TP",
             "index": 66,
-            "file_name": "img0062/image.0067.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "OBDMy19lr2fehUE7pOf7J",
+            "id": "eqijIwA0Ub1eipGC0XWvJ",
             "index": 67,
-            "file_name": "img0062/image.0068.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "qzXWAVc-SSaFutvJmbEgF",
+            "id": "X6RhkTAAy9_gsm53DtY7s",
             "index": 68,
-            "file_name": "img0062/image.0069.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "9zYyLePZe3z5fMe__AXr7",
+            "id": "Km3A1pdP9317q0NxbQ4d4",
             "index": 69,
-            "file_name": "img0062/image.0070.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "OP3YwrpRMxonIUKmLs-tk",
+            "id": "m7Bw18FTkZvkI_uY6OX_I",
             "index": 70,
-            "file_name": "img0062/image.0071.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "qUtVVM8qymmFhqdghTkIU",
+            "id": "6fN4p37JjmO0KqrEXlzvM",
             "index": 71,
-            "file_name": "img0062/image.0072.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "SasiD_nsfReMrLfbujIed",
+            "id": "qFiJLq8OLzSfHP_z_AUsq",
             "index": 72,
-            "file_name": "img0062/image.0073.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "iE7xUd78zUbn1JLjIysm-",
+            "id": "_iKNZlsaPNVavfFv0NgZT",
             "index": 73,
-            "file_name": "img0062/image.0074.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "7ERv5cTUJK_VWPpSK3E9t",
+            "id": "EUsOrhQGMN6M228gE2U7k",
             "index": 74,
-            "file_name": "img0062/image.0075.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "o5RoonwPNmJHKZe3lOoLg",
+            "id": "_3EbFaNQWXiD6Yn0au6Fo",
             "index": 75,
-            "file_name": "img0062/image.0076.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "3oBPGEXlXyGOwavbn3WUX",
+            "id": "3M6GbEWqUVk5D5y0avhmf",
             "index": 76,
-            "file_name": "img0062/image.0077.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "N13NxlCV9KA4F0y75gOe1",
+            "id": "_pa7jdnuIijxF7W8AXM2J",
             "index": 77,
-            "file_name": "img0062/image.0078.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "yre5vf9fOrFm8nb4-Hu3L",
+            "id": "CIoXn8hAVg0172hTuClBc",
             "index": 78,
-            "file_name": "img0062/image.0079.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "xoyzaznDfkfSqB48SpX98",
+            "id": "o1ocEdyY_SLDV8GrAQC1M",
             "index": 79,
-            "file_name": "img0062/image.0080.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "qAytrl6rVzoXT7vlOwUac",
+            "id": "RWDEMfk7x6i-ZrWo1JNZS",
             "index": 80,
-            "file_name": "img0062/image.0081.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "TfgaL0T9T-fCyz2POpRsy",
+            "id": "ANDQC9SrXzrFevnolrEMb",
             "index": 81,
-            "file_name": "img0062/image.0082.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "rMwsSyR4_fid6mO9Ap4dl",
+            "id": "CvnqeRPTAtlEgEpwnVeAs",
             "index": 82,
-            "file_name": "img0062/image.0083.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "J9frk2X5axd8VkxGU8LqM",
+            "id": "KsCv8-Slc8kp7ORg2aLv9",
             "index": 83,
-            "file_name": "img0062/image.0084.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "Nw6jmlliU1_iNo9NTCCnV",
+            "id": "7v3SQAuJNSTBnxbbZqY55",
             "index": 84,
-            "file_name": "img0062/image.0085.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "64a85gC0iNj-lloHYSblQ",
+            "id": "gfUG0iVERFeCx6EO92jsa",
             "index": 85,
-            "file_name": "img0062/image.0086.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "oAvVdlYSq8b17hf6Fa30l",
+            "id": "zUn6ykXxs4YrinAMLorBD",
             "index": 86,
-            "file_name": "img0062/image.0087.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "eDw6NNMUgTmzIbKm2DGaL",
+            "id": "xTxHTNW0yH-WcOKlB9ANT",
             "index": 87,
-            "file_name": "img0062/image.0088.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "PWl_1BHBkeS0-nOiASfBS",
+            "id": "lQJI0k7MJNPJYDh09k7QJ",
             "index": 88,
-            "file_name": "img0062/image.0089.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         },
         {
-            "id": "VFyuv58i8o49RrhOhS9qv",
+            "id": "TeZQLT9NkSE139H8y99mq",
             "index": 89,
-            "file_name": "img0062/image.0090.dcm",
+            "file_name": "img0062.nii.gz",
             "category_ids": null,
             "regressions": null
         }

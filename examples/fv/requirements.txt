@@ -1,5 +1,5 @@
 torch
 torchvision
 scikit-learn
+numpy< 2.0.0
 https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip
-flavor[fv]

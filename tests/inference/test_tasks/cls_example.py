@@ -1,5 +1,5 @@
 import os
-from typing import Any, List, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -8,13 +8,13 @@ from PIL import Image
 from torchvision.models import ResNet18_Weights, resnet18
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import (
-    BaseAiCOCOImageInferenceModel,
+from flavor.serve.inference.data_models.api import (
     BaseAiCOCOImageInputDataModel,
     BaseAiCOCOImageOutputDataModel,
 )
-from flavor.serve.models import AiImage, InferCategory
-from flavor.serve.strategies import AiCOCOClassificationOutputStrategy
+from flavor.serve.inference.data_models.functional import AiImage
+from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
+from flavor.serve.inference.strategies import AiCOCOClassificationOutputStrategy
 
 
 class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
@@ -23,18 +23,18 @@ class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
 
-    def define_inference_network(self):
+    def define_inference_network(self) -> Callable:
         network = resnet18(ResNet18_Weights.DEFAULT)
         network.eval()
         network.to(self.device)
         return network
 
-    def set_categories(self):
+    def set_categories(self) -> List[Dict[str, Any]]:
         # ImageNet has 1000 categories
         categories = [{"name": str(i)} for i in range(1000)]
         return categories
 
-    def set_regressions(self):
+    def set_regressions(self) -> None:
         return None
 
     def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
@@ -46,7 +46,7 @@ class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
         img = transforms(data).unsqueeze(0).to(self.device)
         return img
 
-    def inference(self, x: Any) -> Any:
+    def inference(self, x: torch.Tensor) -> torch.Tensor:
         with torch.no_grad():
             out = self.network(x)
         return out
@@ -60,9 +60,9 @@ class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
         self,
         model_out: np.ndarray,
         images: Sequence[AiImage],
-        categories: List[InferCategory],
+        categories: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> Any:
+    ) -> BaseAiCOCOImageOutputDataModel:
 
         output = self.formatter(model_out=model_out, images=images, categories=categories)
         return output

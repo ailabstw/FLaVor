@@ -1,19 +1,21 @@
 import os
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import cv2
 import numpy as np
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import (
-    BaseAiCOCOImageInferenceModel,
+from flavor.serve.inference.data_models.api import (
     BaseAiCOCOImageInputDataModel,
     BaseAiCOCOImageOutputDataModel,
+)
+from flavor.serve.inference.data_models.functional import AiImage
+from flavor.serve.inference.inference_models import (
+    BaseAiCOCOImageInferenceModel,
     TritonInferenceModel,
     TritonInferenceModelSharedSystemMemory,
 )
-from flavor.serve.models import AiImage, InferCategory
-from flavor.serve.strategies import AiCOCOSegmentationOutputStrategy
+from flavor.serve.inference.strategies import AiCOCOSegmentationOutputStrategy
 
 
 class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
@@ -32,7 +34,7 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
         self.is_shared_memory = is_shared_memory
         super().__init__()
 
-    def define_inference_network(self):
+    def define_inference_network(self) -> Callable:
         if self.is_shared_memory:
             return TritonInferenceModelSharedSystemMemory(
                 self.triton_url, self.model_name, self.model_version
@@ -40,7 +42,7 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
         else:
             return TritonInferenceModel(self.triton_url, self.model_name, self.model_version)
 
-    def set_categories(self):
+    def set_categories(self) -> List[Dict[str, Any]]:
         categories = [
             {"name": "Background", "display": False},
             {"name": "Foreground 1", "display": True},
@@ -48,7 +50,7 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
         ]
         return categories
 
-    def set_regressions(self):
+    def set_regressions(self) -> None:
         return None
 
     def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
@@ -64,7 +66,9 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
     def inference(self, x: np.ndarray) -> Dict[str, np.ndarray]:
         return self.network.forward({"input": x})
 
-    def postprocess(self, out_dict: Any, metadata: Any = None) -> Any:
+    def postprocess(
+        self, out_dict: Dict[str, np.ndarray], metadata: Optional[Any] = None
+    ) -> np.ndarray:
         out = out_dict["logits"][0]  # 1, c, h, w -> c, h, w
         onehot_out = np.zeros_like(out, dtype=np.int8)
         out = np.argmax(out, axis=0)
@@ -76,9 +80,9 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
         self,
         model_out: np.ndarray,
         images: Sequence[AiImage],
-        categories: Sequence[InferCategory],
+        categories: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> Any:
+    ) -> BaseAiCOCOImageOutputDataModel:
 
         output = self.formatter(model_out=model_out, images=images, categories=categories)
         return output

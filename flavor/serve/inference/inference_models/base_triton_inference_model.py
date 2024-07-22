@@ -13,6 +13,7 @@ class BaseTritonClient:
     BaseTritonClient is a base class that sets up connections with Triton Inference Server.
     """
 
+    # for more details regarding data types, see: https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/model_configuration.html#datatypes
     DTYPES_CONFIG_TO_API = {
         "TYPE_BOOL": "BOOL",
         "TYPE_UINT8": "UINT8",
@@ -30,19 +31,19 @@ class BaseTritonClient:
     }
 
     DTYPES_API_TO_NUMPY = {
-      "BOOL": bool,
-      "UINT8": np.uint8,
-      "UINT16": np.uint16,
-      "UINT32": np.uint32,
-      "UINT64": np.uint64,
-      "INT8": np.int8,
-      "INT16": np.int16,
-      "INT32": np.int32,
-      "INT64": np.int64,
-      "FP16": np.float16,
-      "FP32": np.float32,
-      "FP64": np.float64,
-      "BYTES": np.object_,
+        "BOOL": bool,
+        "UINT8": np.uint8,
+        "UINT16": np.uint16,
+        "UINT32": np.uint32,
+        "UINT64": np.uint64,
+        "INT8": np.int8,
+        "INT16": np.int16,
+        "INT32": np.int32,
+        "INT64": np.int64,
+        "FP16": np.float16,
+        "FP32": np.float32,
+        "FP64": np.float64,
+        "BYTES": np.object_,
     }
 
     def __init__(self, triton_url: str):
@@ -57,7 +58,10 @@ class BaseTritonClient:
         """
         client = tritonclient.http.InferenceServerClient(triton_url)
         try:
-            client.is_server_ready()
+            # client.is_server_ready() would raise timeout error if failed
+            if not client.is_server_ready():
+                # client.is_server_ready() would return false if not ready
+                raise ConnectionError
             return client
         except Exception:
             raise ConnectionError(f"cannot connect to triton inference server at {triton_url}")
@@ -69,8 +73,8 @@ class BaseTritonClient:
         models_status = self.client.get_model_repository_index()
         models = {}
         for model in models_status:
-            name = model["name"]
-            state = model["state"]
+            name = model.get("name")
+            state = model.get("state")
 
             if state != "READY":
                 continue
@@ -133,7 +137,7 @@ class TritonInferenceModel(BaseTritonClient):
         self,
         triton_url: str,
         model_name: str,
-        model_version=str,
+        model_version: str,
     ):
         super().__init__(triton_url)
         self.model_name = model_name
@@ -145,9 +149,12 @@ class TritonInferenceModel(BaseTritonClient):
 
     @property
     def model_state(self) -> Dict[str, Any]:
-        return self.get_model_state(self.model_name)
+        model_state = self.get_model_state(self.model_name)
+        return model_state
 
     def refresh_model_state(self):
+        if not self.model_state:
+            raise ValueError(f"cannot find triton model {self.model_name} at {self.triton_url}")
         self.input_structs = self.model_state["inputs"]
         self.output_structs = self.model_state["outputs"]
 
@@ -205,9 +212,9 @@ class TritonInferenceModel(BaseTritonClient):
         result = {}
         for output_struct in self.output_structs:
             name = output_struct["name"]
-            dtype = output_struct['data_type']
+            dtype = output_struct["data_type"]
             res = infer_results.as_numpy(name)
-            if dtype == 'TYPE_STRING':
+            if dtype == "TYPE_STRING":
                 res = np.array([i.decode() for i in res.reshape(res.size)])
             result[name] = res
 
@@ -228,6 +235,7 @@ class TritonInferenceModel(BaseTritonClient):
         infer_results = self.client.infer(
             model_name=self.model_name,
             inputs=infer_inputs,
+            model_version=self.model_version,
         )
         outputs = self.get_output_data(infer_results)
         return outputs
@@ -249,30 +257,35 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
         input_shared_memory_prefix: str = "input",
         output_shared_memory_prefix: str = "output",
     ):
-        super().__init__(triton_url, model_name, model_version)
         self.input_shared_memory_prefix = input_shared_memory_prefix
         self.output_shared_memory_prefix = output_shared_memory_prefix
 
-        self.check_shared_memory_connection()
         self.infer_inputs = {}
         self.input_handles = {}
         self.infer_outputs = {}
         self.output_handles = {}
+
+        super().__init__(triton_url, model_name, model_version)
+        self.check_shared_memory_connection()
 
     def check_shared_memory_connection(self):
         """
         make sure shared memory connection is valid
         """
         try:
-            self.client.unregister_system_shared_memory()
             item = np.zeros(1).astype(np.float32)
             byte_size = item.size * item.itemsize
             shm_input_handle = shm.create_shared_memory_region("tmp", "/tmp", byte_size)
             shm.set_shared_memory_region(shm_input_handle, [item])
+
+            self.client.unregister_system_shared_memory()
             self.client.register_system_shared_memory("tmp", "/tmp", byte_size)
+
             shm.destroy_shared_memory_region(shm_input_handle)
-        except Exception:
-            raise ConnectionError("failed to connect to triton client with shared system memory.")
+        except Exception as e:
+            raise ConnectionError(
+                "failed to connect to triton client with shared system memory.", e
+            )
 
     def set_input_data(
         self, data_dict: Dict[str, np.ndarray]
@@ -302,28 +315,41 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
             if item is None:
                 raise KeyError(f"cannot find required object {name} of dimension {dims}")
 
+            # to ensure item has the correct type that matches model config.pbtxt
             item = item.astype(self.DTYPES_API_TO_NUMPY[data_type])
 
+            # register new shm region when 1. not yet registered; 2. shape mismatch with previously registered region
             if name not in self.infer_inputs or list(item.shape) != self.infer_inputs[name].shape():
                 dims = list(item.shape)
                 byte_size = item.size * item.itemsize
 
+                if data_type == "BYTES":
+                    # reference: https://github.com/triton-inference-server/client/blob/main/src/python/examples/simple_http_shm_string_client.py
+                    item = tritonclient.utils.serialize_byte_tensor(item)
+                    byte_size = tritonclient.utils.serialized_byte_size(item)
+                # destroy previously registered client-side shm region
                 if name in self.input_handles:
                     shm.destroy_shared_memory_region(self.input_handles[name])
+                # register a new client-side shm region of size `byte_size`
                 input_handle = shm.create_shared_memory_region(
                     name, f"/{self.input_shared_memory_prefix}_{name}", byte_size
                 )
+
+                # unregister existing server-side shm of `name`
                 self.client.unregister_system_shared_memory(name)
+                # register a new server-side shm of size `byte_size`
                 self.client.register_system_shared_memory(
                     name, f"/{self.input_shared_memory_prefix}_{name}", byte_size
                 )
 
+                # create a InferInput buffer and set item
                 infer_input = tritonclient.http.InferInput(name, dims, data_type)
                 infer_input.set_shared_memory(name, byte_size)
 
                 self.infer_inputs[name] = infer_input
                 self.input_handles[name] = input_handle
 
+            # set item to shm region
             shm.set_shared_memory_region(self.input_handles[name], [item])
 
         return list(self.infer_inputs.values())
@@ -350,12 +376,15 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
             if name not in self.infer_outputs or dims != self.infer_outputs[name].shape():
                 item = np.zeros(dims)
                 item = item.astype(self.DTYPES_API_TO_NUMPY[data_type])
-                # TODO: handle byte string
 
                 byte_size = item.size * item.itemsize
+
+                if name in self.output_handles:
+                    shm.destroy_shared_memory_region(self.output_handles[name])
                 output_handle = shm.create_shared_memory_region(
                     name, f"/{self.output_shared_memory_prefix}_{name}", byte_size
                 )
+
                 self.client.unregister_system_shared_memory(name)
                 self.client.register_system_shared_memory(
                     name, f"/{self.output_shared_memory_prefix}_{name}", byte_size
@@ -390,14 +419,6 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
 
         return result
 
-    def cleanup(self, handles: List[ctypes.c_void_p]):
-        """
-        Clean up shared memory buffers from both client and triton sides.
-        """
-        self.client.unregister_system_shared_memory()
-        for handle in handles:
-            shm.destroy_shared_memory_region(handle)
-
     def forward(
         self,
         data_dict: Dict[str, np.ndarray],
@@ -429,6 +450,16 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
 
         return outputs
 
-    def __del__(self):
-        self.cleanup(self.input_handles.values())
-        self.cleanup(self.output_handles.values())
+    def cleanup(self, handles: List[ctypes.c_void_p]):
+        """
+        Clean up shared memory buffers from both client and triton sides.
+        """
+        for handle in handles:
+            shm.destroy_shared_memory_region(handle)
+        self.client.unregister_system_shared_memory()
+
+    # def __del__(self):
+    # FIXME: destructor seems problematic in multiple instance tests
+    # FIXME: unsure when is cleaning up required
+    #     self.cleanup(self.input_handles.values())
+    #     self.cleanup(self.output_handles.values())

@@ -1,4 +1,4 @@
 scikit-learn
 xgboost>=1.6.0, <=1.7.6
+numpy< 2.0.0
 https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip
-flavor[fl]

@@ -5,20 +5,31 @@ AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows mu
 
 > ***If you combine good FLaVors, model turns into an orchestra.***
 
+## Important Changelog
+
+* 2024/07/19: Introduce Inference service and FL via HTTP in 2.0.0.
+* 2024/02/21: gRPC dependency will be removed after 2.0.0, please install 1.0.7 if necessary.
+
 ## Installation
 
-### Install stable versions with FL/FV requirements only
+### Install stable versions
 
 ```bash
 pip install https://github.com/ailabstw/flavor/archive/refs/heads/release/stable.zip -U
 ```
 
+### Install bleeding-edge (no guarantees)
+
+```bash
+pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
+```
+
 ## Getting Started
 
-- [Federated Learning Client](examples/fl-client/README.md)
-- [Federated Learning Server](examples/fl-server/README.md)
-- [Federated Validation](examples/fv/README.md)
-- [Inference Model Deployment](examples/inference/README.md)
+* [Federated Learning Client](examples/fl-client/README.md)
+* [Federated Learning Server](examples/fl-server/README.md)
+* [Federated Validation](examples/fv/README.md)
+* [Inference Model Deployment](examples/inference/README.md)
 
 ### Note
 

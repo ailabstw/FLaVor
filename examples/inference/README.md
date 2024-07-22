@@ -4,7 +4,7 @@
     <img src="images/overview.png" width="400">
 </p>
 
-Welcome to the FLaVor Inference Service! This service simplifies the deployment of machine learning models by providing a user-friendly interface that encapsulates complex inference functions. It is designed to handle requests with various input formats seamlessly, ensuring that the inference outputs adhere to the structured AiCOCO format, a standard developed by Taiwan AILabs.
+Welcome to the FLaVor Inference Service! This service simplifies the deployment of machine learning models by providing a user-friendly interface that encapsulates complex inference functions. It is designed to handle requests with various input formats seamlessly, ensuring that the inference outputs adhere to a specific format, e.g., AiCOCO format, a standard developed by Taiwan AILabs.
 
 ## How Does It Work
 
@@ -19,9 +19,9 @@ app = InferAPP(
 app.run(port=int(os.getenv("PORT", 9111)))
 ```
 
-By sending a POST request to the `/invocations` endpoint of `InferAPP`, it will respond in a format defined in your model.
+By sending a POST request to the `/invocations` endpoint of `InferAPP`, it will respond in a format defined in `YourOutputDataModel`.
 
-## `/invocations` API Endpoint
+### `/invocations` API Endpoint
 
 - **Method**: POST
 - **URL**: `/invocations`
@@ -48,7 +48,7 @@ data = {
     "regressions": None
 }
 
-img_files = [("files", (f"images_image.jpg", open("image.jpg", "rb")))]
+img_files = [("files", ("PATH_0.dcm", open("0.dcm", "rb")))]
 json_data["images"] = json.dumps(data)
 
 # Send the POST request
@@ -59,7 +59,7 @@ response = requests.post(
 )
 ```
 
-Please refer to [`send_request.py`](send_request.py) for more detail.
+Please refer to [`send_request.py`](./send_request.py) for more detail.
 
 ## Getting Started
 
@@ -69,7 +69,7 @@ To begin with the FLaVor Inference Service, follow these steps:
 
 Start by defining your custom inference model by inheriting the `BaseInferenceModel` class. This serves as a template for implementing inference functionality tailored to your machine learning model.
 
-Here's an example of a segmentation inference model. For more detail in the implementation, refer to the [Segmentation task example](examples/inference/seg_example.ipynb).
+Here's an example of a segmentation inference model. For more detail in the implementation, refer to the [Segmentation task example](./seg_example.ipynb).
 
 ```python
 from flavor.serve.models import BaseAiCOCOImageInferenceModel
@@ -125,12 +125,12 @@ app.run(port=int(os.getenv("PORT", 9111)))
 
 `InferAPP` serves as the central component of the FLaVor Inference Service, facilitating seamless interaction between other services and the machine learning models. To harness the power of `InferAPP`, developers need to provide the following essential components:
 
-- `infer_function`: Specify your custom inference model, allowing `InferAPP` to invoke the model and process its input/output seamlessly. Data reading, preprocessing, inference (network forward operation), postprocessing, and output formatting are performed accordingly. The  inference operation also supports Triton Inference Server to scale up the network forward operation. See the example in [SAM](./SAM/README.md)
+- `infer_function`: Specify your custom inference model, allowing `InferAPP` to invoke the model and process its input/output seamlessly. Data reading, preprocessing, inference (network forward operation), postprocessing, and output formatting are performed accordingly. Optionally, the inference operation also supports Triton Inference Server to scale up the network forward operation. See the example in [SAM](./triton_example.ipynb).
 - `input_data_model` and `output_data_model`: Define the required Pydantic data models for the input request and output response. `BaseAiCOCOImageInputDataModel` and `BaseAiCOCOImageOutputDataModel` are default data models for input and output respectively.
 
 ### Step 4: Testing the Service by Sending Inference Requests
 
-Once the FLaVor Inference Service is running, send POST requests to the `/invocations` endpoint with image data and associated JSON formatted in AiCOCO format to perform inference. See [`send_request.py`](send_request.py) for python example.
+Once the FLaVor Inference Service is running, send POST requests to the `/invocations` endpoint with image data and associated JSON formatted in AiCOCO format to perform inference. See [`send_request.py`](./send_request.py) for python example.
 
 ### More Examples for Various Tasks
 
@@ -146,5 +146,5 @@ We try to integrate FLaVor with other existing projects or libraries. Please vis
 
 - [AiCOCO format specification](./docs/AiCOCO_spec.md)
 - [Standard input and output structure](./docs/input_output_structure.md)
-- [Visualize your inference output with Gradio](./gradio_example.ipynb)
-- [Segment Anthing Model on Triton Inference Server](./SAM/README.md)
+- [Visualization of inference output with Gradio](./gradio_example.ipynb)
+- [Segment Anything Model (SAM) with Triton Inference Server](./triton_example.ipynb)

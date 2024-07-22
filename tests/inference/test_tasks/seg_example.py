@@ -1,18 +1,18 @@
 import os
-from typing import Any, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 import SimpleITK as sitk
 from lungmask import LMInferer
 
 from flavor.serve.apps import InferAPP
-from flavor.serve.inference import (
-    BaseAiCOCOImageInferenceModel,
+from flavor.serve.inference.data_models.api import (
     BaseAiCOCOImageInputDataModel,
     BaseAiCOCOImageOutputDataModel,
 )
-from flavor.serve.models import AiImage, InferCategory
-from flavor.serve.strategies import AiCOCOSegmentationOutputStrategy
+from flavor.serve.inference.data_models.functional import AiImage
+from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
+from flavor.serve.inference.strategies import AiCOCOSegmentationOutputStrategy
 
 
 class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
@@ -20,10 +20,10 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
         self.formatter = AiCOCOSegmentationOutputStrategy()
         super().__init__()
 
-    def define_inference_network(self):
+    def define_inference_network(self) -> Callable:
         return LMInferer(modelname="LTRCLobes", fillmodel="R231")
 
-    def set_categories(self):
+    def set_categories(self) -> List[Dict[str, Any]]:
         categories = [
             {"name": "Background", "display": False},
             {"name": "Left Upper Lobe", "display": True},
@@ -34,7 +34,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
         ]
         return categories
 
-    def set_regressions(self):
+    def set_regressions(self) -> None:
         return None
 
     def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
@@ -52,7 +52,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def inference(self, x: np.ndarray) -> np.ndarray:
         return self.network.apply(x)
 
-    def postprocess(self, out: Any, metadata: Any = None) -> Any:
+    def postprocess(self, out: Any, metadata: Optional[Any] = None) -> np.ndarray:
         # (1, h, w) -> (c, h, w)
         out = [
             np.expand_dims((out == i).astype(np.uint8), axis=0)
@@ -65,9 +65,9 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
         self,
         model_out: np.ndarray,
         images: Sequence[AiImage],
-        categories: Sequence[InferCategory],
+        categories: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> Any:
+    ) -> BaseAiCOCOImageOutputDataModel:
 
         output = self.formatter(model_out=model_out, images=images, categories=categories)
         return output
