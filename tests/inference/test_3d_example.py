@@ -73,10 +73,10 @@ async def test_seg3d():
 
     with open("examples/inference/test_data/seg/input_3d_dcm_shuffle.json", "r") as f:
         data_shuffle = json.load(f)
-    data_shuffle_drop = data_shuffle
+    data_shuffle_drop = data_shuffle.copy()
     for k in data_shuffle:
         data_shuffle[k] = json.dumps(data_shuffle[k])
-    for k in data_shuffle:
+    for k in data_shuffle_drop:
         data_shuffle_drop[k] = json.dumps(data_shuffle_drop[k][10:])
 
     # single nifti file

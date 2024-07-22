@@ -172,6 +172,9 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         network (Callable): The inference network or model.
     """
 
+    def __init__(self):
+        super().__init__()
+
     @abstractmethod
     def define_inference_network(self) -> Callable:
         """
