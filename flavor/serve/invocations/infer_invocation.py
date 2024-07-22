@@ -108,12 +108,12 @@ class InferInvocationAPP:
             JSONResponse: The JSON response with the inference results or error message.
         """
         form_data = await request.form()
+        tempdir: TemporaryDirectory = TemporaryDirectory()
 
         try:
             input_dict = self.deserialize(form_data)
             self.input_data_model.model_validate(input_dict)
 
-            tempdir: TemporaryDirectory = TemporaryDirectory()
             input_dict = await self.save_temp_files(input_dict, tempdir)
             response = self.infer_function(**input_dict)
             response = self.output_data_model.model_validate(response)

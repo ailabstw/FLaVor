@@ -73,8 +73,11 @@ async def test_seg3d():
 
     with open("examples/inference/test_data/seg/input_3d_dcm_shuffle.json", "r") as f:
         data_shuffle = json.load(f)
+    data_shuffle_drop = data_shuffle
     for k in data_shuffle:
         data_shuffle[k] = json.dumps(data_shuffle[k])
+    for k in data_shuffle:
+        data_shuffle_drop[k] = json.dumps(data_shuffle_drop[k][10:])
 
     # single nifti file
     input_volumetric_files = "examples/inference/test_data/seg/img0062.nii.gz"
@@ -98,10 +101,14 @@ async def test_seg3d():
     ) as client:
         response = await client.post("/invocations", data=data, files=files)
         response_shuffle = await client.post("/invocations", data=data_shuffle, files=files)
+        response_shuffle_drop = await client.post(
+            "/invocations", data=data_shuffle_drop, files=files
+        )
         response_volume = await client.post("/invocations", data=data_volume, files=files_volume)
 
         assert response.status_code == 200
         assert response_shuffle.status_code == 200
+        assert response_shuffle_drop.status_code == 400  # files and images are not matched
         assert response_volume.status_code == 200
 
         ordered_content = json.loads(response.content)

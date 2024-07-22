@@ -212,17 +212,19 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         It is not recommended to have both `files` and `images` empty as it would result in an empty list for `self.image`.
         Users must be aware of this behavior and handle `self.images` afterwards if AiCOCO format is desired.
 
+        This method perform following steps if `files` exists:
+            1. len(files) == len(set(files))
+            2. set(files) == set(images_file_name)
+            3. sort by index
+            4. sort by files
+
         Args:
             images (Sequence[AiImage]): List of AiCOCO image elements.
             files (Optional[Sequence[str]]): List of input filenames. Default: None.
-
-        1. len(files) == len(set(files))
-        2. set(files) == set(images_file_name)
-        3. sort by index
-        4. sort by files
         """
         self.images = []
 
+        # set `self.images` by the order of its index attribute.
         if not files:
             for sorted_img in sorted(images, key=lambda x: x["index"]):
                 self.images.append(AiImage.model_validate(sorted_img))
@@ -238,10 +240,14 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         sorted_images = sorted(images, key=lambda x: x["index"])
 
         for target_file in files:
+            # Ideally, `target_file` would be `image` with some hash prefix.
             for image in sorted_images:
-                if image["file_name"].replace("/", "_") in target_file:
+                image_file_name = image["file_name"].replace("/", "_")
+                if target_file.endswith(image_file_name):
                     self.images.append(AiImage.model_validate(image))
-                    break
+                    break  # early break if found matched
+            else:
+                raise ValueError(f"{target_file} could not be found in input `images`.")
 
     @abstractmethod
     def data_reader(
