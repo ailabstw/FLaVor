@@ -3,9 +3,9 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-import tritonclient
-import tritonclient.http
-import tritonclient.utils.shared_memory as shm
+import tritonclient  # type: ignore
+import tritonclient.http  # type: ignore
+import tritonclient.utils.shared_memory as shm  # type: ignore
 
 
 class BaseTritonClient:

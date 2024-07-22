@@ -116,13 +116,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         raise NotImplementedError
 
     @abstractmethod
-    def output_formatter(
-        self,
-        model_out: Any,
-        categories: Optional[Sequence[Dict[str, Any]]] = None,
-        regressions: Optional[Sequence[Dict[str, Any]]] = None,
-        **kwargs,
-    ) -> Any:
+    def output_formatter(self, *args, **kwargs) -> Any:
         """
         Abstract method to format the output of inference model.
         This is just a template for you to make sure you make use of `categories` and `regressions`.
@@ -136,7 +130,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         raise NotImplementedError
 
     @abstractmethod
-    def __call__(self, **inputs) -> Any:
+    def __call__(self, *args, **kwargs) -> Any:
         """
         Abstract method to run inference model.
 
@@ -146,13 +140,13 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         For example:
 
         ```
-        x = self.preprocess(**inputs)
+        x = self.preprocess(**kwargs)
         out = self.inference(x)
         out = self.postprocess(out)
 
         # generate result in specific format
         result = self.output_formatter(
-            out, categories=self.categories, regressions=self.regressions, **inputs
+            out, categories=self.categories, regressions=self.regressions, **kwargs
         )
 
         return result
@@ -208,7 +202,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
     def _set_images(
         self, images: Sequence[Dict[str, Any]], files: Optional[Sequence[str]] = None
-    ) -> List[AiImage]:
+    ) -> None:
         """
         Initialize `self.images` attribute for AiCOCO format.
         This method takes `files` and `images` as inputs and we expect `images` is always provided.
@@ -320,9 +314,9 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
     def output_formatter(
         self,
         model_out: Any,
+        images: Sequence[AiImage],
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
-        images: Optional[Sequence[AiImage]] = None,
         **kwargs,
     ) -> Any:
         """
@@ -331,16 +325,18 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         Args:
             model_out (Any): Inference output.
+            images (Sequence[AiImage]): List of images. Default: None.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
-            images (Optional[Sequence[AiImage]]): List of images. Default: None.
 
         Returns:
             Any: AiCOCO formatted output.
         """
         raise NotImplementedError
 
-    def __call__(self, images: Dict[str, Any], files: Optional[str] = None, **kwargs) -> Any:
+    def __call__(
+        self, images: Sequence[Dict[str, Any]], files: Optional[Sequence[str]] = None, **kwargs
+    ) -> Any:
         """
         Run the inference model.
         """
@@ -353,9 +349,9 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         result = self.output_formatter(
             out,
+            images=self.images,
             categories=self.categories,
             regressions=self.regressions,
-            images=self.images,
         )
 
         return result
