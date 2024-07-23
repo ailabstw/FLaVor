@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -16,6 +16,37 @@ class GradioInferenceModel(BaseAiCOCOInferenceModel):
 
     def __init__(self):
         super().__init__()
+
+    @abstractmethod
+    def define_inference_network(self) -> Callable:
+        """
+        Abstract method to define the inference network.
+
+        Returns:
+            Callable: The defined inference network instance.
+                The return value would be assigned to `self.network`.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_categories(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Abstract method to set inference categories. Return `None` if no categories.
+
+        Returns:
+            List[Dict[str, Any]]: A list defining inference categories.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_regressions(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Abstract method to set inference regressions. Return `None` if no regressions.
+
+        Returns:
+            List[Dict[str, Any]]: A list defining inference regressions.
+        """
+        raise NotImplementedError
 
     @abstractmethod
     def data_reader(
@@ -36,6 +67,51 @@ class GradioInferenceModel(BaseAiCOCOInferenceModel):
         """
         raise NotImplementedError
 
+    def preprocess(self, data: Any) -> Any:
+        """
+        A default operation for transformations which is identical transformation.
+
+        Override it if you need other transformations like resizing or cropping, etc.
+
+        Args:
+            data (Any): Input data.
+
+        Returns:
+            Any: Preprocessed data.
+        """
+        return data
+
+    def inference(self, x: Any) -> Any:
+        """
+        A default inference operation which performs forward operation of your defined network.
+
+        Override it if needed.
+
+        Args:
+            x (Any): Input data.
+
+        Returns:
+            Any: Inference result.
+        """
+
+        return self.network(x)
+
+    def postprocess(self, out: Any, metadata: Optional[Any] = None) -> Any:
+        """
+        A default operation for post-processing which is identical transformation.
+
+        Override it if you need activations like softmax or sigmoid generating the prediction.
+
+        Args:
+            out (Any): Inference result.
+            metadata (Any, optional): Additional metadata. Default: None.
+
+        Returns:
+            Any: Post-processed result.
+        """
+
+        return out
+
     def output_formatter(
         self,
         model_out: np.ndarray,
@@ -52,7 +128,6 @@ class GradioInferenceModel(BaseAiCOCOInferenceModel):
         return output
 
     def __call__(self, *args, **kwargs):
-
         data, _, metadata = self.data_reader(**kwargs)
 
         x = self.preprocess(data)
