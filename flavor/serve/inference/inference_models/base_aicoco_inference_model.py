@@ -1,9 +1,12 @@
+import os
+import zipfile
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
+import pandas as pd
 from pydantic import BaseModel
 
-from ..data_models.functional import AiImage
+from ..data_models.functional import AiImage, AiInstance
 from .base_inference_model import BaseInferenceModel
 
 
@@ -350,6 +353,140 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         result = self.output_formatter(
             out,
             images=self.images,
+            categories=self.categories,
+            regressions=self.regressions,
+        )
+
+        return result
+
+
+class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
+    """
+    Base class for defining inference model with AiCOCO format response. (tabular version)
+
+    This class serves as a template for implementing inference functionality for various machine learning or deep learning models.
+    Subclasses must override abstract methods to define model-specific behavior.
+
+    Attributes:
+        network (Callable): The inference network or model.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def _set_instances(
+        self, dataframes: Sequence[pd.DataFrame], meta: Dict[str, Any]
+    ) -> List[AiInstance]:
+        assert "window_size" in meta
+        window_size = meta["window_size"]
+        assert all(
+            len(df) % window_size == 0 for df in dataframes
+        ), f"Not all DataFrames have a length that is divisible by {window_size}"
+
+        instance = []
+        for df in dataframes:
+            num_instances = len(df) / window_size
+            for i in range(num_instances):
+                instance.append(
+                    {"row_indexes": list(range(i * window_size, (i + 1) * window_size))}
+                )
+
+        return instance
+
+    def data_reader(self, files: Sequence[str], **kwargs):
+        """
+        Read data for inference model.
+
+        Args:
+            files (Sequence[str]): List of input file_names.
+
+        Returns:
+            dataframes (List[pd.DataFrame]): A list of dataframes.
+
+        """
+        dataframes = []
+
+        for file_name in files:
+            ext = os.path.splitext(file_name)[-1].lower()
+            if ext == ".csv":
+                df = pd.read_csv(file_name)
+            elif ext == ".parquet":
+                df = pd.read_parquet(file_name)
+            elif ext in [".xls", ".xlsx"]:
+                df = pd.read_excel(file_name)
+            elif ext == ".zip":
+                with zipfile.ZipFile(file_name, "r") as z:
+                    with z.open(z.namelist()[0]) as f:
+                        df = pd.read_csv(f)
+            else:
+                raise ValueError(f"Unsupported file extension: {ext}")
+
+            dataframes.append(df)
+
+        return dataframes
+
+    def preprocess(self, data: Any) -> Any:
+        """
+        A default operation for transformations which is identical transformation.
+
+        Override it if you need other transformations like resizing or cropping, etc.
+
+        Args:
+            data (Any): Input data.
+
+        Returns:
+            Any: Preprocessed data.
+        """
+        return data
+
+    @abstractmethod
+    def output_formatter(
+        self,
+        model_out: Any,
+        tables: Sequence[Dict[str, Any]],
+        instances: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        categories: Optional[Sequence[Dict[str, Any]]] = None,
+        regressions: Optional[Sequence[Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Any:
+        """
+        Abstract method to format the output of image inference model.
+        To respond results in AiCOCO format, users should adopt output strategy specifying for various tasks.
+
+        Args:
+            model_out (Any): Inference output.
+            tables (Sequence[Dict[str, Any]]): List of tables.
+            instances (Sequence[AiInstance]): List of inference instances.
+            meta (Dict[str, Any]): Additional metadata.
+            categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
+            regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
+
+        Returns:
+            Any: AiCOCO formatted output.
+        """
+        pass
+
+    def __call__(
+        self, tables: Dict[str, Any], meta: Dict[str, Any], files: Sequence[str], **kwargs
+    ) -> Any:
+        """
+        Run the inference model.
+        """
+        assert len(tables) == len(files), "`files` and `tables` should have same length."
+
+        dataframes = self.data_reader(files=files, **kwargs)
+        instances = self._set_instances(dataframes, meta)
+
+        x = self.preprocess(dataframes)
+        out = self.inference(x)
+        out = self.postprocess(out)
+
+        result = self.output_formatter(
+            out,
+            tables=tables,
+            instances=instances,
+            meta=meta,
             categories=self.categories,
             regressions=self.regressions,
         )

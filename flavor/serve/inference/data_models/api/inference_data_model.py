@@ -6,7 +6,13 @@ import numpy as np
 from fastapi import UploadFile
 from pydantic import BaseModel, model_serializer, model_validator
 
-from ..functional import AiCOCOImageFormat, AiImage
+from ..functional import (
+    AiCOCOImageFormat,
+    AiCOCOTabularFormat,
+    AiImage,
+    AiTable,
+    AiTableMeta,
+)
 
 
 class NpArray(BaseModel, arbitrary_types_allowed=True):
@@ -130,6 +136,30 @@ class BaseAiCOCOImageOutputDataModel(AiCOCOImageFormat):
         }
     )
     ```
+    """
+
+    pass
+
+
+class BaseAiCOCOTabularInputDataModel(BaseModel):
+    """
+    Base class for tabular input data with AiCOCO format.
+
+    Attributes:
+        tables (Sequence[AiTable]): Sequence of AiTable objects.
+        meta (AiTableMeta): Metadata with information like window_size.
+        files (Sequence[UploadFile]): Sequence of UploadFile objects.
+
+    """
+
+    tables: Sequence[AiTable]
+    meta: AiTableMeta
+    files: Sequence[UploadFile]
+
+
+class BaseAiCOCOTabularOutputDataModel(AiCOCOTabularFormat):
+    """
+    Base class for tabular output data with AiCOCO tabular format.
     """
 
     pass

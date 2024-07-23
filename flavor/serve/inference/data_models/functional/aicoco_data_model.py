@@ -69,16 +69,20 @@ class AiInstance(BaseModel):
     id: str
     table_id: str
     row_indexes: Sequence[int]
-    category_ids: Optional[Sequence[AiCategory]] = None
-    regressions: Optional[Sequence[AiRegressionItem]] = None
+    category_ids: Optional[Sequence[AiCategory]]
+    regressions: Optional[Sequence[AiRegressionItem]]
 
 
-class AiCOCOTableFormat(BaseModel, extra="forbid"):
+class AiTableMeta(BaseModel, extra="allow"):
+    window_size: int
+
+
+class AiCOCOTabularFormat(BaseModel, extra="forbid"):
     tables: Sequence[AiTable]
     categories: Optional[Sequence[AiCategory]]
     regressions: Optional[Sequence[AiRegression]]
     instances: Sequence[AiInstance]
-    meta: AiMeta
+    meta: AiTableMeta
 
     @model_validator(mode="before")
     @classmethod
