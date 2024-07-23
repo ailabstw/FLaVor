@@ -74,6 +74,7 @@ class GradioInferAPP:
     def __init__(
         self,
         infer_function: Callable,
+        **kwargs,
     ):
         self.infer_function = infer_function
 

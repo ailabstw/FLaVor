@@ -380,8 +380,9 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
             For 2D input data, it updates the last element of the images field list.
             For 3D input data, it updates meta field.
         """
+
         assert len(out) == len(
-            self.aicoco_categories
+            [cat for cat in self.aicoco_categories if cat.supercategory_id]
         ), f"The number of categories is not matched with the inference model output (shape: {out.shape})."
 
         for cls_pred, category in zip(out, self.aicoco_categories):
@@ -660,7 +661,7 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
             For 3D input data, it updates meta.
         """
         assert len(out) == len(
-            self.aicoco_regressions
+            [reg for reg in self.aicoco_regressions if reg.superregression_id]
         ), f"The number of regression values is not matched with the inference model output (shape: {out.shape})."
 
         for pred_value, regression in zip(out, self.aicoco_regressions):
