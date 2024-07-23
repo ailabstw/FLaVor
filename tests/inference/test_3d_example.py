@@ -123,3 +123,10 @@ async def test_seg3d():
             assert (
                 ordered["segmentation"] == unordered["segmentation"] == volumetric["segmentation"]
             )
+
+        for ordered, unordered, volumetric in zip(
+            ordered_content["images"],
+            unordered_content["images"],
+            volumetric_content["images"],
+        ):
+            assert len(ordered) == len(unordered) == len(volumetric)

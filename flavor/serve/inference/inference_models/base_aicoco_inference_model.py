@@ -238,12 +238,14 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         for target_file in files:
             # Ideally, `target_file` would be `image` with some hash prefix.
+            found_matched = False
             for image in sorted_images:
                 image_file_name = image["file_name"].replace("/", "_")
                 if target_file.endswith(image_file_name):
+                    found_matched = True
                     self.images.append(AiImage.model_validate(image))
-                    break  # early break if found matched
-            else:
+
+            if not found_matched:
                 raise ValueError(f"{target_file} could not be found in input `images`.")
 
     @abstractmethod
