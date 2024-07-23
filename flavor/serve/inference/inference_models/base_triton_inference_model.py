@@ -3,9 +3,9 @@ import logging
 from typing import Any, Dict, List, Optional
 
 import numpy as np
-import tritonclient
-import tritonclient.http
-import tritonclient.utils.shared_memory as shm
+import tritonclient  # type: ignore
+import tritonclient.http  # type: ignore
+import tritonclient.utils.shared_memory as shm  # type: ignore
 
 
 class BaseTritonClient:
@@ -61,10 +61,12 @@ class BaseTritonClient:
             # client.is_server_ready() would raise timeout error if failed
             if not client.is_server_ready():
                 # client.is_server_ready() would return false if not ready
-                raise ConnectionError
+                raise ConnectionError(f"Triton inference server at {triton_url} is not ready.")
             return client
-        except Exception:
-            raise ConnectionError(f"cannot connect to triton inference server at {triton_url}")
+        except Exception as e:
+            raise ConnectionError(
+                f"Cannot connect to triton inference server at {triton_url}. Fetched error: {e}."
+            )
 
     def _load_model_configs(self) -> Dict[str, Any]:
         """

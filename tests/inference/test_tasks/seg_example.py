@@ -43,10 +43,10 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
         dicom_reader.ReadImageInformation()
         dicom = sitk.GetArrayFromImage(dicom_reader.Execute()).squeeze()
 
-        return dicom, None, None
+        data = np.expand_dims(dicom, axis=0)
+        return data, None, None
 
     def preprocess(self, data: np.ndarray) -> np.ndarray:
-        data = np.expand_dims(data, axis=0)
         return data
 
     def inference(self, x: np.ndarray) -> np.ndarray:
