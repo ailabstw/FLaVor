@@ -1,6 +1,6 @@
 import ast
 import json
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Sequence, Tuple
 
 import numpy as np
 from fastapi import UploadFile
@@ -66,21 +66,20 @@ class BaseAiCOCOImageInputDataModel(BaseModel):
     """
     Base class for defining input data model with AiCOCO format.
 
-    Inherit it if you need extra fields.
-
-    Note that `images` and `files` could not be `None` at the same time.
+    Note that you must specify both `images` and `files`. Inherit it if you need extra fields.
 
     Attributes:
-        images (Optional[Sequence[AiImage]]): Sequence of AiImage objects. Defaults to None.
-        files (Optional[Sequence[UploadFile]]): Sequence of UploadFile objects. Defaults to None.
+        images (Sequence[AiImage]): Sequence of AiImage objects. Defaults to None.
+        files (Sequence[UploadFile]): Sequence of UploadFile objects. Defaults to None.
 
-    Example:
+    Example inheritance:
     ```
     class InputDataModel(BaseAiCOCOImageInputDataModel):
         image_embeddings: NpArray
 
     InputDataModel(
         {
+            "files": ...,
             "images": ...,
             "image_embeddings": ...
         }
@@ -88,16 +87,8 @@ class BaseAiCOCOImageInputDataModel(BaseModel):
     ```
     """
 
-    images: Optional[Sequence[AiImage]] = None
-    files: Optional[Sequence[UploadFile]] = None
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_images_files(cls, data: Any) -> Any:
-        images = data.get("images", None)
-        files = data.get("files", None)
-        assert images or files, "`images` and `files` could not be `None` at the same time."
-        return data
+    images: Sequence[AiImage]
+    files: Sequence[UploadFile]
 
 
 class BaseAiCOCOImageOutputDataModel(AiCOCOImageFormat):
