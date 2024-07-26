@@ -1,10 +1,10 @@
 import random
+from abc import abstractmethod
 from typing import Any, Dict, List, Sequence, Tuple
 
 import numpy as np
 from PIL import Image, ImageDraw
 
-from ..data_models.functional import AiImage
 from .base_strategy import BaseStrategy
 
 
@@ -39,22 +39,14 @@ class BaseGradioStrategy(BaseStrategy):
 
         return rgb["r"], rgb["g"], rgb["b"]
 
-    def __call__(
-        self,
-        images: Sequence[AiImage],
-        categories: Sequence[Dict[str, Any]],
-        regressions: Sequence[Dict[str, Any]],
-        model_out: np.ndarray,
-        **kwargs,
-    ) -> Tuple[List, List, None, str]:
-
-        return self.apply(images, categories, regressions, model_out)
+    @abstractmethod
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError
 
 
 class GradioSegmentationStrategy(BaseGradioStrategy):
     """
     Strategy for applying segmentation models using Gradio.
-
     """
 
     def __call__(
@@ -84,7 +76,7 @@ class GradioSegmentationStrategy(BaseGradioStrategy):
         mask = np.zeros_like(data)
 
         for cls_idx in range(model_out.shape[0]):
-            if not categories[cls_idx]["display"]:
+            if not categories[cls_idx].get("display", True):
                 continue
 
             if "color" in categories[cls_idx]:
@@ -148,6 +140,8 @@ class GradioDetectionStrategy(BaseGradioStrategy):
         for i in range(len(bbox_pred)):
             y_min, x_min, y_max, x_max = bbox_pred[i]
             cls_idx = np.argmax(cls_pred[i])
+            if not categories[cls_idx].get("display", True):
+                continue
             confidence = confidence_score[i] if confidence_score is not None else ""
 
             if "color" in categories[cls_idx]:
@@ -169,11 +163,9 @@ class GradioDetectionStrategy(BaseGradioStrategy):
 
 class GradioClassificationStrategy(BaseGradioStrategy):
     # TODO
-    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
-        pass
+    pass
 
 
 class GradioRegressionStrategy(BaseGradioStrategy):
     # TODO
-    async def apply(self, result: Dict[str, Any]) -> Tuple[List[Any], List[Any], None, str]:
-        pass
+    pass

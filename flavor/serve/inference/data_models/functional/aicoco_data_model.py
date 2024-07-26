@@ -1,7 +1,7 @@
 """
 This module defines a set of Pydantic models for handling AICOCO format.
 """
-from typing import Literal, Optional, Sequence
+from typing import List, Literal, Optional, Sequence
 
 from pydantic import BaseModel
 
@@ -12,7 +12,7 @@ class AiAnnotation(BaseModel, extra="allow"):
     iscrowd: Literal[0, 1]
     object_id: str
     bbox: Optional[Sequence[Sequence[int]]]
-    segmentation: Optional[Sequence[Sequence[int]]]
+    segmentation: Optional[List[Sequence[int]]]
 
 
 class AiCategory(BaseModel, extra="allow"):
@@ -34,21 +34,21 @@ class AiRegressionItem(BaseModel, extra="forbid"):
 
 class AiObject(BaseModel, extra="allow"):
     id: str
-    category_ids: Optional[Sequence[str]]
-    regressions: Optional[Sequence[AiRegressionItem]]
+    category_ids: Optional[List[str]]
+    regressions: Optional[List[AiRegressionItem]]
 
 
 class AiMeta(BaseModel, extra="allow"):
-    category_ids: Optional[Sequence[str]]
-    regressions: Optional[Sequence[AiRegressionItem]]
+    category_ids: Optional[List[str]]
+    regressions: Optional[List[AiRegressionItem]]
 
 
 class AiImage(BaseModel, extra="allow"):
     file_name: str
     id: str
     index: int
-    category_ids: Optional[Sequence[str]]
-    regressions: Optional[Sequence[AiRegressionItem]]
+    category_ids: Optional[List[str]]
+    regressions: Optional[List[AiRegressionItem]]
 
 
 class AiCOCOImageFormat(BaseModel, extra="forbid"):

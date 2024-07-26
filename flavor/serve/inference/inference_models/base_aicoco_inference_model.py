@@ -204,7 +204,9 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         raise NotImplementedError
 
     def _set_images(
-        self, images: Sequence[Dict[str, Any]], files: Optional[Sequence[str]] = None
+        self,
+        images: Optional[Sequence[Dict[str, Any]]] = None,
+        files: Optional[Sequence[str]] = None,
     ) -> None:
         """
         Initialize `self.images` attribute for AiCOCO format.
@@ -219,10 +221,13 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             4. sort by files
 
         Args:
-            images (Sequence[AiImage]): List of AiCOCO image elements.
+            images (Optional[Sequence[Dict[str, Any]]]): List of AiCOCO image elements. Default: None.
             files (Optional[Sequence[str]]): List of input filenames. Default: None.
         """
         self.images = []
+
+        if not images:
+            return
 
         # set `self.images` by the order of its index attribute.
         if not files:
@@ -241,12 +246,14 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         for target_file in files:
             # Ideally, `target_file` would be `image` with some hash prefix.
+            found_matched = False
             for image in sorted_images:
                 image_file_name = image["file_name"].replace("/", "_")
                 if target_file.endswith(image_file_name):
+                    found_matched = True
                     self.images.append(AiImage.model_validate(image))
-                    break  # early break if found matched
-            else:
+
+            if not found_matched:
                 raise ValueError(f"{target_file} could not be found in input `images`.")
 
     @abstractmethod
@@ -317,6 +324,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
     def output_formatter(
         self,
         model_out: Any,
+        data: Any,
         images: Sequence[AiImage],
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
@@ -328,7 +336,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         Args:
             model_out (Any): Inference output.
-            images (Sequence[AiImage]): List of images. Default: None.
+            images (Optional[Sequence[Dict[str, Any]]]): List of images. Default: None.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
 
@@ -338,7 +346,10 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         raise NotImplementedError
 
     def __call__(
-        self, images: Sequence[Dict[str, Any]], files: Optional[Sequence[str]] = None, **kwargs
+        self,
+        images: Optional[Sequence[Dict[str, Any]]] = None,
+        files: Optional[Sequence[str]] = None,
+        **kwargs,
     ) -> Any:
         """
         Run the inference model.
@@ -352,6 +363,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         result = self.output_formatter(
             out,
+            data=data,
             images=self.images,
             categories=self.categories,
             regressions=self.regressions,

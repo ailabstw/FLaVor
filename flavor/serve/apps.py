@@ -5,7 +5,6 @@ import gradio as gr
 import uvicorn
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.gzip import GZipMiddleware
-from nanoid import generate
 from pydantic import BaseModel
 
 from .invocations import InferInvocationAPP
@@ -75,33 +74,13 @@ class GradioInferAPP:
     def __init__(
         self,
         infer_function: Callable,
-        output_strategy: Type[BaseModel] = None,
+        **kwargs,
     ):
-
         self.infer_function = infer_function
-        self.output_strategy = output_strategy() if output_strategy else None
 
-    async def invocations(self, files: Sequence[str]):
-        data_dict = {
-            "files": files,
-            "images": [
-                {
-                    "id": generate(),
-                    "file_name": file,
-                    "index": idx,
-                    "category_ids": None,
-                    "regressions": None,
-                }
-                for idx, file in enumerate(files)
-            ],
-        }
-
+    def invocations(self, files: Sequence[str]):
         try:
-            result = self.infer_function(**data_dict)
-            if self.output_strategy:
-                response = self.output_strategy(**result)
-            else:
-                response = result
+            response = self.infer_function(files=files)
         except Exception:
             err_msg = traceback.format_exc()
             return None, None, None, err_msg
