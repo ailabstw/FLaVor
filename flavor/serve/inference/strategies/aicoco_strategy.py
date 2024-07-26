@@ -824,8 +824,8 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
             aicoco_ref (AiCOCOTabularOut): AiCOCO compatible reference.
 
             model_out (np.ndarray): Inference model output.
-                - binary classification: [[0], [1], [1], ...] (one-hot format)
-                - multiclass classification: [[0, 0, 1], [1, 0, 0], ...] (one-hot format)
+                - binary classification: [[0], [1], [1], ...]
+                - multiclass classification: [[0, 0, 1], [1, 0, 0], ...]
                 - multilabel classification: [[1, 0, 1], [1, 1, 1], ...]
 
         Returns:
@@ -840,9 +840,13 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
 
         for instance, cls_pred in zip(instances, model_out):
             instance.category_ids = [] if instance.category_ids is None else instance.category_ids
-            instance.category_ids.extend(
-                category_id.id for pred, category_id in zip(cls_pred, categories) if pred
-            )
+            num_class = cls_pred.shape[-1] == 1
+            if num_class == 1:
+                instance.category_ids.append(categories[cls_pred[0]])
+            else:
+                instance.category_ids.extend(
+                    category_id.id for pred, category_id in zip(cls_pred, categories) if pred
+                )
 
         return aicoco_ref
 
