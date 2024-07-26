@@ -141,7 +141,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             self.aicoco_categories = self.generate_categories(categories)
             self.aicoco_regressions = self.generate_regressions(regressions)
 
-        aicoco_ref: AiCOCOImageRef = {
+        aicoco_ref = {
             "images": images,
             "categories": self.aicoco_categories,
             "regressions": self.aicoco_regressions,
@@ -381,24 +381,25 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
             For 3D input data, it updates meta field.
         """
 
-        assert len(out) == len(
-            [cat for cat in self.aicoco_categories if cat.supercategory_id]
-        ), f"The number of categories is not matched with the inference model output (shape: {out.shape})."
+        n_classes = len(out)
 
-        for cls_pred, category in zip(out, self.aicoco_categories):
+        for cls_idx in range(n_classes):
+            cls_pred = out[cls_idx]
+            category_id = self.aicoco_categories[cls_idx].id
+
+            # For 2D case, handle `images`
             if len(images) == 1:
-                # For 2D case, handle `images`
                 if images[-1].category_ids is None:
                     images[-1].category_ids = list()
                 if cls_pred:
-                    images[-1].category_ids.append(category.id)
+                    images[-1].category_ids.append(category_id)
 
+            # For 3D case, handle `meta`
             else:
-                # For 3D case, handle `meta`
                 if meta.category_ids is None:
                     meta.category_ids = list()
                 if cls_pred:
-                    meta.category_ids.append(category.id)
+                    meta.category_ids.append(category_id)
 
         return images, meta
 
@@ -660,18 +661,19 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
             For 2D input data, it updates the last element of the images field list.
             For 3D input data, it updates meta.
         """
-        assert len(out) == len(
-            [reg for reg in self.aicoco_regressions if reg.superregression_id]
-        ), f"The number of regression values is not matched with the inference model output (shape: {out.shape})."
+        n_regression = len(out)
 
-        for pred_value, regression in zip(out, self.aicoco_regressions):
+        for reg_idx in range(n_regression):
+            reg_pred = out[reg_idx].item()
+            regression_id = self.aicoco_regressions[reg_idx].id
+
             if len(images) == 1:
                 # For 2D case, handle `images`
                 if images[-1].regressions is None:
                     images[-1].regressions = list()
                 regression_item = {
-                    "regression_id": regression.id,
-                    "value": pred_value.item(),
+                    "regression_id": regression_id,
+                    "value": reg_pred,
                 }
                 images[-1].regressions.append(AiRegressionItem(**regression_item))
 
@@ -680,8 +682,8 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
                 if meta.regressions is None:
                     meta.regressions = list()
                 regression_item = {
-                    "regression_id": regression.id,
-                    "value": pred_value.item(),
+                    "regression_id": regression_id,
+                    "value": reg_pred,
                 }
                 meta.regressions.append(AiRegressionItem(**regression_item))
 
