@@ -1,15 +1,5 @@
 from abc import abstractmethod
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    TypedDict,
-    Union,
-)
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, Union
 
 import cv2  # type: ignore
 import numpy as np
@@ -725,11 +715,10 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
         """
         res = []
         for instances in table_instances:
-            table_id = generate()
             for instance in instances:
                 aiinstance = AiInstance(
                     id=generate(),
-                    table_id=table_id,
+                    table_id=instance["table_id"],
                     row_indexes=instance["row_indexes"],
                     category_ids=instance.get("category_ids", None),
                     regressions=instance.get("regressions", None),
@@ -746,7 +735,21 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
     ) -> AiCOCOTabularOut:
+        """
+        Prepare prerequisite for AiCOCO.
 
+        Args:
+            tables (Sequence[Dict]): List of AiCOCO table compatible dict.
+            instances (Sequence[Dict]): List of AiCOCO instance compatible dict.
+            meta (Optional[Dict[str, Any]]): AiCOCO tabular meta dict.
+            categories (Optional[Sequence[Dict[str, Any]]]): List of unprocessed categories. Default: None.
+            regressions (Optional[Sequence[Dict[str, Any]]]): List of unprocessed regressions. Default: None.
+
+        Returns:
+            AiCOCOTabularOut: Prepared AiCOCO output and inference model output array.
+        """
+
+        tables = [AiTable(**table) for table in tables]
         categories = categories if categories is not None else []
         regressions = regressions if regressions is not None else []
 
@@ -758,7 +761,7 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
             self.aicoco_regressions = self.generate_regressions(regressions)
 
         aicoco_ref = {
-            "tables": AiTable(**tables),
+            "tables": tables,
             "categories": self.aicoco_categories,
             "regressions": self.aicoco_regressions,
             "instances": self.aicoco_instances,
@@ -768,7 +771,7 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
         return aicoco_ref
 
 
-class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
+class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy):
     def __call__(
         self,
         model_out: np.ndarray,
@@ -813,12 +816,6 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
         if not np.all(np.isin(model_out, [0, 1])):
             raise ValueError("`model_out` contains elements other than 0 and 1")
 
-        num_classes = sum(
-            1 for category in self.aicoco_categories if category.supercategory_id is None
-        )
-        if model_out.shape[-1] != num_classes:
-            raise ValueError("`model_out` output class is not matched with number of classes.")
-
     def model_to_aicoco(
         self, aicoco_ref: AiCOCOTabularOut, model_out: np.ndarray
     ) -> AiCOCOTabularOut:
@@ -827,7 +824,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
             aicoco_ref (AiCOCOTabularOut): AiCOCO compatible reference.
 
             model_out (np.ndarray): Inference model output.
-                - binary classification: [[0, 1], [1, 0], [1, 0], ...] (one-hot format)
+                - binary classification: [[0], [1], [1], ...] (one-hot format)
                 - multiclass classification: [[0, 0, 1], [1, 0, 0], ...] (one-hot format)
                 - multilabel classification: [[1, 0, 1], [1, 1, 1], ...]
 
@@ -842,13 +839,15 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
         ), "The number of instances is not matched with the inference model output."
 
         for instance, cls_pred in zip(instances, model_out):
-            instance.setdefault("category_ids", [])
-            instance["category_ids"].extend(
+            instance.category_ids = [] if instance.category_ids is None else instance.category_ids
+            instance.category_ids.extend(
                 category_id.id for pred, category_id in zip(cls_pred, categories) if pred
             )
 
+        return aicoco_ref
 
-class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOOutputStrategy):
+
+class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
     def __call__(
         self,
         model_out: np.ndarray,
@@ -915,10 +914,8 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOOutputStrategy):
         ), "The number of instances is not matched with the inference model output."
 
         for instance, pred in zip(instances, model_out):
-            pred = pred if isinstance(pred, Iterable) else [pred]
-
-            instance["regressions"] = [
-                AiRegressionItem(regression_id=reg["id"], value=value)
+            instance.regressions = [
+                AiRegressionItem(regression_id=reg.id, value=value)
                 for reg, value in zip(regressions, pred)
             ]
 

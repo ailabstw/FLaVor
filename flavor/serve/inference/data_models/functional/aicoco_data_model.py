@@ -3,7 +3,7 @@ This module defines a set of Pydantic models for handling AICOCO format.
 """
 from typing import Literal, Optional, Sequence
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 
 class AiAnnotation(BaseModel, extra="allow"):
@@ -83,10 +83,3 @@ class AiCOCOTabularFormat(BaseModel, extra="forbid"):
     regressions: Optional[Sequence[AiRegression]]
     instances: Sequence[AiInstance]
     meta: AiTableMeta
-
-    @model_validator(mode="before")
-    @classmethod
-    def check_id_and_name(cls, values):
-        if values.get("categories") is None and values.get("regressions") is None:
-            raise ValueError("Either id or name must be provided.")
-        return values

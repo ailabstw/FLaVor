@@ -375,23 +375,29 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         super().__init__()
 
     def _set_instances(
-        self, dataframes: Sequence[pd.DataFrame], meta: Dict[str, Any]
+        self, dataframes: Sequence[pd.DataFrame], tables: Dict[str, Any], meta: Dict[str, Any]
     ) -> List[AiInstance]:
+        assert len(dataframes) == len(tables)
         assert "window_size" in meta
         window_size = meta["window_size"]
         assert all(
             len(df) % window_size == 0 for df in dataframes
         ), f"Not all DataFrames have a length that is divisible by {window_size}"
 
-        instance = []
-        for df in dataframes:
-            num_instances = len(df) / window_size
+        table_instances = []
+        for df, table in zip(dataframes, tables):
+            num_instances = len(df) // window_size
+            instances = []
             for i in range(num_instances):
-                instance.append(
-                    {"row_indexes": list(range(i * window_size, (i + 1) * window_size))}
+                instances.append(
+                    {
+                        "table_id": table["id"],
+                        "row_indexes": list(range(i * window_size, (i + 1) * window_size)),
+                    }
                 )
+            table_instances.append(instances)
 
-        return instance
+        return table_instances
 
     def data_reader(self, files: Sequence[str], **kwargs):
         """
@@ -476,7 +482,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         assert len(tables) == len(files), "`files` and `tables` should have same length."
 
         dataframes = self.data_reader(files=files, **kwargs)
-        instances = self._set_instances(dataframes, meta)
+        instances = self._set_instances(dataframes, tables, meta)
 
         x = self.preprocess(dataframes)
         out = self.inference(x)

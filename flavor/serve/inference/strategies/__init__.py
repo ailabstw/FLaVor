@@ -14,6 +14,7 @@ __all__ = [
     "AiCOCORegressionOutputStrategy",
     "AiCOCOSegmentationOutputStrategy",
     "AiCOCOTabularClassificationOutputStrategy",
-    "AiCOCOTabularRegressionOutputStrategy" "GradioDetectionStrategy",
+    "AiCOCOTabularRegressionOutputStrategy",
+    "GradioDetectionStrategy",
     "GradioSegmentationStrategy",
 ]
