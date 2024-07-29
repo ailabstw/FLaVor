@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "flavor"
-version = "2.1.0"
+version = "2.0.0"
 description = "AILabs Federated Learning and Validation Framework"
 authors = ["Stanley Huang <ding3820@gmail.com>", "Keng-Chi Liu <calvin89029@gmail.com>"]
 readme = "README.md"
