@@ -2,7 +2,7 @@
 
 ## About input structure
 
-The FLaVor inference service accepts requests with form data containing input images and a JSON file describing the images in AiCOCO format. The JSON file should adhere to the structure outlined below:
+The FLaVor inference service accepts requests with form data containing input images and a JSON file in AiCOCO format. The JSON file should adhere to the following structure:
 
 ```python
 {
@@ -21,63 +21,127 @@ The FLaVor inference service accepts requests with form data containing input im
 
 ## About output structure
 
-The output strategy is an optional component that allows the output of the inference model to be easily converted to the AiCOCO format and provides a standardized method for serializing the results. If `output_strategy=None` is specified, the `infer_function` must return the AiCOCO format directly.
-
-The given output strategy can be chosen depending on the task, classification, detection, regression or segmentation. Each requires a different input format, which is defined in `AiCOCOClassificationOutputStrategy`, `AiCOCODetectionOutputStrategy`, `AiCOCORegressionOutputStrategy` and `AiCOCOSegmentationOutputStrategy`.
-
-The input format for each output strategy are listed as follows:
-
-### Classification task -  `AiCOCOClassificationOutputStrategy`
+The output strategy includes functions that convert the inference model output to the AiCOCO format for serialization. This is typically used in the `output_formatter` of the inference model.
 
 ```python
-infer_output = {
-    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
-    "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
-    "model_out": model_out # 1d NumPy array with classification predictions
-}
+from flavor.serve.inference.strategies import AiCOCOClassificationOutputStrategy
+
+...
+def __init__(self,):
+    self.formatter = AiCOCOClassificationOutputStrategy()
+
+def output_formatter(
+    self,
+    model_out: np.ndarray,
+    images: Sequence[AiImage],
+    categories: Sequence[Dict[str, Any]],
+    **kwargs
+) -> BaseAiCOCOImageOutputDataModel:
+
+    output = self.formatter(model_out=model_out, images=images, categories=categories)
+    return output
 ```
 
-### Detection task (support 2D only) - `AiCOCODetectionOutputStrategy`
+Different output strategies can be selected based on the task: classification, detection, regression, or segmentation. Each strategy uses specific input formats, defined as follows:
+
+
+### Classification task
+
+#### `class flavor.serve.inference.strategies.AiCOCOClassificationOutputStrategy`
 
 ```python
-infer_output = {
-    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
-    "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
-    "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
-    "model_out": {
-        "bbox_pred": bbox_pred, # list of bbox prediction as [[x_min, y_min, x_max, y_max], ...]
-        "cls_pred": cls_pred, # list of 1d NumPy array as classification result of each bbox
-        "confidence_score": confidence_score, # optional, list of the confidence values of the individual bbox
-        "regression_value": regression_value, # optional, list of the regression value of each bbox if there is a regression prediction
-    }
-}
+def __call__(
+    model_out: np.ndarray,
+    images: List[AiImage],
+    categories: Sequence[Dict[str, Any]],
+)
 ```
 
-### Regression task - `AiCOCORegressionOutputStrategy`
+#### Arguments
+
+* `model_out`: 1D NumPy array with classification results
+* `images`: List of AiCOCO format compatible images
+* `categories`: List of categories defined in your inference model (`set_categories`).
+
+#### Return
+
+* `AiCOCOImageOut`: A dictionary compatible with the full AiCOCO format
+
+### Detection task (support 2D only)
+
+#### `class flavor.serve.inference.strategies.AiCOCODetectionOutputStrategy`
 
 ```python
-infer_output = {
-    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
-    "regressions": {regression_id: {"name": regression_name, "superregression_name": superregression_name, ...}, ...},
-    "model_out": model_out # 1d NumPy array with regression predictions
-}
+def __call__(
+    model_out: Dict[str, Any],
+    images: List[AiImage],
+    categories: Sequence[Dict[str, Any]],
+    regressions: Sequence[Dict[str, Any]],
+):
 ```
 
-### Segmentation task - `AiCOCOSegmentationOutputStrategy`
+#### Arguments
+
+* `model_out`: Dictionary with predefined keys:
+  * `bbox_pred`: List of bbox predictions as `[[x_min, y_min, x_max, y_max], ...]`
+  * `cls_pred`: List of 1D NumPy arrays with classification results for each bbox
+  * `confidence_score`: (Optional) List of confidence values for each bbox
+  * `regression_value`: (Optional) List of regression values for each bbox
+* `images`: List of AiCOCO format compatible images
+* `categories`: List of categories defined in your inference model (`set_categories`).
+* `regressions`: List of regressions defined in your inference model (`set_regressions`).
+
+#### Return
+
+* `AiCOCOImageOut`: A dictionary compatible with the full AiCOCO format
+
+### Regression task
+
+#### `class flavor.serve.inference.strategies.AiCOCORegressionOutputStrategy`
 
 ```python
-infer_output = {
-    "sorted_images": [{"id": uid, "file_name": file_name, "index": index, ...}, ...],
-    "categories": {class_id: {"name": category_name, "supercategory_name": supercategory_name, display: True, ...}, ...},
-    "model_out": model_out # 3d/4d NumPy array with segmentation predictions
-}
+def __call__(
+    model_out: np.ndarray,
+    images: List[AiImage],
+    regressions: Sequence[Dict[str, Any]],
+):
 ```
+
+#### Arguments
+
+* `model_out`: 1D NumPy array with regression results
+* `images`: List of AiCOCO format compatible images
+* `regressions`: List of regressions defined in your inference model (`set_regressions`).
+
+#### Return
+
+* `AiCOCOImageOut`: A dictionary compatible with the full AiCOCO format
+
+### Segmentation task
+
+#### `class flavor.serve.inference.strategies.AiCOCOSegmentationOutputStrategy`
+
+```python
+def __call__(
+    model_out: np.ndarray,
+    images: List[AiImage],
+    categories: Sequence[Dict[str, Any]],
+)
+```
+
+#### Arguments
+
+* `model_out`: D NumPy array with segmentation results (instance or semantic segmentation mask)
+* `images`: List of AiCOCO format compatible images
+* `categories`: List of categories defined in your inference model (`set_categories`).
+
+#### Return
+
+* `AiCOCOImageOut`: A dictionary compatible with the full AiCOCO format
 
 ### Summary
 
 The general pattern of the expected output should be a dictionary containing the following keys:
-
-* `sorted_images`: a list of AiCOCO-compatible images (see input format) sorted by a certain criterion (e.g. by Z-axis or temporal order) to correlate with `model_out`.
 
 * `categories`: a dictionary where each key is the class ID in counting order starting from `0`. The corresponding value is a dictionary of category information that must be filled with `name` and optionally `supercategory_name`, `display` and all other details compatible in the AiCOCO format, except for the fields related to `nanoid`.
 
