@@ -16,7 +16,7 @@ dist
 
 # jupyter notebook
 .ipynb_checkpoints/
-# *.ipynb
+*.ipynb
 
 # mac
 .DS_Store

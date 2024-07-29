@@ -11,7 +11,6 @@ from .base_triton_inference_model import (
 __all__ = [
     "BaseAiCOCOImageInferenceModel",
     "BaseAiCOCOTabularInferenceModel",
-    "GradioInferenceModel",
     "TritonInferenceModel",
     "TritonInferenceModelSharedSystemMemory",
 ]
