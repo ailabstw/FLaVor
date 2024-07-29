@@ -11,6 +11,10 @@ import tritonclient.utils.shared_memory as shm
 class BaseTritonClient:
     """
     BaseTritonClient is a base class that sets up connections with Triton Inference Server.
+
+    Version information:
+    - tested on Triton Server version 24.05
+    - image name: `nvcr.io/nvidia/tritonserver:24.05-py3`
     """
 
     # for more details regarding data types, see: https://docs.nvidia.com/deeplearning/triton-inference-server/user-guide/docs/user_guide/model_configuration.html#datatypes
