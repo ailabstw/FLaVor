@@ -190,14 +190,17 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
         """
         Validate inference model output.
         """
-        assert np.all(np.mod(model_out, 1) == 0)
-
         if not isinstance(model_out, np.ndarray):
             raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
 
         if model_out.ndim != 3 and model_out.ndim != 4:
             raise ValueError(
                 f"The dimension of `model_out` should be in 3D or 4D but got {model_out.ndim}."
+            )
+
+        if check_any_nonint(model_out):
+            raise ValueError(
+                "The value of `model_out` should be integer such as 0, 1, 2 ... with int or float type."
             )
 
     def model_to_aicoco(self, aicoco_ref: AiCOCOImageRef, model_out: np.ndarray) -> AiCOCOImageOut:
