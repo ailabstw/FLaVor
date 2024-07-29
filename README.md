@@ -1,21 +1,24 @@
+
 # AILabs FLaVor
 
 AILabs **F**ederated **L**earning **a**nd **V**alidation Framew**or**k allows multiple parties to collaboratively build and evaluate AI models without compromising data privacy. **FLaVor** also provides a python package for users to join us, even if your code is implemented in other programming languages. It enables users to make modifications to their program codes by simply adding certain signals and importing/exporting the necessary files, as demonstrated in the examples.
 
 > ***If you combine good FLaVors, model turns into an orchestra.***
 
-**Note: gRPC dependency will be removed after 2.0.0, please install 1.0.7 if necessary.**
+## Important Changelog
+
+* 2024/07/19: Introduce Inference service and FL via HTTP in 2.0.0.
+* 2024/02/21: gRPC dependency will be removed after 2.0.0, please install 1.0.7 if necessary.
 
 ## Installation
 
-#### Install stable versions
-
+### Install stable versions
 
 ```bash
 pip install https://github.com/ailabstw/flavor/archive/refs/heads/release/stable.zip -U
 ```
 
-#### Install bleeding-edge (no guarantees)
+### Install bleeding-edge (no guarantees)
 
 ```bash
 pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
@@ -23,14 +26,15 @@ pip install https://github.com/ailabstw/flavor/archive/refs/heads/master.zip -U
 
 ## Getting Started
 
- - [Federated Learning Client](examples/hello-fl-client)
- - [Federated Learning Server](examples/hello-fl-server)
- - [Federated Validation](examples/hello-fv)
+* [Federated Learning Client](examples/fl-client/README.md)
+* [Federated Learning Server](examples/fl-server/README.md)
+* [Federated Validation](examples/fv/README.md)
+* [Inference Model Deployment](examples/inference/README.md)
 
-#### Note
+### Note
+
 1. FLaVor calls the user's code through subprocess, so it allows environment conflicts with the user's training code, such as different versions of Python or conflicting packages. In addition, FLaVor also supports running programs other than Python.
 2. The main purpose of the sample code is to guide users to use FLaVor and deploy pre-existing training code on AILabs framework. It is important to note that the intent is not to provide guidance on using the deep learning framework itself. Therefore, direct modification of the sample code is not recommended.
-
 
 ## Asking for help
 

@@ -1,3 +1,0 @@
-scikit-learn
-xgboost>=1.6.0, <=1.7.6
-https://github.com/ailabstw/FLaVor/archive/refs/heads/release/stable.zip
