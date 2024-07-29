@@ -785,7 +785,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
         tables: Sequence[Dict[str, Any]],
         instances: Sequence[Dict[str, Any]],
         categories: Sequence[Dict[str, Any]],
-        meta: AiTableMeta,
+        meta: Dict[str, Any],
         **kwargs,
     ) -> AiCOCOTabularOut:
         """
@@ -793,10 +793,10 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
 
         Args:
             model_out (np.ndarray): Inference model output.
-            tables (Sequence[Dict[str, Any]]): List of AiCOCO tables field.
-            instances (Sequence[Dict[str, Any]]): List of inference instances.
+            tables (Sequence[Dict[str, Any]]): List of AiCOCO table compatible dict.
+            instances (Sequence[Dict[str, Any]]): List of AiCOCO instance compatible dict.
             categories (Sequence[Dict[str, Any]]): List of unprocessed categories.
-            meta (AiTableMeta): Additional metadata.
+            meta (Dict[str, Any]): Additional metadata.
 
         Returns:
             AiCOCOOut: Result in AiCOCO compatible format.
@@ -847,7 +847,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
 
         for instance, cls_pred in zip(instances, model_out):
             instance.category_ids = [] if instance.category_ids is None else instance.category_ids
-            num_class = cls_pred.shape[-1] == 1
+            num_class = cls_pred.shape[-1]
             if num_class == 1:
                 instance.category_ids.append(categories[cls_pred[0]])
             else:
@@ -865,7 +865,7 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
         tables: Sequence[Dict[str, Any]],
         instances: Sequence[Dict[str, Any]],
         regressions: Sequence[Dict[str, Any]],
-        meta: AiTableMeta,
+        meta: Dict[str, Any],
         **kwargs,
     ) -> AiCOCOTabularOut:
         """
@@ -873,10 +873,10 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
 
         Args:
             model_out (np.ndarray): Inference model output.
-            tables (Sequence[Dict[str, Any]]): List of AiCOCO tables field.
-            instances (Sequence[Dict[str, Any]]): List of inference instances.
+            tables (Sequence[Dict[str, Any]]): List of AiCOCO table compatible dict.
+            instances (Sequence[Dict[str, Any]]): List of AiCOCO instance compatible dict.
             regressions (Sequence[Dict[str, Any]]): List of unprocessed regressions.
-            meta (AiTableMeta): Additional metadata.
+            meta (Dict[str, Any]): Additional metadata.
 
         Returns:
             AiCOCOOut: Result in AiCOCO compatible format.
@@ -911,7 +911,7 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
             aicoco_ref (AiCOCOTabularOut): AiCOCO compatible reference.
 
             model_out (np.ndarray): Inference model output.
-                - single regression: [1, 2, 3, ...]
+                - single regression: [[1], [2], [3], ...]
                 - multiple regression: [[1, 2, 3], [4, 5, 6], ...]
 
         Returns:

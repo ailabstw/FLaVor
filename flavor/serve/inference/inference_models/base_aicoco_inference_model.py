@@ -6,7 +6,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from ..data_models.functional import AiImage, AiInstance
+from ..data_models.functional import AiImage
 from .base_inference_model import BaseInferenceModel
 
 
@@ -388,7 +388,18 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
 
     def _set_instances(
         self, dataframes: Sequence[pd.DataFrame], tables: Dict[str, Any], meta: Dict[str, Any]
-    ) -> List[AiInstance]:
+    ) -> List[Dict[str, Any]]:
+        """
+        Setup instances for each table for inference, the instances should contain `table_id` and `row_indexes` information.
+
+        Args:
+            dataframes (Sequence[pd.DataFrame]): A list of dataframes.
+            tables (Dict[str, Any]): A dictionary of table information.
+            meta (Dict[str, Any]): Meta information.
+
+        returns
+            table_instances (List[Dict[str, Any]]): A list of instances.
+        """
         assert len(dataframes) == len(tables)
         assert "window_size" in meta
         window_size = meta["window_size"]
@@ -469,7 +480,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         **kwargs,
     ) -> Any:
         """
-        Abstract method to format the output of image inference model.
+        Abstract method to format the output of tabular inference model.
         To respond results in AiCOCO format, users should adopt output strategy specifying for various tasks.
 
         Args:
@@ -493,11 +504,11 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
         assert len(tables) == len(files), "`files` and `tables` should have same length."
 
-        dataframes = self.data_reader(files=files, **kwargs)
+        dataframes = self.data_reader(files, **kwargs)
         instances = self._set_instances(dataframes, tables, meta)
 
-        x = self.preprocess(dataframes)
-        out = self.inference(x)
+        out = self.preprocess(dataframes)
+        out = self.inference(out)
         out = self.postprocess(out)
 
         result = self.output_formatter(
