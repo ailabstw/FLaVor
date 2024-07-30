@@ -65,11 +65,11 @@ class AiTable(BaseModel, extra="allow"):
     file_name: str
 
 
-class AiInstance(BaseModel):
+class AiInstance(BaseModel, extra="allow"):
     id: str
     table_id: str
     row_indexes: Sequence[int]
-    category_ids: Optional[Sequence[AiCategory]]
+    category_ids: Optional[Sequence[str]]
     regressions: Optional[Sequence[AiRegressionItem]]
 
 
