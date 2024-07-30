@@ -422,7 +422,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
 
         return table_instances
 
-    def data_reader(self, files: Sequence[str], **kwargs):
+    def data_reader(self, tables: Dict[str, Any], files: Sequence[str], **kwargs):
         """
         Read data for inference model.
 
@@ -433,23 +433,31 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             dataframes (List[pd.DataFrame]): A list of dataframes.
 
         """
-        dataframes = []
+        table_names = [table["file_name"].replace("/", "_") for table in tables]
 
-        for file_name in files:
-            ext = os.path.splitext(file_name)[-1].lower()
-            if ext == ".csv":
-                df = pd.read_csv(file_name)
-            elif ext == ".parquet":
-                df = pd.read_parquet(file_name)
-            elif ext in [".xls", ".xlsx"]:
-                df = pd.read_excel(file_name)
-            elif ext == ".zip":
-                with zipfile.ZipFile(file_name, "r") as z:
-                    with z.open(z.namelist()[0]) as f:
-                        df = pd.read_csv(f)
-            else:
+        file_names = sorted(files, key=lambda s: s[::-1])
+        table_names = sorted(table_names, key=lambda s: s[::-1])
+
+        read_func = {
+            ".csv": pd.read_csv,
+            ".parquet": pd.read_parquet,
+            ".xls": pd.read_excel,
+            ".xlsx": pd.read_excel,
+            ".zip": lambda file_name: pd.read_csv(
+                zipfile.ZipFile(file_name, "r").open(zipfile.ZipFile(file_name, "r").namelist()[0])
+            ),
+        }
+
+        dataframes = []
+        for file, table in zip(file_names, table_names):
+            if not file.endswith(table):
+                raise ValueError(f"File names do not match table names: {file} vs {table}")
+
+            ext = os.path.splitext(file)[-1].lower()
+            if ext not in read_func:
                 raise ValueError(f"Unsupported file extension: {ext}")
 
+            df = read_func[ext](file)
             dataframes.append(df)
 
         return dataframes
@@ -504,7 +512,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
         assert len(tables) == len(files), "`files` and `tables` should have same length."
 
-        dataframes = self.data_reader(files, **kwargs)
+        dataframes = self.data_reader(tables, files, **kwargs)
         instances = self._set_instances(dataframes, tables, meta)
 
         out = self.preprocess(dataframes)
