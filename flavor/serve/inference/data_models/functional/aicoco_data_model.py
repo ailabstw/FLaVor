@@ -79,7 +79,7 @@ class AiTableMeta(BaseModel, extra="allow"):
 
 class AiCOCOTabularFormat(BaseModel, extra="forbid"):
     tables: Sequence[AiTable]
-    categories: Optional[Sequence[AiCategory]]
-    regressions: Optional[Sequence[AiRegression]]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
     instances: Sequence[AiInstance]
     meta: AiTableMeta
