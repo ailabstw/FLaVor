@@ -1,5 +1,3 @@
-import os
-import zipfile
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -386,14 +384,14 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
     def __init__(self):
         super().__init__()
 
-    def _set_instances(
+    def check_inputs(
         self, dataframes: Sequence[pd.DataFrame], tables: Dict[str, Any], meta: Dict[str, Any]
-    ) -> List[Dict[str, Any]]:
+    ):
         """
         Setup instances for each table for inference, the instances should contain `table_id` and `row_indexes` information.
 
         Args:
-            dataframes (Sequence[pd.DataFrame]): A list of dataframes.
+            dataframes (Sequence[DataFrame]): Sequence of dataframes correspond each tables.
             tables (Dict[str, Any]): A dictionary of table information.
             meta (Dict[str, Any]): Meta information.
 
@@ -407,60 +405,22 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             len(df) % window_size == 0 for df in dataframes
         ), f"Not all DataFrames have a length that is divisible by {window_size}"
 
-        table_instances = []
-        for df, table in zip(dataframes, tables):
-            num_instances = len(df) // window_size
-            instances = []
-            for i in range(num_instances):
-                instances.append(
-                    {
-                        "table_id": table["id"],
-                        "row_indexes": list(range(i * window_size, (i + 1) * window_size)),
-                    }
-                )
-            table_instances.append(instances)
-
-        return table_instances
-
-    def data_reader(self, tables: Dict[str, Any], files: Sequence[str], **kwargs):
+    def data_reader(
+        self, tables: Dict[str, Any], files: Sequence[str], **kwargs
+    ) -> Sequence[pd.DataFrame]:
         """
         Read data for inference model.
 
         Args:
+            tables (Dict[str, Any]): A dictionary of table information.
             files (Sequence[str]): List of input file_names.
 
         Returns:
-            dataframes (List[pd.DataFrame]): A list of dataframes.
+            dataframes (Sequence[pd.DataFrame]): A sequence of dataframes.
 
         """
-        table_names = [table["file_name"].replace("/", "_") for table in tables]
 
-        file_names = sorted(files, key=lambda s: s[::-1])
-        table_names = sorted(table_names, key=lambda s: s[::-1])
-
-        read_func = {
-            ".csv": pd.read_csv,
-            ".parquet": pd.read_parquet,
-            ".xls": pd.read_excel,
-            ".xlsx": pd.read_excel,
-            ".zip": lambda file_name: pd.read_csv(
-                zipfile.ZipFile(file_name, "r").open(zipfile.ZipFile(file_name, "r").namelist()[0])
-            ),
-        }
-
-        dataframes = []
-        for file, table in zip(file_names, table_names):
-            if not file.endswith(table):
-                raise ValueError(f"File names do not match table names: {file} vs {table}")
-
-            ext = os.path.splitext(file)[-1].lower()
-            if ext not in read_func:
-                raise ValueError(f"Unsupported file extension: {ext}")
-
-            df = read_func[ext](file)
-            dataframes.append(df)
-
-        return dataframes
+        raise NotImplementedError
 
     def preprocess(self, data: Any) -> Any:
         """
@@ -502,7 +462,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         Returns:
             Any: AiCOCO formatted output.
         """
-        pass
+        raise NotImplementedError
 
     def __call__(
         self, tables: Dict[str, Any], meta: Dict[str, Any], files: Sequence[str], **kwargs
@@ -513,7 +473,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         assert len(tables) == len(files), "`files` and `tables` should have same length."
 
         dataframes = self.data_reader(tables, files, **kwargs)
-        instances = self._set_instances(dataframes, tables, meta)
+        self.check_inputs(dataframes, tables, meta)
 
         out = self.preprocess(dataframes)
         out = self.inference(out)
@@ -522,8 +482,8 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         result = self.output_formatter(
             out,
             tables=tables,
-            instances=instances,
             meta=meta,
+            dataframes=dataframes,
             categories=self.categories,
             regressions=self.regressions,
         )
