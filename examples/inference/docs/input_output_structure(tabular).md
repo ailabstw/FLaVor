@@ -5,7 +5,7 @@ The FLaVor inference service accepts requests with form data containing input ta
 
 The JSON file should adhere to the following structure:
 
-```json
+```python
 {
     "table": [
         # can be without order
@@ -64,7 +64,7 @@ Different output strategies can be selected based on the following task:
 * [**Regression**](https://github.com/ailabstw/FLaVor/blob/fdf806dd574059fff2a03427596ea73814bfc5cc/flavor/serve/inference/strategies/aicoco_strategy.py#L889) (single, multiple)
 
 
-Each strategy uses specific input formats, defined as follows:
+Each strategy uses specific input formats, defined as follows
 
 
 ## Classification

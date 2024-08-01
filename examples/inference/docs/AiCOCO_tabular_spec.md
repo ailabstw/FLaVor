@@ -23,7 +23,7 @@ Target table files (whole dataset)
 
 Response code: `200`
 
-```json
+```python
 {
   "result": AiCOCO v2
 }
@@ -33,7 +33,7 @@ Response code: `200`
 
 Response code: `400`, `500`
 
-```json
+```python
 {
   "error": "Error message"
 }
@@ -41,7 +41,7 @@ Response code: `400`, `500`
 
 #### Example
 
-```json
+```python
 {
   "info": {
     // Required fields
