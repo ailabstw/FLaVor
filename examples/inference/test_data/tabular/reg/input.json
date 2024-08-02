@@ -1,0 +1,11 @@
+{
+    "tables": [
+        {
+            "id": "table_001",
+            "file_name": "test_reg.csv"
+        }
+    ],
+    "meta": {
+        "window_size": 1
+    }
+}
