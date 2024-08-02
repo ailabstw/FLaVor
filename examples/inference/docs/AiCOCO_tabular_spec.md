@@ -80,7 +80,7 @@ Response code: `400`, `500`
       ...
     }
   ],
-  "instances": [
+  "records": [
     {
       // Required fields
       "id": "nanoid(21)",
