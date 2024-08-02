@@ -136,9 +136,9 @@ Once the FLaVor Inference Service is running, send POST requests to the `/invoca
 
 We try to integrate FLaVor with other existing projects or libraries. Please visit following instruction pages:
 
-- [Classification task example](./cls_example.ipynb)
+- [Image Classification task example](./cls_example.ipynb)
 - [Detection task example](./det_example.ipynb)
-- [Regression task example](./reg_example.ipynb)
+- [Image Regression task example](./reg_example.ipynb)
 - [Segmentation task example](./seg_example.ipynb)
 - [3D Segmentation task example](./seg3d_example.ipynb)
 - [Tabular classification task example](./tabular_cls_example.ipynb)
@@ -146,9 +146,9 @@ We try to integrate FLaVor with other existing projects or libraries. Please vis
 
 ## Other Things You Might Want to Know
 
-- [AiCOCO format specification](./docs/AiCOCO_spec.md)
+- [AiCOCO image format specification](./docs/AiCOCO_spec.md)
 - [AiCOCO tabular format specification](./docs/AiCOCO_tabular_spec.md)
-- [Standard input and output structure](./docs/input_output_structure.md)
+- [Standard input and output structure (image)](./docs/input_output_structure.md)
 - [Standard input and output structure (tabular)](./docs/input_output_structure(tabular).md)
 - [Visualization of inference output with Gradio](./gradio_example.ipynb)
 - [Segment Anything Model (SAM) with Triton Inference Server](./triton_example.ipynb)
