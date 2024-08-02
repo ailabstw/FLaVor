@@ -876,13 +876,13 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
         assert len(model_out) == len(
             records
         ), "The number of records is not matched with the inference model output."
-        breakpoint()
+
         for record, cls_pred in zip(records, model_out):
             record.category_ids = [] if record.category_ids is None else record.category_ids
             record.category_ids.extend(
                 category_id.id for pred, category_id in zip(cls_pred, categories) if pred
             )
-        breakpoint()
+
         return aicoco_ref
 
 
