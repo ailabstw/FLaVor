@@ -10,9 +10,9 @@ from ..data_models.functional import (
     AiAnnotation,
     AiCategory,
     AiImage,
-    AiInstance,
     AiMeta,
     AiObject,
+    AiRecord,
     AiRegression,
     AiRegressionItem,
     AiTable,
@@ -46,7 +46,7 @@ class AiCOCOTabularOut(TypedDict):
     tables: Sequence[AiTable]
     categories: Sequence[AiCategory]
     regressions: Sequence[AiRegression]
-    instances: Sequence[AiInstance]
+    records: Sequence[AiRecord]
     meta: AiTableMeta
 
 
@@ -729,11 +729,11 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
         """
         raise NotImplementedError
 
-    def generate_instances(
+    def generate_records(
         self, dataframes: Sequence[pd.DataFrame], tables: Sequence[AiTable], meta: Dict[str, Any]
-    ) -> List[AiInstance]:
+    ) -> List[AiRecord]:
         """
-        Generates instances in AiCOCO compatible format from each tables.
+        Generates records in AiCOCO compatible format from each tables.
 
         dataframes (Sequence[pd.DataFrame]): Sequence of dataframes correspond each tables.
         tables (Sequence[AiTable]): List of AiTable objects.
@@ -741,23 +741,23 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
 
         Notes:
             - each table contains an unique table id.
-            - each table may contains multiple instances.
+            - each table may contains multiple records.
             - each instance contains an unique instance id.
         """
         window_size = meta["window_size"]
 
         res = []
         for df, table in zip(dataframes, tables):
-            num_instances = len(df) // window_size
-            for i in range(num_instances):
-                instance = AiInstance(
+            num_records = len(df) // window_size
+            for i in range(num_records):
+                record = AiRecord(
                     id=generate(),
                     table_id=table.id,
                     row_indexes=list(range(i * window_size, (i + 1) * window_size)),
                     category_ids=None,
                     regressions=None,
                 )
-                res.append(instance)
+                res.append(record)
 
         return res
 
@@ -787,7 +787,7 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
         categories = categories if categories is not None else []
         regressions = regressions if regressions is not None else []
 
-        self.aicoco_instances = self.generate_instances(dataframes, tables, meta)
+        self.aicoco_records = self.generate_records(dataframes, tables, meta)
 
         if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
             # only activate at first run
@@ -798,7 +798,7 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
             "tables": tables,
             "categories": self.aicoco_categories,
             "regressions": self.aicoco_regressions,
-            "instances": self.aicoco_instances,
+            "records": self.aicoco_records,
             "meta": AiTableMeta(**meta),
         }
 
@@ -871,18 +871,18 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
             AiCOCOTabularOut: AiCOCO compatible output.
         """
         categories = aicoco_ref["categories"]
-        instances = aicoco_ref["instances"]
+        records = aicoco_ref["records"]
 
         assert len(model_out) == len(
-            instances
-        ), "The number of instances is not matched with the inference model output."
-
-        for instance, cls_pred in zip(instances, model_out):
-            instance.category_ids = [] if instance.category_ids is None else instance.category_ids
-            instance.category_ids.extend(
+            records
+        ), "The number of records is not matched with the inference model output."
+        breakpoint()
+        for record, cls_pred in zip(records, model_out):
+            record.category_ids = [] if record.category_ids is None else record.category_ids
+            record.category_ids.extend(
                 category_id.id for pred, category_id in zip(cls_pred, categories) if pred
             )
-
+        breakpoint()
         return aicoco_ref
 
 
@@ -946,14 +946,14 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
             AiCOCOTabularOut: AiCOCO compatible output.
         """
         regressions = aicoco_ref["regressions"]
-        instances = aicoco_ref["instances"]
+        records = aicoco_ref["records"]
 
         assert len(model_out) == len(
-            instances
-        ), "The number of instances is not matched with the inference model output."
+            records
+        ), "The number of records is not matched with the inference model output."
 
-        for instance, pred in zip(instances, model_out):
-            instance.regressions = [
+        for record, pred in zip(records, model_out):
+            record.regressions = [
                 AiRegressionItem(regression_id=reg.id, value=value)
                 for reg, value in zip(regressions, pred)
             ]

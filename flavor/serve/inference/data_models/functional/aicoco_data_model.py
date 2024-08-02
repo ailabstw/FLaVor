@@ -65,7 +65,7 @@ class AiTable(BaseModel, extra="allow"):
     file_name: str
 
 
-class AiInstance(BaseModel, extra="allow"):
+class AiRecord(BaseModel, extra="allow"):
     id: str
     table_id: str
     row_indexes: Sequence[int]
@@ -81,5 +81,5 @@ class AiCOCOTabularFormat(BaseModel, extra="forbid"):
     tables: Sequence[AiTable]
     categories: Sequence[AiCategory]
     regressions: Sequence[AiRegression]
-    instances: Sequence[AiInstance]
+    records: Sequence[AiRecord]
     meta: AiTableMeta
