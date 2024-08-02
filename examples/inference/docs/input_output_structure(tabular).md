@@ -188,9 +188,9 @@ The general pattern of the expected output should be a dictionary containing the
    a dictionary where each key is the regression ID in counting order starting from **0**.
    The corresponding value is a dictionary of regression information that must be filled with name and optionally `superregression_name` and all other details compatible in the AiCOCO format, except for the fields related to nanoid.
 
-* `instances`:
+* `records`:
 
-   a list of all predicted instance that contains the following information
-   * `row_indexes`: the indexes of the instances in the raw datafram.
-   * `category_ids`: the predicted categories corresponding to the instances.
-   * `regressions`: the predicted regression values corresponding to the instances.
+   a list of all predicted records that contains the following information
+   * `row_indexes`: the indexes of the records in the raw datafram.
+   * `category_ids`: the predicted categories corresponding to the records.
+   * `regressions`: the predicted regression values corresponding to the records.

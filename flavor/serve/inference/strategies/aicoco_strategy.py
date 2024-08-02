@@ -742,7 +742,7 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
         Notes:
             - each table contains an unique table id.
             - each table may contains multiple records.
-            - each instance contains an unique instance id.
+            - each record contains an unique record id.
         """
         window_size = meta["window_size"]
 

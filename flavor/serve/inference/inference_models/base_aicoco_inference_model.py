@@ -388,15 +388,13 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         self, dataframes: Sequence[pd.DataFrame], tables: Dict[str, Any], meta: Dict[str, Any]
     ):
         """
-        Setup instances for each table for inference, the instances should contain `table_id` and `row_indexes` information.
+        Check dataframes and tables size and the key of meta.
 
         Args:
             dataframes (Sequence[DataFrame]): Sequence of dataframes correspond each tables.
             tables (Dict[str, Any]): A dictionary of table information.
             meta (Dict[str, Any]): Meta information.
 
-        returns
-            table_instances (List[Dict[str, Any]]): A list of instances.
         """
         assert len(dataframes) == len(tables)
         assert "window_size" in meta
@@ -454,7 +452,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         Args:
             model_out (Any): Inference output.
             tables (Sequence[Dict[str, Any]]): List of tables.
-            records (Sequence[AiRecord]): List of inference instances.
+            records (Sequence[AiRecord]): List of inference records.
             meta (Dict[str, Any]): Additional metadata.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
