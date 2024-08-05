@@ -1,2 +1,4 @@
-pclass,age,sibsp,parch,fare,sex_male,embarked_Q,embarked_S,class_Second,class_Third,who_man,who_woman,adult_male_True,alone_True
-3,28.0,1,1,15.2458,True,False,False,False,True,True,False,True,False
+fixed acidity,volatile acidity,citric acid,residual sugar,chlorides,free sulfur dioxide,total sulfur dioxide,density,pH,sulphates,alcohol
+7.4,0.7,0.0,1.9,0.076,11.0,34.0,0.9978,3.51,0.56,9.4
+7.8,0.88,0.0,2.6,0.098,25.0,67.0,0.9968,3.2,0.68,9.8
+7.8,0.76,0.04,2.3,0.092,15.0,54.0,0.997,3.26,0.65,9.8
