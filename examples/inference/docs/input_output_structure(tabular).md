@@ -91,7 +91,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
 ### Parameters
 - `model_out`: np.ndarray
 
-   1D NumPy array with classification results, the output shape will be :
+   2D NumPy array with classification results in shape of (n, c), where n represents n instances and c is the number of classes. Here are some output examples:
 
    > binary classification: [[0], [1], [1], ...]
    >
