@@ -43,13 +43,6 @@ Response code: `400`, `500`
 
 ```python
 {
-  "info": {
-    // Required fields
-    "version": "1.0.0",
-    "variant": "table"
-    // Optional fields
-    ...
-  },
   "tables": [
     {
       // Required fields

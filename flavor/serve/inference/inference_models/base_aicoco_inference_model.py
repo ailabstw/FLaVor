@@ -397,16 +397,9 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             sorted_files (Sequence[str]): sorted files.
 
         """
-        table_names = [table["file_name"].replace("/", "_") for table in tables]
 
-        table_dict = {table["file_name"].replace("/", "_"): table for table in tables}
-        file_dict = {file: file for file in files}
-
-        table_names = sorted(table_names, key=lambda s: s[::-1])
-        file_names = sorted(files, key=lambda s: s[::-1])
-
-        sorted_tables = [table_dict[name] for name in table_names]
-        sorted_files = [file_dict[name] for name in file_names]
+        sorted_tables = sorted(tables, key=lambda x: x["file_name"].replace("/", "_")[::-1])
+        sorted_files = sorted(files, key=lambda x: x[::-1])
 
         return sorted_tables, sorted_files
 
