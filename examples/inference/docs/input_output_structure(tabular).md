@@ -147,7 +147,7 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
 ### Parameters
 - `model_out`: np.ndarray
 
-   1D NumPy array with regression results
+   2D NumPy array with regression results in shape of (n, c), where n represents n instances and c is the number of regressions. Here are some output examples:
 
    > single regression: [[1], [2], [3], ...]
    >
