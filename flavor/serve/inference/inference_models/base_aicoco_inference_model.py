@@ -384,6 +384,32 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
     def __init__(self):
         super().__init__()
 
+    def sort_tables_files(self, tables: Dict[str, Any], files: Sequence[str]):
+        """
+        Sort tables and files by file_names
+
+        Args:
+            tables (Dict[str, Any]): A dictionary of table information.
+            files (Sequence[str]): List of input file_names.
+
+        Returns:
+            sorted_tables (Dict[str, Any]): sorted tables.
+            sorted_files (Sequence[str]): sorted files.
+
+        """
+        table_names = [table["file_name"].replace("/", "_") for table in tables]
+
+        table_dict = {table["file_name"].replace("/", "_"): table for table in tables}
+        file_dict = {file: file for file in files}
+
+        table_names = sorted(table_names, key=lambda s: s[::-1])
+        file_names = sorted(files, key=lambda s: s[::-1])
+
+        sorted_tables = [table_dict[name] for name in table_names]
+        sorted_files = [file_dict[name] for name in file_names]
+
+        return sorted_tables, sorted_files
+
     def check_inputs(
         self, dataframes: Sequence[pd.DataFrame], tables: Dict[str, Any], meta: Dict[str, Any]
     ):
@@ -434,6 +460,36 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
         return data
 
+    def inference(self, x: Any) -> Any:
+        """
+        A default inference operation which performs forward operation of your defined network.
+
+        Override it if needed.
+
+        Args:
+            x (Any): Input data.
+
+        Returns:
+            Any: Inference result.
+        """
+
+        return self.network(x)
+
+    def postprocess(self, out: Any) -> Any:
+        """
+        A default operation for post-processing which is identical transformation.
+
+        Override it if you need activations like softmax or sigmoid generating the prediction.
+
+        Args:
+            out (Any): Inference result.
+
+        Returns:
+            Any: Post-processed result.
+        """
+
+        return out
+
     @abstractmethod
     def output_formatter(
         self,
@@ -470,6 +526,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
         assert len(tables) == len(files), "`files` and `tables` should have same length."
 
+        tables, files = self.sort_tables_files(tables, files)
         dataframes = self.data_reader(tables, files, **kwargs)
         self.check_inputs(dataframes, tables, meta)
 
