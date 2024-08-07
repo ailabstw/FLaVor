@@ -401,6 +401,11 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         sorted_tables = sorted(tables, key=lambda x: x["file_name"].replace("/", "_")[::-1])
         sorted_files = sorted(files, key=lambda x: x[::-1])
 
+        for file, table in zip(sorted_files, sorted_tables):
+            table_name = table["file_name"].replace("/", "_")
+            if not file.endswith(table_name):
+                raise ValueError(f"File names do not match table names: {file} vs {table_name}")
+
         return sorted_tables, sorted_files
 
     def check_inputs(
