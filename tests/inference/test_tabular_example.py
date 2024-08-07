@@ -15,7 +15,7 @@ async def test_cls():
     filepath = "examples/inference/test_data/tabular/cls/test_cls.csv"
     filepath = Path(filepath)
     file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/tabular/cls/input.json", "r") as f:
         data = json.load(f)
@@ -39,7 +39,7 @@ async def test_reg():
     filepath = "examples/inference/test_data/tabular/reg/test_reg.csv"
     filepath = Path(filepath)
     file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/tabular/reg/input.json", "r") as f:
         data = json.load(f)

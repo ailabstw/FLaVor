@@ -26,7 +26,7 @@ files = []
 for filepath in glob.glob(args.filenames):
     filepath = Path(filepath)
     file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files.append(("files", (f"{filepath.name}", file)))
 
 with open(args.data, "r") as f:
     data = json.load(f)

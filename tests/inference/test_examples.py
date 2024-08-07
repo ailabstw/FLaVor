@@ -14,7 +14,7 @@ async def test_seg():
     filepath = "examples/inference/test_data/seg/0.dcm"
     filepath = Path(filepath)
     file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/seg/input.json", "r") as f:
         data = json.load(f)
@@ -38,7 +38,7 @@ async def test_cls():
     filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
     filepath = Path(filepath)
     file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/cls_reg/input.json", "r") as f:
         data = json.load(f)
@@ -62,7 +62,7 @@ async def test_reg():
     filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
     filepath = Path(filepath)
     file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/cls_reg/input.json", "r") as f:
         data = json.load(f)
@@ -86,7 +86,7 @@ async def test_det():
     filepath = "examples/inference/test_data/det/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg"
     filepath = Path(filepath)
     file = open(filepath, "rb")
-    files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/det/input.json", "r") as f:
         data = json.load(f)
