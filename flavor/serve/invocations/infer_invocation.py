@@ -67,7 +67,7 @@ class InferInvocationAPP:
                     path = pathlib.Path(file_.filename)
                     suffix = str(path).replace("/", "_")
                     temp_file = NamedTemporaryFile(
-                        delete=False, dir=tempdir.name, suffix=f"{suffix}"
+                        delete=False, dir=tempdir.name, suffix=f"_{suffix}"
                     )
                     async with aiofile.async_open(temp_file.name, "wb") as f:
                         await f.write(await file_.read())

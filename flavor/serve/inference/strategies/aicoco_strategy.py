@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict
 
 import cv2  # type: ignore
 import numpy as np
+import pandas as pd
 from nanoid import generate  # type: ignore
 
 from ..data_models.functional import (
@@ -11,8 +12,11 @@ from ..data_models.functional import (
     AiImage,
     AiMeta,
     AiObject,
+    AiRecord,
     AiRegression,
     AiRegressionItem,
+    AiTable,
+    AiTableMeta,
 )
 from .base_strategy import BaseStrategy
 
@@ -36,6 +40,14 @@ class AiCOCOImageRef(TypedDict):
 class AiCOCOAnnotObj(TypedDict):
     annotations: List[AiAnnotation]
     objects: List[AiObject]
+
+
+class AiCOCOTabularOut(TypedDict):
+    tables: Sequence[AiTable]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    records: Sequence[AiRecord]
+    meta: AiTableMeta
 
 
 def check_any_nonint(x):
@@ -170,17 +182,22 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
         Returns:
             AiCOCOImageOut: Result in AiCOCO compatible format.
         """
-        self.validate_model_output(model_out)
+        self.validate_model_output(model_out, categories)
         aicoco_ref = self.prepare_aicoco(images=images, categories=categories)
         aicoco_out = self.model_to_aicoco(aicoco_ref, model_out)
         return aicoco_out
 
-    def validate_model_output(self, model_out: np.ndarray):
+    def validate_model_output(self, model_out: np.ndarray, categories: Sequence[Dict[str, Any]]):
         """
         Validate inference model output.
         """
         if not isinstance(model_out, np.ndarray):
             raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
+
+        if len(model_out) != len(categories):
+            raise ValueError(
+                f"The number of classes in `model_out` should be {len(categories)} but got {len(model_out)}."
+            )
 
         if model_out.ndim != 3 and model_out.ndim != 4:
             raise ValueError(
@@ -311,17 +328,22 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
         Returns:
             AiCOCOImageOut: Result in AiCOCO compatible format.
         """
-        self.validate_model_output(model_out)
+        self.validate_model_output(model_out, categories)
         aicoco_ref = self.prepare_aicoco(images=images, categories=categories)
         aicoco_out = self.model_to_aicoco(aicoco_ref, model_out)
         return aicoco_out
 
-    def validate_model_output(self, model_out: np.ndarray):
+    def validate_model_output(self, model_out: np.ndarray, categories: Sequence[Dict[str, Any]]):
         """
         Validate inference model output.
         """
         if not isinstance(model_out, np.ndarray):
             raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
+
+        if len(model_out) != len(categories):
+            raise ValueError(
+                f"The number of classes in `model_out` should be {len(categories)} but got {len(model_out)}."
+            )
 
         if model_out.ndim != 1:
             raise ValueError(
@@ -425,14 +447,16 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         Returns:
             AiCOCOImageOut: Result in AiCOCO compatible format.
         """
-        self.validate_model_output(model_out)
+        self.validate_model_output(model_out, categories)
         aicoco_ref = self.prepare_aicoco(
             images=images, categories=categories, regressions=regressions
         )
         aicoco_out = self.model_to_aicoco(aicoco_ref, model_out)
         return aicoco_out
 
-    def validate_model_output(self, model_out: Dict[str, Any]):
+    def validate_model_output(
+        self, model_out: Dict[str, Any], categories: Sequence[Dict[str, Any]]
+    ):
         """
         Validate inference model output.
         """
@@ -464,6 +488,11 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         if not isinstance(cls_pred, np.ndarray) and not isinstance(cls_pred, list):
             raise TypeError(
                 f"`cls_pred` must be type: np.ndarray or list but got {type(cls_pred)}."
+            )
+
+        if any(len(pred) != len(categories) for pred in cls_pred):
+            raise ValueError(
+                f"The length of each element in `cls_pred` should be {len(categories)}."
             )
 
         if check_any_nonint(cls_pred):
@@ -688,3 +717,245 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
                 meta.regressions.append(AiRegressionItem(**regression_item))
 
         return images, meta
+
+
+class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
+    @abstractmethod
+    def model_to_aicoco(
+        self, aicoco_ref: AiCOCOTabularOut, model_out: np.ndarray, **kwargs
+    ) -> AiCOCOTabularOut:
+        """
+        Abstract method to convert model output to AiCOCO compatible format.
+        """
+        raise NotImplementedError
+
+    def generate_records(
+        self, dataframes: Sequence[pd.DataFrame], tables: Sequence[AiTable], meta: Dict[str, Any]
+    ) -> List[AiRecord]:
+        """
+        Generates records in AiCOCO compatible format from each tables.
+
+        dataframes (Sequence[pd.DataFrame]): Sequence of dataframes correspond each tables.
+        tables (Sequence[AiTable]): List of AiTable objects.
+        meta (Dict[str, Any]): Additional metadata.
+
+        Notes:
+            - each table contains an unique table id.
+            - each table may contains multiple records.
+            - each record contains an unique record id.
+        """
+        window_size = meta["window_size"]
+
+        res = []
+        for df, table in zip(dataframes, tables):
+            num_records = len(df) // window_size
+            for i in range(num_records):
+                record = AiRecord(
+                    id=generate(),
+                    table_id=table.id,
+                    row_indexes=list(range(i * window_size, (i + 1) * window_size)),
+                    category_ids=None,
+                    regressions=None,
+                )
+                res.append(record)
+
+        return res
+
+    def prepare_aicoco(
+        self,
+        tables: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        dataframes: Sequence[pd.DataFrame],
+        categories: Optional[Sequence[Dict[str, Any]]] = None,
+        regressions: Optional[Sequence[Dict[str, Any]]] = None,
+    ) -> AiCOCOTabularOut:
+        """
+        Prepare prerequisite for AiCOCO.
+
+        Args:
+            tables (Sequence[Dict]): List of AiCOCO table compatible dict.
+            meta (Dict[str, Any]): AiCOCO tabular meta dict.
+            dataframes (Sequence[pd.DataFrame]): Sequence of dataframes correspond each tables.
+            categories (Optional[Sequence[Dict[str, Any]]]): List of unprocessed categories. Default: None.
+            regressions (Optional[Sequence[Dict[str, Any]]]): List of unprocessed regressions. Default: None.
+
+        Returns:
+            AiCOCOTabularOut: Prepared AiCOCO output and inference model output array.
+        """
+
+        tables = [AiTable(**table) for table in tables]
+        categories = categories if categories is not None else []
+        regressions = regressions if regressions is not None else []
+
+        self.aicoco_records = self.generate_records(dataframes, tables, meta)
+
+        if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
+            # only activate at first run
+            self.aicoco_categories = self.generate_categories(categories)
+            self.aicoco_regressions = self.generate_regressions(regressions)
+
+        aicoco_ref = {
+            "tables": tables,
+            "categories": self.aicoco_categories,
+            "regressions": self.aicoco_regressions,
+            "records": self.aicoco_records,
+            "meta": AiTableMeta(**meta),
+        }
+
+        return aicoco_ref
+
+
+class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy):
+    def __call__(
+        self,
+        model_out: np.ndarray,
+        tables: Sequence[Dict[str, Any]],
+        dataframes: Sequence[pd.DataFrame],
+        categories: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        **kwargs,
+    ) -> AiCOCOTabularOut:
+        """
+        Apply the AiCOCO output strategy to reformat the model's output.
+
+        Args:
+            model_out (np.ndarray): Inference model output.
+            tables (Sequence[Dict[str, Any]]): List of AiCOCO table compatible dict.
+            dataframes (Sequence[pd.DataFrame]): Sequence of dataframes correspond each tables.
+            categories (Sequence[Dict[str, Any]]): List of unprocessed categories.
+            meta (Dict[str, Any]): Additional metadata.
+
+        Returns:
+            AiCOCOOut: Result in AiCOCO compatible format.
+        """
+        self.validate_model_output(model_out, categories)
+        aicoco_ref = self.prepare_aicoco(
+            tables=tables, meta=meta, dataframes=dataframes, categories=categories
+        )
+        aicoco_out = self.model_to_aicoco(aicoco_ref, model_out)
+        return aicoco_out
+
+    def validate_model_output(self, model_out: np.ndarray, categories: Sequence[Dict[str, Any]]):
+        """
+        Validate inference model output.
+        """
+        if not isinstance(model_out, np.ndarray):
+            raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
+
+        if model_out.ndim > 2:
+            raise ValueError(
+                f"The dimension of the `model_out` must be less than 2 but got {model_out.ndim}."
+            )
+
+        if model_out.shape[-1] != len(categories):
+            raise ValueError(
+                f"The number of classes in `model_out` should be {len(categories)} but got {len(model_out)}."
+            )
+
+        if not np.all(np.isin(model_out, [0, 1])):
+            raise ValueError("`model_out` contains elements other than 0 and 1")
+
+    def model_to_aicoco(
+        self, aicoco_ref: AiCOCOTabularOut, model_out: np.ndarray
+    ) -> AiCOCOTabularOut:
+        """
+        Args:
+            aicoco_ref (AiCOCOTabularOut): AiCOCO compatible reference.
+
+            model_out (np.ndarray): Inference model output.
+                - binary classification: [[0], [1], [1], ...]
+                - multiclass classification: [[0, 0, 1], [1, 0, 0], ...]
+                - multilabel classification: [[1, 0, 1], [1, 1, 1], ...]
+
+        Returns:
+            AiCOCOTabularOut: AiCOCO compatible output.
+        """
+        categories = aicoco_ref["categories"]
+        records = aicoco_ref["records"]
+
+        assert len(model_out) == len(
+            records
+        ), "The number of records is not matched with the inference model output."
+
+        for record, cls_pred in zip(records, model_out):
+            record.category_ids = [] if record.category_ids is None else record.category_ids
+            record.category_ids.extend(
+                category_id.id for pred, category_id in zip(cls_pred, categories) if pred
+            )
+
+        return aicoco_ref
+
+
+class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
+    def __call__(
+        self,
+        model_out: np.ndarray,
+        tables: Sequence[Dict[str, Any]],
+        dataframes: Sequence[Dict[str, Any]],
+        regressions: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        **kwargs,
+    ) -> AiCOCOTabularOut:
+        """
+        Apply the AiCOCO output strategy to reformat the model's output.
+
+        Args:
+            model_out (np.ndarray): Inference model output.
+            tables (Sequence[Dict[str, Any]]): List of AiCOCO table compatible dict.
+            dataframes (Sequence[pd.DataFrame]): Sequence of dataframes correspond each tables.
+            regressions (Sequence[Dict[str, Any]]): List of unprocessed regressions.
+            meta (Dict[str, Any]): Additional metadata.
+
+        Returns:
+            AiCOCOOut: Result in AiCOCO compatible format.
+        """
+        self.validate_model_output(model_out)
+        aicoco_ref = self.prepare_aicoco(
+            tables=tables, meta=meta, dataframes=dataframes, regressions=regressions
+        )
+        aicoco_out = self.model_to_aicoco(aicoco_ref, model_out)
+        return aicoco_out
+
+    def validate_model_output(self, model_out: np.ndarray):
+        """
+        Validate inference model output.
+        """
+        if not isinstance(model_out, np.ndarray):
+            raise TypeError(f"`model_out` must be type: np.ndarray but got {type(model_out)}.")
+
+        if model_out.ndim > 2:
+            raise ValueError(
+                f"The dimension of the `model_out` must be less than 2 but got {model_out.ndim}."
+            )
+
+        if np.isinf(model_out).any():
+            raise ValueError("The value of `model_out` should not contain finite numbers.")
+
+    def model_to_aicoco(
+        self, aicoco_ref: AiCOCOTabularOut, model_out: np.ndarray
+    ) -> AiCOCOTabularOut:
+        """
+        Args:
+            aicoco_ref (AiCOCOTabularOut): AiCOCO compatible reference.
+
+            model_out (np.ndarray): Inference model output.
+                - single regression: [[1], [2], [3], ...]
+                - multiple regression: [[1, 2, 3], [4, 5, 6], ...]
+
+        Returns:
+            AiCOCOTabularOut: AiCOCO compatible output.
+        """
+        regressions = aicoco_ref["regressions"]
+        records = aicoco_ref["records"]
+
+        assert len(model_out) == len(
+            records
+        ), "The number of records is not matched with the inference model output."
+
+        for record, pred in zip(records, model_out):
+            record.regressions = [
+                AiRegressionItem(regression_id=reg.id, value=value)
+                for reg, value in zip(regressions, pred)
+            ]
+
+        return aicoco_ref

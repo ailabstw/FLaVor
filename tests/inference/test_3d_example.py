@@ -64,7 +64,7 @@ async def test_seg3d():
     for filepath in input_files:
         filepath = Path(filepath)
         file = open(filepath, "rb")
-        files.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+        files.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/seg/input_3d_dcm.json", "r") as f:
         data = json.load(f)
@@ -89,7 +89,7 @@ async def test_seg3d():
     files_volume = []
     filepath = Path(input_volumetric_files)
     file = open(filepath, "rb")
-    files_volume.append(("files", (f"_{filepath.parent.stem}_{filepath.name}", file)))
+    files_volume.append(("files", (f"{filepath.name}", file)))
 
     with open("examples/inference/test_data/seg/input_3d.json", "r") as f:
         data_volume = json.load(f)

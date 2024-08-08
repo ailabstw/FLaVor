@@ -58,3 +58,28 @@ class AiCOCOImageFormat(BaseModel, extra="forbid"):
     regressions: Sequence[AiRegression]
     objects: Sequence[AiObject]
     meta: AiMeta
+
+
+class AiTable(BaseModel, extra="allow"):
+    id: str
+    file_name: str
+
+
+class AiRecord(BaseModel, extra="allow"):
+    id: str
+    table_id: str
+    row_indexes: Sequence[int]
+    category_ids: Optional[Sequence[str]]
+    regressions: Optional[Sequence[AiRegressionItem]]
+
+
+class AiTableMeta(BaseModel, extra="allow"):
+    window_size: int
+
+
+class AiCOCOTabularFormat(BaseModel, extra="forbid"):
+    tables: Sequence[AiTable]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    records: Sequence[AiRecord]
+    meta: AiTableMeta

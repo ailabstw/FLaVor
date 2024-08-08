@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
+import pandas as pd
 from pydantic import BaseModel
 
 from ..data_models.functional import AiImage
@@ -362,6 +363,180 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             out,
             data=data,
             images=self.images,
+            categories=self.categories,
+            regressions=self.regressions,
+        )
+
+        return result
+
+
+class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
+    """
+    Base class for defining inference model with AiCOCO format response. (tabular version)
+
+    This class serves as a template for implementing inference functionality for various machine learning or deep learning models.
+    Subclasses must override abstract methods to define model-specific behavior.
+
+    Attributes:
+        network (Callable): The inference network or model.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def sort_tables_files(self, tables: Dict[str, Any], files: Sequence[str]):
+        """
+        Sort tables and files by file_names
+
+        Args:
+            tables (Dict[str, Any]): A dictionary of table information.
+            files (Sequence[str]): List of input file_names.
+
+        Returns:
+            sorted_tables (Dict[str, Any]): sorted tables.
+            sorted_files (Sequence[str]): sorted files.
+
+        """
+
+        sorted_tables = sorted(tables, key=lambda x: x["file_name"].replace("/", "_")[::-1])
+        sorted_files = sorted(files, key=lambda x: x[::-1])
+
+        for file, table in zip(sorted_files, sorted_tables):
+            table_name = table["file_name"].replace("/", "_")
+            if not file.endswith(table_name):
+                raise ValueError(f"File names do not match table names: {file} vs {table_name}")
+
+        return sorted_tables, sorted_files
+
+    def check_inputs(
+        self, dataframes: Sequence[pd.DataFrame], tables: Dict[str, Any], meta: Dict[str, Any]
+    ):
+        """
+        Check dataframes and tables size and the key of meta.
+
+        Args:
+            dataframes (Sequence[DataFrame]): Sequence of dataframes correspond each tables.
+            tables (Dict[str, Any]): A dictionary of table information.
+            meta (Dict[str, Any]): Meta information.
+
+        """
+        assert len(dataframes) == len(tables)
+        assert "window_size" in meta
+        window_size = meta["window_size"]
+        assert all(
+            len(df) % window_size == 0 for df in dataframes
+        ), f"Not all DataFrames have a length that is divisible by {window_size}"
+
+    def data_reader(
+        self, tables: Dict[str, Any], files: Sequence[str], **kwargs
+    ) -> Sequence[pd.DataFrame]:
+        """
+        Read data for inference model.
+
+        Args:
+            tables (Dict[str, Any]): A dictionary of table information.
+            files (Sequence[str]): List of input file_names.
+
+        Returns:
+            dataframes (Sequence[pd.DataFrame]): A sequence of dataframes.
+
+        """
+
+        raise NotImplementedError
+
+    def preprocess(self, data: Any) -> Any:
+        """
+        A default operation for transformations which is identical transformation.
+
+        Override it if you need other transformations like resizing or cropping, etc.
+
+        Args:
+            data (Any): Input data.
+
+        Returns:
+            Any: Preprocessed data.
+        """
+        return data
+
+    def inference(self, x: Any) -> Any:
+        """
+        A default inference operation which performs forward operation of your defined network.
+
+        Override it if needed.
+
+        Args:
+            x (Any): Input data.
+
+        Returns:
+            Any: Inference result.
+        """
+
+        return self.network(x)
+
+    def postprocess(self, out: Any) -> Any:
+        """
+        A default operation for post-processing which is identical transformation.
+
+        Override it if you need activations like softmax or sigmoid generating the prediction.
+
+        Args:
+            out (Any): Inference result.
+
+        Returns:
+            Any: Post-processed result.
+        """
+
+        return out
+
+    @abstractmethod
+    def output_formatter(
+        self,
+        model_out: Any,
+        tables: Sequence[Dict[str, Any]],
+        records: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        categories: Optional[Sequence[Dict[str, Any]]] = None,
+        regressions: Optional[Sequence[Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Any:
+        """
+        Abstract method to format the output of tabular inference model.
+        To respond results in AiCOCO format, users should adopt output strategy specifying for various tasks.
+
+        Args:
+            model_out (Any): Inference output.
+            tables (Sequence[Dict[str, Any]]): List of tables.
+            records (Sequence[AiRecord]): List of inference records.
+            meta (Dict[str, Any]): Additional metadata.
+            categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
+            regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
+
+        Returns:
+            Any: AiCOCO formatted output.
+        """
+        raise NotImplementedError
+
+    def __call__(
+        self, tables: Dict[str, Any], meta: Dict[str, Any], files: Sequence[str], **kwargs
+    ) -> Any:
+        """
+        Run the inference model.
+        """
+        assert len(tables) == len(files), "`files` and `tables` should have same length."
+
+        tables, files = self.sort_tables_files(tables, files)
+        dataframes = self.data_reader(tables, files, **kwargs)
+        self.check_inputs(dataframes, tables, meta)
+
+        out = self.preprocess(dataframes)
+        out = self.inference(out)
+        out = self.postprocess(out)
+
+        result = self.output_formatter(
+            out,
+            tables=tables,
+            meta=meta,
+            dataframes=dataframes,
             categories=self.categories,
             regressions=self.regressions,
         )
