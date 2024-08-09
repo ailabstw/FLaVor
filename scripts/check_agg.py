@@ -133,7 +133,7 @@ def main():
         os.remove(os.environ["GLOBAL_MODEL_PATH"])
     os.makedirs(os.path.dirname(os.environ["GLOBAL_MODEL_PATH"]), exist_ok=True)
 
-    os.environ["TOTAL_ROUNDS"] = args.rounds
+    os.environ["TOTAL_ROUNDS"] = str(args.rounds)
 
     from flavor.cook.app import AggregatorApp, EdgeApp
 
