@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 
 from flavor.cook.utils import SaveInfoJson, SetEvent, WaitEvent
 
-total_round = 2  # Must be 2
+total_rounds = 2  # Must be 2
 kernel = "rbf"
 
 # Load example dataset from sklearn, please load from INPUT_PATH in the real-world scenario
@@ -20,7 +20,7 @@ X_train, X_val, y_train, y_val = train_test_split(
 # Tell the server that all preparations for training have been completed.
 SetEvent("TrainInitDone")
 
-for round_idx in range(total_round):
+for round_idx in range(total_rounds):
 
     # Wait for the server
     WaitEvent("TrainStarted")

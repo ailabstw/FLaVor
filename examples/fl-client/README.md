@@ -1,12 +1,13 @@
 ### Step 1: Modify the training code
-1. Handle Events
+1. Set number of rounds from the environment variable `$TOTAL_ROUNDS`.
+2. Handle Events
 	- `TrainInitDone`: Tells the server that preparations for training have been completed.
 	- `TrainStarted`: The server uses this event to tell the client that it can continue with the next round of training. Therefore, the client needs to pause and wait before receiving the signal.
 	- `TrainFinished`: An event that tells the server that this round of training work has ended. After the server receives the signal, it will start aggregating the model weights received from each client.
-2. Load dataset from the environment variable `$INPUT_PATH` (folder).
-3. Load the global model from the environment variable `$GLOBAL_MODEL_PATH` (file) before each round of training starts. This step should be skipped in the first round if no pre-trained weights are provided.
-4. Save the local model to `$LOCAL_MODEL_PATH` (file) after each round of training. If the default aggregator provided by AILabs is used, please save the weight in the format of `torch.Tensor` or `ndarray` to the ckpt/pickle file with dictionary key `state_dict`.
-5. Export client information to `info.json` and save it in the same directory as the local model via `SaveInfoJson`. Please refer to the example below for the format.
+3. Load dataset from the environment variable `$INPUT_PATH` (folder).
+4. Load the global model from the environment variable `$GLOBAL_MODEL_PATH` (file) before each round of training starts. This step should be skipped in the first round if no pre-trained weights are provided.
+5. Save the local model to `$LOCAL_MODEL_PATH` (file) after each round of training. If the default aggregator provided by AILabs is used, please save the weight in the format of `torch.Tensor` or `ndarray` to the ckpt/pickle file with dictionary key `state_dict`.
+6. Export client information to `info.json` and save it in the same directory as the local model via `SaveInfoJson`. Please refer to the example below for the format.
 
 - **Reminder**
   - If there are any log files, they can be saved to `$LOG_PATH` (folder); additional files can be put to`$OUTPUT_PATH` (folder).
@@ -31,15 +32,15 @@ def main():
     # (Handle Events) Tell the server that all preparations for training have been completed.
     SetEvent("TrainInitDone")
 
-    # Round index
-    round_idx = 0
+    # Total rounds from FL plan
+    total_rounds = int(os.getenv("TOTAL_ROUNDS"))
 
-    while True:
+    for round_idx in range(total_rounds):
 
         # (Handle Events) Wait for the server
         WaitEvent("TrainStarted")
 
-        # Load checkpoint sent from the server (exclude epoch 0 if no pre-trained weight)
+        # Load checkpoint sent from the server (exclude round 0 if no pre-trained weight)
         model.load_state_dict(torch.load(os.environ["GLOBAL_MODEL_PATH"])["state_dict"])
 
         # Verify the performance of the global model before training
@@ -64,8 +65,6 @@ def main():
 
         # (Handle Events) Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
-
-        round_idx += 1
 
     # (Optional) Add if not disable warning message
     SetEvent("ProcessFinished")

@@ -54,10 +54,9 @@ def main():
     # Tell the server that all preparations for training have been completed.
     SetEvent("TrainInitDone")
 
-    # Round index
-    round_idx = 0
+    total_rounds = int(os.getenv("TOTAL_ROUNDS"))
 
-    while True:
+    for round_idx in range(total_rounds):
 
         # Wait for the server
         WaitEvent("TrainStarted")
@@ -96,8 +95,6 @@ def main():
 
         # Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
-
-        round_idx += 1
 
 
 if __name__ == "__main__":

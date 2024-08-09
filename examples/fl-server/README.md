@@ -61,11 +61,11 @@ def main():
 ### (Optional) Step 2:  Check implementation
 Run `check-agg` to preliminarily check whether the implementation is correct on their computer before bundling the code into the Docker. To run `check-agg`, besides the code for the aggregator, the user also needs to prepare the training code for the client.
 ```bash
-check-agg -m AGGREGATOR_PROCESS_CMD -cm CLIENT_MAIN_CMD -cp CLIENT_PREPROCESS_CMD(optional) -e NUM_OF_EPOCH(optional) -y(optional; automatic Enter to prompts) #Initialize every round.
+check-agg -m AGGREGATOR_PROCESS_CMD -cm CLIENT_MAIN_CMD -cp CLIENT_PREPROCESS_CMD(optional) -r NUM_OF_ROUND(optional) -y(optional; automatic Enter to prompts) #Initialize every round.
 ```
 or
 ```bash
-check-agg --init-once -m AGGREGATOR_PROCESS_CMD -cm CLIENT_MAIN_CMD -cp CLIENT_PREPROCESS_CMD(optional) -e NUM_OF_EPOCH(optional) -y(optional; automatic Enter to prompts) #Initialize once.
+check-agg --init-once -m AGGREGATOR_PROCESS_CMD -cm CLIENT_MAIN_CMD -cp CLIENT_PREPROCESS_CMD(optional) -r NUM_OF_ROUND(optional) -y(optional; automatic Enter to prompts) #Initialize once.
 ```
 
 ### Step 3: Set Dockerfile CMD
