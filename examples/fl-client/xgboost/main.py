@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from flavor.cook.utils import SaveInfoJson, SetEvent, WaitEvent
 from flavor.gadget.xgboost import load_global_xgbmodel, save_local_xgbmodel
 
-total_round = 10
+total_rounds = int(os.getenv("TOTAL_ROUNDS"))
 
 # Load example dataset from sklearn, please load from INPUT_PATH in the real-world scenario
 data = load_digits()
@@ -31,7 +31,7 @@ param = {
 # Tell the server that all preparations for training have been completed.
 SetEvent("TrainInitDone")
 
-for round_idx in range(total_round):
+for round_idx in range(total_rounds):
 
     # Wait for the server
     WaitEvent("TrainStarted")

@@ -122,6 +122,8 @@ def main():
     os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
     os.makedirs(os.path.dirname(os.environ["LOCAL_MODEL_PATH"]), exist_ok=True)
 
+    os.environ["TOTAL_ROUNDS"] = 1
+
     from flavor.cook.app import EdgeApp
 
     app = EdgeApp(mainProcess=args.main, preProcess=args.preprocess, debugMode=True)

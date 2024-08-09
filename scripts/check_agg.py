@@ -25,7 +25,7 @@ def set_env_var(key, default, force_default=False):
         )
 
 
-def run_app(edge_app, aggregator_app, n_epochs):
+def run_app(edge_app, aggregator_app, n_rounds):
 
     try:
         for state in ["data_validate", "train_init"]:
@@ -34,14 +34,14 @@ def run_app(edge_app, aggregator_app, n_epochs):
             if edge_app.is_error.value != 0:
                 return
 
-        for epoch in range(n_epochs + 1):
+        for round_idx in range(n_rounds + 1):
 
             getattr(edge_app, "local_train")({})
             if edge_app.is_error.value != 0:
                 aggregator_app.close_process()
                 return
 
-            if epoch == n_epochs:
+            if round_idx == n_rounds:
                 break
 
             shutil.move(
@@ -99,7 +99,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--main", type=str, required=True, help="main process command")
-    parser.add_argument("-e", "--epochs", type=int, default=1, help="epoch num to test")
+    parser.add_argument("-r", "--rounds", type=int, default=1, help="round num to test")
     parser.add_argument(
         "--init-once", action="store_true", help="Initialize aggregator just once", default=False
     )
@@ -133,6 +133,8 @@ def main():
         os.remove(os.environ["GLOBAL_MODEL_PATH"])
     os.makedirs(os.path.dirname(os.environ["GLOBAL_MODEL_PATH"]), exist_ok=True)
 
+    os.environ["TOTAL_ROUNDS"] = args.rounds
+
     from flavor.cook.app import AggregatorApp, EdgeApp
 
     edge_app = EdgeApp(
@@ -145,7 +147,7 @@ def main():
         args=(
             edge_app,
             aggregator_app,
-            args.epochs,
+            args.rounds,
         ),
     )
     server_process.start()
