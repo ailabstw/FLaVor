@@ -253,7 +253,7 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
 
         # Traverse classes
         for cls_idx in range(classes):
-            if getattr(self.aicoco_categories[cls_idx], "display", None):
+            if not getattr(self.aicoco_categories[cls_idx], "display", False):
                 continue
 
             class_nano_id = self.aicoco_categories[cls_idx].id
