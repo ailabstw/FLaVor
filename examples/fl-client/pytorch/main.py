@@ -219,6 +219,9 @@ def main():
         # Tell the server that this round of training work has ended.
         SetEvent("TrainFinished")
 
+    # Notify the external service that the process is finished.
+    SetEvent("ProcessFinished")
+
 
 if __name__ == "__main__":
 

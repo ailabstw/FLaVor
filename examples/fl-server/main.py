@@ -56,6 +56,9 @@ def main_init_once():
         aggregator()
         SetEvent("AggregateFinished")
 
+    # Notify the external service that the process is finished.
+    SetEvent("ProcessFinished")
+
 
 def main_init_every_round():
 

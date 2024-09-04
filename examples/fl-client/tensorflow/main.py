@@ -97,6 +97,9 @@ def main():
         SetEvent("TrainFinished")
 
 
+# Notify the external service that the process is finished.
+SetEvent("ProcessFinished")
+
 if __name__ == "__main__":
 
     main()

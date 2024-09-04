@@ -73,3 +73,6 @@ for round_idx in range(total_rounds):
 
     # Tell the server that this round of training work has ended.
     SetEvent("TrainFinished")
+
+# Notify the external service that the process is finished.
+SetEvent("ProcessFinished")

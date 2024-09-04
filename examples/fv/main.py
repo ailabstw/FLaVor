@@ -11,6 +11,8 @@ import torch.nn.functional as F
 from sklearn import metrics
 from torchvision import datasets, transforms
 
+from flavor.cook.utils import SetEvent
+
 
 class Net(nn.Module):
     def __init__(self):
@@ -165,6 +167,9 @@ def main():
 
     with open(os.path.join(os.environ["OUTPUT_PATH"], "result.json"), "w", encoding="utf-8") as f:
         json.dump(result, f, ensure_ascii=False, indent=4)
+
+    # Notify the external service that the process is finished.
+    SetEvent("ProcessFinished")
 
 
 if __name__ == "__main__":
