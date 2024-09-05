@@ -253,7 +253,7 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
 
         # Traverse classes
         for cls_idx in range(classes):
-            if not getattr(self.aicoco_categories[cls_idx], "display", False):
+            if not getattr(self.aicoco_categories[cls_idx], "display", True):
                 continue
 
             class_nano_id = self.aicoco_categories[cls_idx].id
@@ -564,7 +564,9 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
             for cls_idx in range(len(cls_pred)):
                 # support multi-label
                 category_id = self.aicoco_categories[cls_idx].id
-                if category_id == 1 and getattr(self.aicoco_categories[cls_idx], "display", None):
+                if cls_pred[cls_idx] == 1 and getattr(
+                    self.aicoco_categories[cls_idx], "display", True
+                ):
                     obj["category_ids"].append(category_id)
 
             if not obj["category_ids"]:
