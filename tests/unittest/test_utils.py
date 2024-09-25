@@ -52,16 +52,25 @@ class TestUtilityFunctions(unittest.TestCase):
         CleanEvent(event)
         mock_remove.assert_not_called()
 
-    @patch("os.path.exists", side_effect=[False, True])
+    @patch("os.path.exists", side_effect=[False, False, True])
     @patch("os.remove")
     @patch("time.sleep", return_value=None)
-    @patch.dict(os.environ, {"OUTPUT_PATH": "/tmp"})
-    def test_WaitEvent_success(self, mock_sleep, mock_remove, mock_exists):
-        event = "TrainStarted"
+    def test_WaitEvent_no_error(self, mock_sleep, mock_remove, mock_exists):
         is_error = Value("i", 0)
-        result = WaitEvent(event, is_error)
-        self.assertTrue(result)
-        mock_remove.assert_called_with("/tmp/TrainStarted")
+        WaitEvent("event1", is_error)
+        self.assertEqual(mock_exists.call_count, 3)
+        mock_remove.assert_called_once_with(os.path.join(self.output_path, "event1"))
+        self.assertEqual(mock_sleep.call_count, 2)
+
+    @patch("os.path.exists", return_value=False)
+    @patch("os.remove")
+    @patch("time.sleep", return_value=None)
+    def test_WaitEvent_with_error(self, mock_sleep, mock_remove, mock_exists):
+        is_error = Value("i", 1)
+        WaitEvent("event1", is_error)
+        self.assertEqual(mock_exists.call_count, 1)
+        mock_remove.assert_not_called()
+        self.assertEqual(mock_sleep.call_count, 1)
 
     @patch("os.environ.get", return_value=None)
     def test_WaitEvent_missing_env(self, mock_env_get):

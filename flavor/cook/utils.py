@@ -40,11 +40,9 @@ def WaitEvent(event: str, is_error: mp.Value = None):
     while not os.path.exists(os.path.join(output_path, event)):
         time.sleep(1)
         if is_error.value != 0:
-            return False
+            return
 
     os.remove(os.path.join(output_path, event))
-
-    return True
 
 
 def CleanEvent(event: str):
