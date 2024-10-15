@@ -2,100 +2,80 @@ import json
 from pathlib import Path
 
 import pytest
+import torch
+import yaml
 from httpx import ASGITransport, AsyncClient
 
-
-@pytest.mark.asyncio
-async def test_seg():
-    seg_example = pytest.importorskip("test_tasks.seg_example")
-    seg_app = seg_example.app
-
-    files = []
-    filepath = "examples/inference/test_data/seg/0.dcm"
-    filepath = Path(filepath)
-    file = open(filepath, "rb")
-    files.append(("files", (f"{filepath.name}", file)))
-
-    with open("examples/inference/test_data/seg/input.json", "r") as f:
-        data = json.load(f)
-
-    for k in data:
-        data[k] = json.dumps(data[k])
-
-    async with AsyncClient(
-        transport=ASGITransport(app=seg_app.app), base_url="http://test"
-    ) as client:
-        response = await client.post("/invocations", data=data, files=files)
-        assert response.status_code == 200
+from flavor.utils.infer_utils import compare_responses
 
 
-@pytest.mark.asyncio
-async def test_cls():
-    cls_example = pytest.importorskip("test_tasks.cls_example")
-    cls_app = cls_example.app
-
-    files = []
-    filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
-    filepath = Path(filepath)
-    file = open(filepath, "rb")
-    files.append(("files", (f"{filepath.name}", file)))
-
-    with open("examples/inference/test_data/cls_reg/input.json", "r") as f:
-        data = json.load(f)
-
-    for k in data:
-        data[k] = json.dumps(data[k])
-
-    async with AsyncClient(
-        transport=ASGITransport(app=cls_app.app), base_url="http://test"
-    ) as client:
-        response = await client.post("/invocations", data=data, files=files)
-        assert response.status_code == 200
+@pytest.fixture
+def configs():
+    with open("tests/integration_tests/inference/test_configs.yaml", "r") as f:
+        test_configs = yaml.load(f, Loader=yaml.SafeLoader)
+    return test_configs["test_inference"]
 
 
-@pytest.mark.asyncio
-async def test_reg():
-    reg_example = pytest.importorskip("test_tasks.reg_example")
-    reg_app = reg_example.app
+class TestImageInference:
+    @pytest.fixture(autouse=True)
+    def _set_configs(self, configs):
+        self.configs = configs["test_image_inference"]
 
-    files = []
-    filepath = "examples/inference/test_data/cls_reg/n02123159_tiger_cat.jpeg"
-    filepath = Path(filepath)
-    file = open(filepath, "rb")
-    files.append(("files", (f"{filepath.name}", file)))
+        self.target_fields = {
+            "images": (["id"], ["file_name"]),
+            "annotations": (
+                ["id", "object_id"],
+                ["bbox", "segmentation", "image_id"],
+            ),
+            "categories": (["id"], ["name"]),
+            "regressions": (["id"], ["name"]),
+        }
+        torch.manual_seed(1999)
 
-    with open("examples/inference/test_data/cls_reg/input.json", "r") as f:
-        data = json.load(f)
+    def get_files_data(self, files_path, data_path):
+        files = []
+        files_path = Path(files_path)
+        file = open(files_path, "rb")
+        files.append(("files", (f"{files_path.name}", file)))
 
-    for k in data:
-        data[k] = json.dumps(data[k])
+        with open(data_path, "r") as f:
+            data = json.load(f)
+        for k in data:
+            data[k] = json.dumps(data[k])
 
-    async with AsyncClient(
-        transport=ASGITransport(app=reg_app.app), base_url="http://test"
-    ) as client:
-        response = await client.post("/invocations", data=data, files=files)
-        assert response.status_code == 200
+        return files, data
 
+    async def run_test(self, name: str, files_path: str, data_path: str):
+        example = pytest.importorskip(f"test_tasks.{name}")
+        example_app = example.app
 
-@pytest.mark.asyncio
-async def test_det():
-    det_example = pytest.importorskip("test_tasks.det_example")
-    det_app = det_example.app
+        files, data = self.get_files_data(files_path, data_path)
 
-    files = []
-    filepath = "examples/inference/test_data/det/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg"
-    filepath = Path(filepath)
-    file = open(filepath, "rb")
-    files.append(("files", (f"{filepath.name}", file)))
+        async with AsyncClient(
+            transport=ASGITransport(app=example_app.app), base_url="http://test"
+        ) as client:
+            response = await client.post("/invocations", data=data, files=files)
+            assert response.status_code == 200
+            response_json = json.loads(response.text)
 
-    with open("examples/inference/test_data/det/input.json", "r") as f:
-        data = json.load(f)
+        with open(f"tests/integration_tests/inference/data/{name}.json", "r") as f:
+            target = json.loads(f.read())
 
-    for k in data:
-        data[k] = json.dumps(data[k])
+        identical = compare_responses(response_json, target, self.target_fields)
+        assert identical
 
-    async with AsyncClient(
-        transport=ASGITransport(app=det_app.app), base_url="http://test"
-    ) as client:
-        response = await client.post("/invocations", data=data, files=files)
-        assert response.status_code == 200
+    @pytest.mark.asyncio
+    async def test_seg(self):
+        await self.run_test(name="seg_example", **self.configs["seg_example"])
+
+    @pytest.mark.asyncio
+    async def test_cls(self):
+        await self.run_test(name="cls_example", **self.configs["cls_example"])
+
+    @pytest.mark.asyncio
+    async def test_reg(self):
+        await self.run_test(name="reg_example", **self.configs["reg_example"])
+
+    @pytest.mark.asyncio
+    async def test_det(self):
+        await self.run_test(name="det_example", **self.configs["det_example"])
