@@ -278,8 +278,8 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
 
                     contours, _ = cv2.findContours(
                         the_label_slice,
-                        cv2.RETR_TREE,
-                        cv2.CHAIN_APPROX_NONE,  # No approximation
+                        cv2.RETR_EXTERNAL,
+                        cv2.CHAIN_APPROX_SIMPLE,
                     )
 
                     # Traverse contours
