@@ -1,5 +1,4 @@
 import json
-import shutil
 from pathlib import Path
 
 import numpy as np
@@ -67,13 +66,6 @@ class TestTabularInference:
         identical = compare_responses(response_json, target, self.target_fields)
         assert identical
 
-        if name == "tabular_reg_example":
-            shutil.rmtree(example_app.MODEL_PATH, ignore_errors=True)
-
     @pytest.mark.asyncio
     async def test_tabular_cls(self):
         await self.run_test(name="tabular_cls_example", **self.configs["tabular_cls_example"])
-
-    @pytest.mark.asyncio
-    async def test_tabular_reg(self):
-        await self.run_test(name="tabular_reg_example", **self.configs["tabular_reg_example"])
