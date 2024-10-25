@@ -65,7 +65,9 @@ class InferInvocationAPP:
                 filenames = []
                 for file_ in input_dict[k]:
                     path = pathlib.Path(file_.filename)
-                    suffix = str(path).replace("/", "_")
+                    suffix = str(path).replace(
+                        "/", "@@@"
+                    )  # consist with `flavor/serve/inference/inference_models/base_aicoco_inference_model.py` in L249
                     temp_file = NamedTemporaryFile(
                         delete=False, dir=tempdir.name, suffix=f"_{suffix}"
                     )
