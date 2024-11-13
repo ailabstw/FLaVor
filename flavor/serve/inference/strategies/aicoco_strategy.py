@@ -147,9 +147,10 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         regressions = regressions if regressions is not None else []
         meta = meta if meta is not None else {"category_ids": None, "regressions": None}
 
+        self.images_ids = [image.id for image in images]
+
         if not hasattr(self, "aicoco_categories") and not hasattr(self, "aicoco_regressions"):
             # only activate at first run
-            self.images_ids = [image.id for image in images]
             self.aicoco_categories = self.generate_categories(categories)
             self.aicoco_regressions = self.generate_regressions(regressions)
 

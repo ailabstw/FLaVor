@@ -246,7 +246,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             # Ideally, `target_file` would be `image` with some hash prefix.
             found_matched = False
             for image in sorted_images:
-                image_file_name = image["file_name"].replace("/", "_")
+                image_file_name = image["file_name"].replace("/", "@@@")
                 if target_file.endswith(image_file_name):
                     found_matched = True
                     self.images.append(AiImage.model_validate(image))
