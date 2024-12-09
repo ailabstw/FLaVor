@@ -594,7 +594,7 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
             # handle annotations
             if isinstance(bbox_pred, np.ndarray):
                 bbox_pred = bbox_pred.tolist()
-            y_min, x_min, y_max, x_max = bbox_pred
+            x_min, y_min, x_max, y_max = bbox_pred
 
             annot = {
                 "id": generate(),
