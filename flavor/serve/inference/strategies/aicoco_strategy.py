@@ -22,6 +22,8 @@ from ..data_models.functional import (
 )
 from .base_strategy import BaseStrategy
 
+GLOBAL_SEED = None
+
 
 def set_global_seed(seed):
     global GLOBAL_SEED
