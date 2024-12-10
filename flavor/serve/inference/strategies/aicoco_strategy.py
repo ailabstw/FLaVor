@@ -4,7 +4,6 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict
 import cv2  # type: ignore
 import numpy as np
 import pandas as pd
-from nanoid import generate  # type: ignore
 
 from ..data_models.functional import (
     AiAnnotation,
@@ -20,6 +19,18 @@ from ..data_models.functional import (
 )
 from .base_strategy import BaseStrategy
 
+def set_global_seed(seed):
+    global GLOBAL_SEED
+    GLOBAL_SEED = seed
+    
+def generate(size = 21):
+    global GLOBAL_SEED
+    
+    if GLOBAL_SEED is None:
+        random.seed(GLOBAL_SEED)
+    
+    GLOBAL_SEED += 1
+    return ''.join(random.choices(string.ascii_letters + string.digits + "_-", k=size))
 
 class AiCOCOImageOut(TypedDict):
     images: List[AiImage]
