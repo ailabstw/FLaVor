@@ -3,6 +3,7 @@ from .aicoco_data_model import (
     AiCategory,
     AiCOCOImageFormat,
     AiCOCOTabularFormat,
+    AiCOCOHybridFormat,
     AiImage,
     AiMeta,
     AiObject,

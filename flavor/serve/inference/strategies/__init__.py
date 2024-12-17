@@ -5,6 +5,8 @@ from .aicoco_strategy import (
     AiCOCOSegmentationOutputStrategy,
     AiCOCOTabularClassificationOutputStrategy,
     AiCOCOTabularRegressionOutputStrategy,
+    AiCOCOHybridClassificationOutputStrategy,
+    AiCOCOHybridRegressionOutputStrategy
 )
 from .gradio_strategy import GradioDetectionStrategy, GradioSegmentationStrategy
 
@@ -15,6 +17,8 @@ __all__ = [
     "AiCOCOSegmentationOutputStrategy",
     "AiCOCOTabularClassificationOutputStrategy",
     "AiCOCOTabularRegressionOutputStrategy",
+    "AiCOCOHybridClassificationOutputStrategy",
+    "AiCOCOHybridRegressionOutputStrategy",
     "GradioDetectionStrategy",
     "GradioSegmentationStrategy",
 ]

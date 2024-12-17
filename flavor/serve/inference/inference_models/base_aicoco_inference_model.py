@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from ..data_models.functional import AiImage
+from ..data_models.functional import AiImage, AiTable
 from .base_inference_model import BaseInferenceModel
 
 
@@ -427,6 +427,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             len(df) % window_size == 0 for df in dataframes
         ), f"Not all DataFrames have a length that is divisible by {window_size}"
 
+    @abstractmethod
     def data_reader(
         self, tables: Dict[str, Any], files: Sequence[str], **kwargs
     ) -> Sequence[pd.DataFrame]:
@@ -542,3 +543,78 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         )
 
         return result
+
+
+class BaseAiCOCOHybridInferenceModel(BaseAiCOCOInferenceModel):
+    """
+    Base class for defining inference model with AiCOCO format response. (hybrid version)
+
+    This class serves as a template for implementing inference functionality for various machine learning or deep learning models.
+    Subclasses must override abstract methods to define model-specific behavior.
+    """
+    
+    def __init__(self):
+        super().__init__()
+    
+    def _sort_inputs(
+        self, 
+        images: Sequence[Dict[str, Any]], 
+        tables: Sequence[Dict[str, Any]], 
+        files: Sequence[str]
+    ) -> Any:
+        self.images, self.tables = [], []
+        image_files, table_files = [], []
+        table_dict = {table["id"]: table for table in tables}
+        for img in images:
+            # image
+            image_filename = img["file_name"].replace("/", "_")
+            image_filename = next((file for file in files if file.endswith(image_filename)), None)
+            if image_filename == None:
+                raise ValueError(f"Image file not found: {image_filename}")
+            image_files.append(image_filename)
+            
+            # table
+            table_id = img["table_ids"][0] # Assume the length is 1
+            table = table_dict[table_id]
+            table_filename = table["file_name"].replace("/", "_")
+            table_filename = next((file for file in files if file.endswith(table_filename)), None)
+            if table_filename == None:
+                raise ValueError(f"Table file not found: {table_filename}")
+            table_files.append(table_filename)
+            self.images.append(AiImage.model_validate(img))
+            self.tables.append(AiTable.model_validate(table))
+            
+        return image_files, table_files
+    
+    def data_reader(image_files: Sequence[str], table_files: Sequence[str], **kwargs):
+        raise NotImplementedError
+    
+    def __call__(
+        self,
+        images: Sequence[Dict[str, Any]],
+        tables: Sequence[Dict[str, Any]], 
+        meta: Dict[str, Any],
+        files: Sequence[str],
+        **kwargs,
+    ) -> Any:
+        assert len(images) == len(tables), "`tables`, and `images` should have same length."
+        assert len(files) == len(images) + len(tables), "The number of `files` should be equal to the sum of `images` and `tables`."
+        
+        image_filename, table_filename = self._sort_inputs(images, tables, files)
+        image_data, table_data = self.data_reader(image_filename, table_filename, **kwargs)
+        
+        x = self.preprocess(image_data, table_data)
+        out = self.inference(x)
+        out = self.postprocess(out)
+
+        result = self.output_formatter(
+            out,
+            images=self.images,
+            tables=tables,
+            meta=meta,
+            categories=self.categories,
+            regressions=self.regressions,
+        )
+
+        return result
+        

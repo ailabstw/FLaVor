@@ -9,6 +9,8 @@ from pydantic import BaseModel, model_serializer, model_validator
 from ..functional import (
     AiCOCOImageFormat,
     AiCOCOTabularFormat,
+    AiCOCOHybridFormat,
+    AiMeta,
     AiImage,
     AiTable,
     AiTableMeta,
@@ -153,4 +155,27 @@ class BaseAiCOCOTabularOutputDataModel(AiCOCOTabularFormat):
     Base class for tabular output data with AiCOCO tabular format.
     """
 
+    pass
+
+
+class BaseAiCOCOHybridInputDataModel(BaseModel):
+    """
+    Base class for hybrid input data with AiCOCO format.
+
+    Attributes:
+        images (Sequence[AiImage]): Sequence of AiImage objects.
+        tables (Sequence[AiTable]): Sequence of AiTable objects.
+        meta (AiMeta): Metadata with information like category_ids / regressions / table_ids.
+        files (Sequence[UploadFile]): Sequence of UploadFile objects.
+    """
+    images: Sequence[AiImage]
+    tables: Sequence[AiTable]
+    meta: AiMeta
+    files: Sequence[UploadFile]
+    
+
+class BaseAiCOCOHybridOutputDataModel(AiCOCOHybridFormat):
+    """
+    Base class for hybrid output data with AiCOCO format.
+    """
     pass

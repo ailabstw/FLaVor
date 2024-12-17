@@ -61,6 +61,7 @@ class InferInvocationAPP:
             if isinstance(input_dict[k], Iterable) and all(
                 (isinstance(f, UploadFile) for f in input_dict[k])
             ):
+                if len(input_dict[k]) < 1: continue
                 # save temp file
                 filenames = []
                 for file_ in input_dict[k]:
