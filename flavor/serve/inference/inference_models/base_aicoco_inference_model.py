@@ -586,7 +586,7 @@ class BaseAiCOCOHybridInferenceModel(BaseAiCOCOInferenceModel):
             
         return image_files, table_files
     
-    def data_reader(image_files: Sequence[str], table_files: Sequence[str], **kwargs):
+    def data_reader(self, image_files: Sequence[str], table_files: Sequence[str], **kwargs):
         raise NotImplementedError
     
     def __call__(
@@ -603,8 +603,8 @@ class BaseAiCOCOHybridInferenceModel(BaseAiCOCOInferenceModel):
         image_filename, table_filename = self._sort_inputs(images, tables, files)
         image_data, table_data = self.data_reader(image_filename, table_filename, **kwargs)
         
-        x = self.preprocess(image_data, table_data)
-        out = self.inference(x)
+        image, tabular = self.preprocess(image_data, table_data)
+        out = self.inference(image, tabular)
         out = self.postprocess(out)
 
         result = self.output_formatter(

@@ -8,7 +8,7 @@ from pathlib import Path
 import requests
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-f", "--filenames", type=str, help="Input file dir")
+parser.add_argument("-f", "--filenames", type=str, action="append", help="Input file dir")
 parser.add_argument("-d", "--data", type=str, help="Json file path")
 parser.add_argument("-p", "--port", type=str, default=9111, help="Port")
 args = parser.parse_args()
@@ -22,8 +22,14 @@ while True:
         time.sleep(1)
         pass
 
+if isinstance(args.filenames, str):
+    filepaths = glob.glob(args.filenames)
+elif isinstance(args.filenames, list):
+    filepaths = args.filenames
+
 files = []
-for filepath in glob.glob(args.filenames):
+
+for filepath in filepaths:
     filepath = Path(filepath)
     file = open(filepath, "rb")
     files.append(("files", (f"{filepath.name}", file)))
