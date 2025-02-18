@@ -55,7 +55,7 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
 
     def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
         img = cv2.imread(files[0])
-        return img, None, None
+        return img, None
 
     def preprocess(self, data: np.ndarray) -> np.ndarray:
         data = cv2.resize(data, (256, 256), interpolation=cv2.INTER_NEAREST)

@@ -42,7 +42,7 @@ class RegressionInferenceModel(BaseAiCOCOImageInferenceModel):
 
     def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[Image.Image, None, None]:
         img = Image.open(files[0])
-        return img, None, None
+        return img, None
 
     def preprocess(self, data: np.ndarray) -> torch.Tensor:
         transforms = ResNet18_Weights.DEFAULT.transforms()

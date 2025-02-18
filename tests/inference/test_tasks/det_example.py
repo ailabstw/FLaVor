@@ -46,7 +46,7 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
         image = cv2.imread(files[0])
         image = image.astype(np.float32)
 
-        return image, None, None
+        return image, None
 
     def inference(self, x: np.ndarray) -> Any:
         return self.network.predict(x, conf=0.7)[0]

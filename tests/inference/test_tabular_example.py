@@ -1,5 +1,4 @@
 import json
-import shutil
 from pathlib import Path
 
 import pytest
@@ -52,5 +51,3 @@ async def test_reg():
     ) as client:
         response = await client.post("/invocations", data=data, files=files)
         assert response.status_code == 200
-
-    shutil.rmtree(reg_example.MODEL_PATH, ignore_errors=True)
