@@ -135,7 +135,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         This is just a template for you to make sure you make use of `categories` and `regressions`.
         Override it with your additional arguments such as `images`.
 
-        Args:
+        Example args:
             model_out (Any): Inference output.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
@@ -275,13 +275,12 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         This method should return three things:
         1. data: in np.ndarray or torch.Tensor for inference model.
         2. modified_filenames: modified list of filenames if the order of `files` is altered (e.g., 3D multiple slices input).
-        3. metadata: necessary metadata for the post-processing.
 
         Args:
             files (Sequence[str]): List of input filenames.
 
         Returns:
-            Tuple[Any, Optional[List[str]], Optional[Any]]: A tuple containing data, modified filenames, and metadata.
+            Tuple[Any, Optional[List[str]], Optional[Any]]: A tuple containing data and modified filenames.
         """
         raise NotImplementedError
 
@@ -289,7 +288,6 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
     def output_formatter(
         self,
         model_out: Any,
-        data: Any,
         images: Sequence[AiImage],
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
@@ -301,7 +299,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         Args:
             model_out (Any): Inference output.
-            images (Optional[Sequence[Dict[str, Any]]]): List of images. Default: None.
+            images (Sequence[AiImage]): List of AiImages.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
 
@@ -365,11 +363,11 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
 
         """
 
-        sorted_tables = sorted(tables, key=lambda x: x["file_name"].replace("/", "_")[::-1])
+        sorted_tables = sorted(tables, key=lambda x: x["file_name"].replace("/", "@@@")[::-1])
         sorted_files = sorted(files, key=lambda x: x[::-1])
 
         for file, table in zip(sorted_files, sorted_tables):
-            table_name = table["file_name"].replace("/", "_")
+            table_name = table["file_name"].replace("/", "@@@")
             if not file.endswith(table_name):
                 raise ValueError(f"File names do not match table names: {file} vs {table_name}")
 
@@ -471,6 +469,10 @@ class BaseAiCOCOHybridInferenceModel(BaseAiCOCOInferenceModel):
 
     This class serves as a template for implementing inference functionality for various machine learning or deep learning models.
     Subclasses must override abstract methods to define model-specific behavior.
+
+    Important Notes:
+    - This Hybrid Model is currently designed for **one-to-one** mapping between image and table.
+    - If the input contains **multiple table_ids**, developers need to implement their own handling logic.
     """
 
     def __init__(self):
@@ -487,7 +489,7 @@ class BaseAiCOCOHybridInferenceModel(BaseAiCOCOInferenceModel):
         table_dict = {table["id"]: table for table in tables}
         for img in images:
             # image
-            image_filename = img["file_name"].replace("/", "_")
+            image_filename = img["file_name"].replace("/", "@@@")
             image_filename = next((file for file in files if file.endswith(image_filename)), None)
             if image_filename is None:
                 raise ValueError(f"Image file not found: {image_filename}")
@@ -496,7 +498,7 @@ class BaseAiCOCOHybridInferenceModel(BaseAiCOCOInferenceModel):
             # table
             table_id = img["table_ids"][0]  # Assume the length is 1
             table = table_dict[table_id]
-            table_filename = table["file_name"].replace("/", "_")
+            table_filename = table["file_name"].replace("/", "@@@")
             table_filename = next((file for file in files if file.endswith(table_filename)), None)
             if table_filename is None:
                 raise ValueError(f"Table file not found: {table_filename}")
