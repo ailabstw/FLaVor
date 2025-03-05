@@ -40,10 +40,10 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
         model.eval()  # Set the model to evaluation mode.
         return model
 
-    def set_categories(self) -> List[Dict[str, Any]]:
+    def set_categories(self) -> None:
         return None
 
-    def set_regressions(self) -> None:
+    def set_regressions(self) -> List[Dict[str, Any]]:
         regressions = [{"name": "reg_value"}]
         return regressions
 

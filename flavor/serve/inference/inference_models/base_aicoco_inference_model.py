@@ -269,7 +269,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
     @abstractmethod
     def data_reader(
         self, files: Optional[Sequence[str]] = None, **kwargs
-    ) -> Tuple[Any, Optional[List[str]], Optional[Any]]:
+    ) -> Tuple[Any, Optional[List[str]]]:
         """
         Abstract method to read data for inference model.
         This method should return three things:
@@ -280,7 +280,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
             files (Sequence[str]): List of input filenames.
 
         Returns:
-            Tuple[Any, Optional[List[str]], Optional[Any]]: A tuple containing data and modified filenames.
+            Tuple[Any, Optional[List[str]]]: A tuple containing data and modified filenames.
         """
         raise NotImplementedError
 
