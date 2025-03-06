@@ -1,0 +1,39 @@
+{
+  "images": [
+    {
+      "file_name": "n02123159_tiger_cat.jpeg",
+      "id": "0",
+      "index": 0,
+      "category_ids": null,
+      "regressions": [
+        {
+          "regression_id": "2WAqGzYtEL6GsWNq6_Z5t",
+          "value": -0.03316183015704155
+        },
+        {
+          "regression_id": "i2WqFCPYgb1BWaCUo85bb",
+          "value": -0.11870795488357544
+        }
+      ]
+    }
+  ],
+  "annotations": [],
+  "categories": [],
+  "regressions": [
+    {
+      "id": "2WAqGzYtEL6GsWNq6_Z5t",
+      "name": "reg0",
+      "superregression_id": null
+    },
+    {
+      "id": "i2WqFCPYgb1BWaCUo85bb",
+      "name": "reg1",
+      "superregression_id": null
+    }
+  ],
+  "objects": [],
+  "meta": {
+    "category_ids": null,
+    "regressions": null
+  }
+}

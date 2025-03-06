@@ -1,0 +1,79 @@
+{
+  "tables": [
+    {
+      "id": "table_001",
+      "file_name": "test_cls.csv"
+    }
+  ],
+  "categories": [
+    {
+      "id": "pIxMOea1qo-E1EOjO3HVQ",
+      "name": "3",
+      "supercategory_id": null
+    },
+    {
+      "id": "pgzjez6ZWoIrlgn71ZZmt",
+      "name": "4",
+      "supercategory_id": null
+    },
+    {
+      "id": "NVY8V7bD8P5hEpIKanr6X",
+      "name": "5",
+      "supercategory_id": null
+    },
+    {
+      "id": "Y0FqaQEWxXrZUAIRmJZqZ",
+      "name": "6",
+      "supercategory_id": null
+    },
+    {
+      "id": "ujPeIxdGcBefB0hoO8Kz_",
+      "name": "7",
+      "supercategory_id": null
+    },
+    {
+      "id": "o9iTfp-nPDDFm1fobrA5y",
+      "name": "8",
+      "supercategory_id": null
+    }
+  ],
+  "regressions": [],
+  "records": [
+    {
+      "id": "2WAqGzYtEL6GsWNq6_Z5t",
+      "table_id": "table_001",
+      "row_indexes": [
+        0
+      ],
+      "category_ids": [
+        "NVY8V7bD8P5hEpIKanr6X"
+      ],
+      "regressions": null
+    },
+    {
+      "id": "i2WqFCPYgb1BWaCUo85bb",
+      "table_id": "table_001",
+      "row_indexes": [
+        1
+      ],
+      "category_ids": [
+        "NVY8V7bD8P5hEpIKanr6X"
+      ],
+      "regressions": null
+    },
+    {
+      "id": "98df1VQtMMLkBzU-8ICrc",
+      "table_id": "table_001",
+      "row_indexes": [
+        2
+      ],
+      "category_ids": [
+        "NVY8V7bD8P5hEpIKanr6X"
+      ],
+      "regressions": null
+    }
+  ],
+  "meta": {
+    "window_size": 1
+  }
+}

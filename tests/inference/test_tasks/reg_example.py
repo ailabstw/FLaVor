@@ -16,6 +16,8 @@ from flavor.serve.inference.data_models.functional import AiImage
 from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
 from flavor.serve.inference.strategies import AiCOCORegressionOutputStrategy
 
+torch.manual_seed(1234)
+np.random.seed(1234)
 
 class RegressionInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
