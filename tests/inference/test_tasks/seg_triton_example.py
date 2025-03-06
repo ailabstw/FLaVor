@@ -26,13 +26,12 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
         model_version: str = "",
         is_shared_memory: bool = False,
     ):
+        super().__init__()
         self.formatter = AiCOCOSegmentationOutputStrategy()
-
         self.triton_url = triton_url
         self.model_name = model_name
         self.model_version = model_version
         self.is_shared_memory = is_shared_memory
-        super().__init__()
 
     def define_inference_network(self) -> Callable:
         if self.is_shared_memory:
@@ -53,7 +52,7 @@ class SegmentationTritonInferenceModel(BaseAiCOCOImageInferenceModel):
     def set_regressions(self) -> None:
         return None
 
-    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None]:
         img = cv2.imread(files[0])
         return img, None
 

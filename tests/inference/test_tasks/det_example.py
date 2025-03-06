@@ -17,8 +17,8 @@ from flavor.serve.inference.strategies import AiCOCODetectionOutputStrategy
 
 class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCODetectionOutputStrategy()
         super().__init__()
+        self.formatter = AiCOCODetectionOutputStrategy()
 
     def define_inference_network(self) -> Callable:
         ckpt_path = os.path.join(os.getcwd(), "best.pt")
@@ -42,7 +42,7 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
     def set_regressions(self) -> None:
         return None
 
-    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None]:
         image = cv2.imread(files[0])
         image = image.astype(np.float32)
 

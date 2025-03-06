@@ -19,11 +19,11 @@ from flavor.serve.inference.strategies import AiCOCOClassificationOutputStrategy
 
 class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCOClassificationOutputStrategy()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
+        self.formatter = AiCOCOClassificationOutputStrategy()
 
     def define_inference_network(self) -> Callable:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         network = resnet18(ResNet18_Weights.DEFAULT)
         network.eval()
         network.to(self.device)
@@ -37,7 +37,7 @@ class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
     def set_regressions(self) -> None:
         return None
 
-    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None]:
         img = Image.open(files[0])
         return img, None
 

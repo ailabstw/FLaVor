@@ -17,8 +17,8 @@ from flavor.serve.inference.strategies import AiCOCOSegmentationOutputStrategy
 
 class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCOSegmentationOutputStrategy()
         super().__init__()
+        self.formatter = AiCOCOSegmentationOutputStrategy()
 
     def define_inference_network(self) -> Callable:
         return LMInferer(modelname="LTRCLobes", fillmodel="R231")
@@ -37,7 +37,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def set_regressions(self) -> None:
         return None
 
-    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None, None]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, None]:
         dicom_reader = sitk.ImageFileReader()
         dicom_reader.SetFileName(files[0])
         dicom_reader.ReadImageInformation()
