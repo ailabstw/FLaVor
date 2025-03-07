@@ -25,37 +25,37 @@ async def post_data_and_files(app, data_path: Path, file_path: Path):
 
 
 def compare_dicts(
-        d1: Any, d2: Any, tolerance: float = 1e-2, ignored_keys: Optional[List[str]] = None
-    ) -> bool:
-        if ignored_keys is None:
-            ignored_keys = []
+    d1: Any, d2: Any, tolerance: float = 1e-2, ignored_keys: Optional[List[str]] = None
+) -> bool:
+    if ignored_keys is None:
+        ignored_keys = []
 
-        if type(d1) != type(d2):
-            return False
+    if type(d1) != type(d2):
+        return False
 
-        if isinstance(d1, dict):
-            for key in d1:
-                if key in ignored_keys:
-                    continue
-                if key not in d2 or not compare_dicts(
-                    d1[key], d2[key], tolerance, ignored_keys
-                ):
-                    return False
-            for key in d2:
-                if key not in d1 and key not in ignored_keys:
-                    return False
-            return True
-
-        elif isinstance(d1, list):
-            if len(d1) != len(d2):
+    if isinstance(d1, dict):
+        for key in d1:
+            if key in ignored_keys:
+                continue
+            if key not in d2 or not compare_dicts(
+                d1[key], d2[key], tolerance, ignored_keys
+            ):
                 return False
-            return all(compare_dicts(a, b, tolerance, ignored_keys) for a, b in zip(d1, d2))
+        for key in d2:
+            if key not in d1 and key not in ignored_keys:
+                return False
+        return True
 
-        elif isinstance(d1, (int, float)):
-            return math.isclose(d1, d2, abs_tol=tolerance)
+    elif isinstance(d1, list):
+        if len(d1) != len(d2):
+            return False
+        return all(compare_dicts(a, b, tolerance, ignored_keys) for a, b in zip(d1, d2))
 
-        else:
-            return d1 == d2
+    elif isinstance(d1, (int, float)):
+        return math.isclose(d1, d2, abs_tol=tolerance)
+
+    else:
+        return d1 == d2
 
 
 @pytest.mark.asyncio
@@ -83,7 +83,7 @@ def compare_dicts(
         (
             "test_tasks.det_example",
             "examples/inference/test_data/det/input.json",
-            "examples/inference/test_data/det/BloodImage_00000_jpg.rf.5fb00ac1228969a39cee7cd6678ee704.jpg",
+            "examples/inference/test_data/det/5fb00ac1228969a39cee7cd6678ee704.jpg",
             "examples/inference/test_data/det/expected.json",
         ),
         (
@@ -104,8 +104,7 @@ def compare_dicts(
 
 async def test_inference(import_name, input_json, file_path, expected_json):
     """
-    Parameterized test for different inference scenarios (segmentation, classification, regression, detection).
-    Not only checks the status_code, but also compares the response body with the expected output.
+    Test for different inference scenarios (segmentation, classification, regression, detection).
     """
     set_global_seed(0)
 
