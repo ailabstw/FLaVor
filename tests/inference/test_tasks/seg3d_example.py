@@ -21,11 +21,11 @@ from flavor.serve.inference.strategies import AiCOCOSegmentationOutputStrategy
 
 class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCOSegmentationOutputStrategy()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
+        self.formatter = AiCOCOSegmentationOutputStrategy()
 
     def define_inference_network(self) -> Callable:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = SwinUNETR(
             img_size=(96, 96, 96),
             in_channels=1,
@@ -67,9 +67,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def set_regressions(self) -> None:
         return None
 
-    def data_reader(
-        self, files: Sequence[str], **kwargs
-    ) -> Tuple[np.ndarray, List[str], Tuple[int, ...]]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, List[str]]:
         if len(files) > 1:
             # read multiple dicom
             def sort_images_by_z_axis(filenames):

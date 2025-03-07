@@ -21,8 +21,8 @@ FILENAME = "sklearn_model.joblib"
 
 class ClassificationInferenceModel(BaseAiCOCOTabularInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCOTabularClassificationOutputStrategy()
         super().__init__()
+        self.formatter = AiCOCOTabularClassificationOutputStrategy()
 
     def define_inference_network(self) -> Callable:
         model = joblib.load(cached_download(hf_hub_url(REPO_ID, FILENAME)))
