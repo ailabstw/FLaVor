@@ -1,7 +1,9 @@
+name: PR Agent
+
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review]
-  issue_comment:
+    types: [opened, reopened, ready_for_review, synchronize]
+
 jobs:
   pr_agent_job:
     if: ${{ github.event.sender.type != 'Bot' }}
@@ -12,11 +14,16 @@ jobs:
       issues: write
       pull-requests: write
       contents: write
-    name: Run pr agent on every pull request, respond to user comments
+    name: Run PR Agent on PRs and respond to comments
+
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: PR Agent action step
         id: pragent
         uses: qodo-ai/pr-agent@main
         env:
           OPENAI_KEY: ${{ secrets.OPENAI_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_AGENT_MODEL: "gpt-4o-mini-2024-07-18"
