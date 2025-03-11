@@ -6,6 +6,8 @@ jobs:
   pr_agent_job:
     if: ${{ github.event.sender.type != 'Bot' }}
     runs-on: ubuntu-latest
+    env:
+      PR_AGENT_CONFIG_FILE: .pr_agent.toml
     permissions:
       issues: write
       pull-requests: write
