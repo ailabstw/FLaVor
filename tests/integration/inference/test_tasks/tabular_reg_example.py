@@ -1,12 +1,10 @@
 import os
-import shutil
-import uuid
 from typing import Any, Callable, Dict, List, Optional, Sequence
 
-import joblib
 import numpy as np
 import pandas as pd
-from skops.hub_utils import download
+import torch
+import torch.nn as nn
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference.data_models.api import (
@@ -17,7 +15,20 @@ from flavor.serve.inference.data_models.functional import AiTable
 from flavor.serve.inference.inference_models import BaseAiCOCOTabularInferenceModel
 from flavor.serve.inference.strategies import AiCOCOTabularRegressionOutputStrategy
 
-MODEL_PATH = os.path.join(os.getcwd(), str(uuid.uuid4()))
+torch.manual_seed(1234)
+np.random.seed(1234)
+
+class SimpleRegressor(nn.Module):
+    def __init__(self, input_dim: int = 10, hidden_dim: int = 32, output_dim: int = 1):
+        super(SimpleRegressor, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim)
+        self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_dim, output_dim)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        return self.fc2(x)
 
 
 class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
@@ -25,41 +36,31 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
         self.formatter = AiCOCOTabularRegressionOutputStrategy()
         super().__init__()
 
-    def define_inference_network(self) -> Callable:
-        download(repo_id="quantile-forest/california-housing-example", dst=MODEL_PATH)
-        model = joblib.load(os.path.join(MODEL_PATH, "model.pkl"))
+    def define_inference_network(self) -> nn.Module:
+        input_dim = 8  # change this if needed
+        model = SimpleRegressor(input_dim=input_dim, hidden_dim=32, output_dim=1)
+        model.eval()  # Set the model to evaluation mode.
         return model
 
-    def set_categories(self) -> List[Dict[str, Any]]:
+    def set_categories(self) -> None:
         return None
 
-    def set_regressions(self) -> None:
+    def set_regressions(self) -> List[Dict[str, Any]]:
         regressions = [{"name": "reg_value"}]
         return regressions
 
-    def data_reader(
-        self, tables: Dict[str, Any], files: Sequence[str], **kwargs
-    ) -> List[pd.DataFrame]:
-        table_names = [table["file_name"].replace("/", "_") for table in tables]
-
-        file_names = sorted(files, key=lambda s: s[::-1])
-        table_names = sorted(table_names, key=lambda s: s[::-1])
-
-        dataframes = []
-        for file, table in zip(file_names, table_names):
-            if not file.endswith(table):
-                raise ValueError(f"File names do not match table names: {file} vs {table}")
-
-            df = pd.read_csv(file)
-            dataframes.append(df)
-
+    def data_reader(self, tables: Dict[str, Any], files: Sequence[str], **kwargs) -> List[pd.DataFrame]:
+        dataframes = [pd.read_csv(file) for file in files]
         return dataframes
 
     def preprocess(self, data: List[pd.DataFrame]) -> pd.DataFrame:
         return pd.concat(data)
 
     def inference(self, x: pd.DataFrame):
-        out = self.network.predict(x).reshape(-1, 1)
+        with torch.no_grad():
+            input_tensor = torch.tensor(x.values.astype(np.float32))
+            output_tensor = self.network(input_tensor)
+            out = output_tensor.numpy().reshape(-1, 1)
         return out
 
     def postprocess(self, model_out: np.ndarray, **kwargs) -> np.ndarray:
@@ -93,6 +94,3 @@ app = InferAPP(
 
 if __name__ == "__main__":
     app.run(port=int(os.getenv("PORT", 9111)))
-
-    # remove downloaded files
-    shutil.rmtree(MODEL_PATH, ignore_errors=True)
