@@ -36,7 +36,7 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
         self.formatter = AiCOCOTabularRegressionOutputStrategy()
         super().__init__()
 
-    def define_inference_network(self) -> Callable:
+    def define_inference_network(self) -> nn.Module:
         input_dim = 8  # change this if needed
         model = SimpleRegressor(input_dim=input_dim, hidden_dim=32, output_dim=1)
         model.eval()  # Set the model to evaluation mode.
