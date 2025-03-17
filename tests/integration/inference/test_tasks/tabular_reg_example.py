@@ -1,5 +1,5 @@
 import os
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,9 @@ from flavor.serve.inference.data_models.api import (
 from flavor.serve.inference.data_models.functional import AiTable
 from flavor.serve.inference.inference_models import BaseAiCOCOTabularInferenceModel
 from flavor.serve.inference.strategies import AiCOCOTabularRegressionOutputStrategy
+
+torch.manual_seed(1234)
+np.random.seed(1234)
 
 
 class SimpleRegressor(nn.Module):
@@ -34,7 +37,7 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
         self.formatter = AiCOCOTabularRegressionOutputStrategy()
         super().__init__()
 
-    def define_inference_network(self) -> Callable:
+    def define_inference_network(self) -> nn.Module:
         input_dim = 8  # change this if needed
         model = SimpleRegressor(input_dim=input_dim, hidden_dim=32, output_dim=1)
         model.eval()  # Set the model to evaluation mode.
@@ -47,7 +50,9 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
         regressions = [{"name": "reg_value"}]
         return regressions
 
-    def data_reader(self, files: Sequence[str], **kwargs) -> List[pd.DataFrame]:
+    def data_reader(
+        self, tables: Dict[str, Any], files: Sequence[str], **kwargs
+    ) -> List[pd.DataFrame]:
         dataframes = [pd.read_csv(file) for file in files]
         return dataframes
 
