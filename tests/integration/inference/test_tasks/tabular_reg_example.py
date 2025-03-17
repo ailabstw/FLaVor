@@ -50,9 +50,7 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
         regressions = [{"name": "reg_value"}]
         return regressions
 
-    def data_reader(
-        self, tables: Dict[str, Any], files: Sequence[str], **kwargs
-    ) -> List[pd.DataFrame]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> List[pd.DataFrame]:
         dataframes = [pd.read_csv(file) for file in files]
         return dataframes
 
