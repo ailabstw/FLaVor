@@ -1,0 +1,35 @@
+{
+  "images": [
+    {
+      "file_name": "451c164d-7684-44b1-81b2-956247db765b_20160112_102927.jpg",
+      "id": "image_001",
+      "index": 0,
+      "category_ids": [
+        "2WAqGzYtEL6GsWNq6_Z5t"
+      ],
+      "regressions": null,
+      "table_ids": [
+        "table_001"
+      ]
+    }
+  ],
+  "annotations": [],
+  "categories": [
+    {
+      "id": "2WAqGzYtEL6GsWNq6_Z5t",
+      "name": "0",
+      "supercategory_id": null
+    },
+    {
+      "id": "i2WqFCPYgb1BWaCUo85bb",
+      "name": "1",
+      "supercategory_id": null
+    }
+  ],
+  "regressions": [],
+  "objects": [],
+  "meta": {
+    "category_ids": null,
+    "regressions": null
+  }
+}
