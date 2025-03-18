@@ -21,11 +21,11 @@ from flavor.serve.inference.strategies import AiCOCOSegmentationOutputStrategy
 
 class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCOSegmentationOutputStrategy()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
+        self.formatter = AiCOCOSegmentationOutputStrategy()
 
     def define_inference_network(self) -> Callable:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model = SwinUNETR(
             img_size=(96, 96, 96),
             in_channels=1,
@@ -67,9 +67,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
     def set_regressions(self) -> None:
         return None
 
-    def data_reader(
-        self, files: Sequence[str], **kwargs
-    ) -> Tuple[np.ndarray, List[str], Tuple[int, ...]]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[np.ndarray, List[str]]:
         if len(files) > 1:
             # read multiple dicom
             def sort_images_by_z_axis(filenames):
@@ -102,13 +100,16 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
             volume = np.stack(simages)
             volume = np.expand_dims(volume, axis=0)
 
-            return volume, sorted_filenames, volume.shape[1:]
+            self.metadata = volume.shape[1:]
+
+            return volume, sorted_filenames
 
         else:
             # read nifti file
             sitk_reader = sitk.ReadImage(files)
             volume = sitk.GetArrayFromImage(sitk_reader)
-            return volume, None, volume.shape[1:]
+            self.metadata = volume.shape[1:]
+            return volume, None
 
     def preprocess(self, data: np.ndarray) -> torch.Tensor:
         infer_transform = transforms.Compose(
@@ -131,13 +132,12 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
             )
         return out
 
-    def postprocess(self, out: torch.Tensor, metadata: Tuple[int, ...]) -> np.ndarray:
+    def postprocess(self, out: torch.Tensor) -> np.ndarray:
         """
         Apply softmax and perform inverse resample back to original image size.
 
         Args:
             out (torch.Tensor): Inference model output.
-            metadata (Tuple[int, ...]): Original image size.
 
         Returns:
             np.ndarray: Prediction output.
@@ -154,7 +154,7 @@ class SegmentationInferenceModel(BaseAiCOCOImageInferenceModel):
         output = torch.softmax(out, 1).cpu().numpy()
         output = np.argmax(output, axis=1).astype(np.uint8)[0]
 
-        output = resample_3d(output, metadata)
+        output = resample_3d(output, self.metadata)
         binary_output = np.zeros([c] + list(output.shape))
         for i in range(c):
             binary_output[i] = (output == i).astype(np.uint8)

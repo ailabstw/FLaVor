@@ -21,8 +21,8 @@ FILENAME = "sklearn_model.joblib"
 
 class ClassificationInferenceModel(BaseAiCOCOTabularInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCOTabularClassificationOutputStrategy()
         super().__init__()
+        self.formatter = AiCOCOTabularClassificationOutputStrategy()
 
     def define_inference_network(self) -> Callable:
         model = joblib.load(cached_download(hf_hub_url(REPO_ID, FILENAME)))
@@ -35,22 +35,8 @@ class ClassificationInferenceModel(BaseAiCOCOTabularInferenceModel):
     def set_regressions(self) -> None:
         return None
 
-    def data_reader(
-        self, tables: Dict[str, Any], files: Sequence[str], **kwargs
-    ) -> List[pd.DataFrame]:
-        table_names = [table["file_name"].replace("/", "_") for table in tables]
-
-        file_names = sorted(files, key=lambda s: s[::-1])
-        table_names = sorted(table_names, key=lambda s: s[::-1])
-
-        dataframes = []
-        for file, table in zip(file_names, table_names):
-            if not file.endswith(table):
-                raise ValueError(f"File names do not match table names: {file} vs {table}")
-
-            df = pd.read_csv(file)
-            dataframes.append(df)
-
+    def data_reader(self, files: Sequence[str], **kwargs) -> List[pd.DataFrame]:
+        dataframes = [pd.read_csv(file) for file in files]
         return dataframes
 
     def preprocess(self, data: List[pd.DataFrame]) -> pd.DataFrame:

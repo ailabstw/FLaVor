@@ -19,13 +19,14 @@ from flavor.serve.inference.strategies import AiCOCORegressionOutputStrategy
 torch.manual_seed(1234)
 np.random.seed(1234)
 
+
 class RegressionInferenceModel(BaseAiCOCOImageInferenceModel):
     def __init__(self):
-        self.formatter = AiCOCORegressionOutputStrategy()
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
+        self.formatter = AiCOCORegressionOutputStrategy()
 
     def define_inference_network(self) -> Callable:
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         network = resnet18(ResNet18_Weights.DEFAULT)
         network.fc = nn.Linear(512, 2)
         network.eval()
@@ -42,9 +43,9 @@ class RegressionInferenceModel(BaseAiCOCOImageInferenceModel):
         ]
         return regressions
 
-    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[Image.Image, None, None]:
+    def data_reader(self, files: Sequence[str], **kwargs) -> Tuple[Image.Image, None]:
         img = Image.open(files[0])
-        return img, None, None
+        return img, None
 
     def preprocess(self, data: np.ndarray) -> torch.Tensor:
         transforms = ResNet18_Weights.DEFAULT.transforms()

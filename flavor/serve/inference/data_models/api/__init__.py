@@ -3,6 +3,8 @@ from .inference_data_model import (
     BaseAiCOCOImageOutputDataModel,
     BaseAiCOCOTabularInputDataModel,
     BaseAiCOCOTabularOutputDataModel,
+    BaseAiCOCOHybridInputDataModel,
+    BaseAiCOCOHybridOutputDataModel,
     NpArray,
 )
 
@@ -12,4 +14,6 @@ __all__ = [
     "BaseAiCOCOImageOutputDataModel",
     "BaseAiCOCOTabularInputDataModel",
     "BaseAiCOCOTabularOutputDataModel",
+    "BaseAiCOCOHybridInputDataModel",
+    "BaseAiCOCOHybridOutputDataModel"
 ]

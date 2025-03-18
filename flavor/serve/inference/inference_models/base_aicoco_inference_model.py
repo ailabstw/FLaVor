@@ -4,7 +4,7 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 import pandas as pd
 from pydantic import BaseModel
 
-from ..data_models.functional import AiImage
+from ..data_models.functional import AiImage, AiTable
 from .base_inference_model import BaseInferenceModel
 
 
@@ -84,37 +84,49 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         """
         raise NotImplementedError
 
-    @abstractmethod
-    def preprocess(self, net_input: Any) -> Any:
+    def preprocess(self, data: Any) -> Any:
         """
-        Abstract method to preprocess the input data where transformations like resizing and cropping operated.
+        A default operation for transformations which is identical transformation.
+
+        Override it if you need other transformations like resizing or cropping, etc.
 
         Args:
             data (Any): Input data.
-        """
-        raise NotImplementedError
 
-    @abstractmethod
+        Returns:
+            Any: Preprocessed data.
+        """
+        return data
+
     def inference(self, x: Any) -> Any:
         """
-        Abstract method to perform inference.
+        A default inference operation which performs forward operation of your defined network.
 
         Override it if needed.
 
         Args:
             x (Any): Input data.
-        """
-        raise NotImplementedError
 
-    @abstractmethod
+        Returns:
+            Any: Inference result.
+        """
+
+        return self.network(x)
+
     def postprocess(self, out: Any) -> Any:
         """
-        Abstract method to post-process the inference result where activations like softmax or sigmoid performed.
+        A default operation for post-processing which is identical transformation.
+
+        Override it if you need activations like softmax or sigmoid generating the prediction.
 
         Args:
             out (Any): Inference result.
+
+        Returns:
+            Any: Post-processed result.
         """
-        raise NotImplementedError
+
+        return out
 
     @abstractmethod
     def output_formatter(self, *args, **kwargs) -> Any:
@@ -123,7 +135,7 @@ class BaseAiCOCOInferenceModel(BaseInferenceModel):
         This is just a template for you to make sure you make use of `categories` and `regressions`.
         Override it with your additional arguments such as `images`.
 
-        Args:
+        Example args:
             model_out (Any): Inference output.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
@@ -257,72 +269,25 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
     @abstractmethod
     def data_reader(
         self, files: Optional[Sequence[str]] = None, **kwargs
-    ) -> Tuple[Any, Optional[List[str]], Optional[Any]]:
+    ) -> Tuple[Any, Optional[List[str]]]:
         """
         Abstract method to read data for inference model.
         This method should return three things:
         1. data: in np.ndarray or torch.Tensor for inference model.
         2. modified_filenames: modified list of filenames if the order of `files` is altered (e.g., 3D multiple slices input).
-        3. metadata: necessary metadata for the post-processing.
 
         Args:
             files (Sequence[str]): List of input filenames.
 
         Returns:
-            Tuple[Any, Optional[List[str]], Optional[Any]]: A tuple containing data, modified filenames, and metadata.
+            Tuple[Any, Optional[List[str]]]: A tuple containing data and modified filenames.
         """
         raise NotImplementedError
-
-    def preprocess(self, data: Any) -> Any:
-        """
-        A default operation for transformations which is identical transformation.
-
-        Override it if you need other transformations like resizing or cropping, etc.
-
-        Args:
-            data (Any): Input data.
-
-        Returns:
-            Any: Preprocessed data.
-        """
-        return data
-
-    def inference(self, x: Any) -> Any:
-        """
-        A default inference operation which performs forward operation of your defined network.
-
-        Override it if needed.
-
-        Args:
-            x (Any): Input data.
-
-        Returns:
-            Any: Inference result.
-        """
-
-        return self.network(x)
-
-    def postprocess(self, out: Any, metadata: Optional[Any] = None) -> Any:
-        """
-        A default operation for post-processing which is identical transformation.
-
-        Override it if you need activations like softmax or sigmoid generating the prediction.
-
-        Args:
-            out (Any): Inference result.
-            metadata (Any, optional): Additional metadata. Default: None.
-
-        Returns:
-            Any: Post-processed result.
-        """
-
-        return out
 
     @abstractmethod
     def output_formatter(
         self,
         model_out: Any,
-        data: Any,
         images: Sequence[AiImage],
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
@@ -334,7 +299,7 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
 
         Args:
             model_out (Any): Inference output.
-            images (Optional[Sequence[Dict[str, Any]]]): List of images. Default: None.
+            images (Sequence[AiImage]): List of AiImages.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
 
@@ -352,12 +317,12 @@ class BaseAiCOCOImageInferenceModel(BaseAiCOCOInferenceModel):
         """
         Run the inference model.
         """
-        data, modified_files, metadata = self.data_reader(files=files, **kwargs)
+        data, modified_files = self.data_reader(files=files, **kwargs)
         self._set_images(images=images, files=modified_files if modified_files else files)
 
         x = self.preprocess(data)
         out = self.inference(x)
-        out = self.postprocess(out, metadata=metadata)
+        out = self.postprocess(out)
 
         result = self.output_formatter(
             out,
@@ -398,11 +363,11 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
 
         """
 
-        sorted_tables = sorted(tables, key=lambda x: x["file_name"].replace("/", "_")[::-1])
+        sorted_tables = sorted(tables, key=lambda x: x["file_name"].replace("/", "@@@")[::-1])
         sorted_files = sorted(files, key=lambda x: x[::-1])
 
         for file, table in zip(sorted_files, sorted_tables):
-            table_name = table["file_name"].replace("/", "_")
+            table_name = table["file_name"].replace("/", "@@@")
             if not file.endswith(table_name):
                 raise ValueError(f"File names do not match table names: {file} vs {table_name}")
 
@@ -427,14 +392,12 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             len(df) % window_size == 0 for df in dataframes
         ), f"Not all DataFrames have a length that is divisible by {window_size}"
 
-    def data_reader(
-        self, tables: Dict[str, Any], files: Sequence[str], **kwargs
-    ) -> Sequence[pd.DataFrame]:
+    @abstractmethod
+    def data_reader(self, files: Sequence[str], **kwargs) -> Sequence[pd.DataFrame]:
         """
         Read data for inference model.
 
         Args:
-            tables (Dict[str, Any]): A dictionary of table information.
             files (Sequence[str]): List of input file_names.
 
         Returns:
@@ -443,50 +406,6 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
 
         raise NotImplementedError
-
-    def preprocess(self, data: Any) -> Any:
-        """
-        A default operation for transformations which is identical transformation.
-
-        Override it if you need other transformations like resizing or cropping, etc.
-
-        Args:
-            data (Any): Input data.
-
-        Returns:
-            Any: Preprocessed data.
-        """
-        return data
-
-    def inference(self, x: Any) -> Any:
-        """
-        A default inference operation which performs forward operation of your defined network.
-
-        Override it if needed.
-
-        Args:
-            x (Any): Input data.
-
-        Returns:
-            Any: Inference result.
-        """
-
-        return self.network(x)
-
-    def postprocess(self, out: Any) -> Any:
-        """
-        A default operation for post-processing which is identical transformation.
-
-        Override it if you need activations like softmax or sigmoid generating the prediction.
-
-        Args:
-            out (Any): Inference result.
-
-        Returns:
-            Any: Post-processed result.
-        """
-
-        return out
 
     @abstractmethod
     def output_formatter(
@@ -525,7 +444,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         assert len(tables) == len(files), "`files` and `tables` should have same length."
 
         tables, files = self.sort_tables_files(tables, files)
-        dataframes = self.data_reader(tables, files, **kwargs)
+        dataframes = self.data_reader(files, **kwargs)
         self.check_inputs(dataframes, tables, meta)
 
         out = self.preprocess(dataframes)
@@ -537,6 +456,115 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             tables=tables,
             meta=meta,
             dataframes=dataframes,
+            categories=self.categories,
+            regressions=self.regressions,
+        )
+
+        return result
+
+
+class BaseAiCOCOHybridInferenceModel(BaseAiCOCOInferenceModel):
+    """
+    Base class for defining inference model with AiCOCO format response. (hybrid version)
+
+    This class serves as a template for implementing inference functionality for various machine learning or deep learning models.
+    Subclasses must override abstract methods to define model-specific behavior.
+
+    Important Notes:
+    - This Hybrid Model is currently designed for **one-to-one** mapping between image and table.
+    - If the input contains **multiple table_ids**, developers need to implement their own handling logic.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def _sort_inputs(
+        self,
+        images: Sequence[Dict[str, Any]],
+        tables: Sequence[Dict[str, Any]],
+        files: Sequence[str],
+    ) -> Any:
+        self.images, self.tables = [], []
+        image_files, table_files = [], []
+        table_dict = {table["id"]: table for table in tables}
+        for img in images:
+            # image
+            image_filename = img["file_name"].replace("/", "@@@")
+            image_filename = next((file for file in files if file.endswith(image_filename)), None)
+            if image_filename is None:
+                raise ValueError(f"Image file not found: {image_filename}")
+            image_files.append(image_filename)
+
+            # table
+            table_id = img["table_ids"][0]  # Assume the length is 1
+            table = table_dict[table_id]
+            table_filename = table["file_name"].replace("/", "@@@")
+            table_filename = next((file for file in files if file.endswith(table_filename)), None)
+            if table_filename is None:
+                raise ValueError(f"Table file not found: {table_filename}")
+            table_files.append(table_filename)
+            self.images.append(AiImage.model_validate(img))
+            self.tables.append(AiTable.model_validate(table))
+
+        return image_files, table_files
+
+    @abstractmethod
+    def data_reader(self, image_files: Sequence[str], table_files: Sequence[str], **kwargs):
+        raise NotImplementedError
+
+    @abstractmethod
+    def output_formatter(
+        self,
+        model_out: Any,
+        images: Sequence[AiImage],
+        tables: Sequence[AiTable],
+        meta: Dict[str, Any],
+        categories: Optional[Sequence[Dict[str, Any]]] = None,
+        regressions: Optional[Sequence[Dict[str, Any]]] = None,
+        **kwargs,
+    ) -> Any:
+        """
+        Abstract method to format the output of hybrid inference model.
+        To respond results in AiCOCO format, users should adopt output strategy specifying for various tasks.
+
+        Args:
+            model_out (Any): Inference output.
+            images (Optional[Sequence[Dict[str, Any]]]): List of images.
+            tables (Sequence[Dict[str, Any]]): List of tables.
+            meta (Dict[str, Any]): Additional metadata.
+            categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
+            regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
+
+        Returns:
+            Any: AiCOCO formatted output.
+        """
+        raise NotImplementedError
+
+    def __call__(
+        self,
+        images: Sequence[Dict[str, Any]],
+        tables: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        files: Sequence[str],
+        **kwargs,
+    ) -> Any:
+        assert len(images) == len(tables), "`tables`, and `images` should have same length."
+        assert len(files) == len(images) + len(
+            tables
+        ), "The number of `files` should be equal to the sum of `images` and `tables`."
+
+        image_filename, table_filename = self._sort_inputs(images, tables, files)
+        x = self.data_reader(image_filename, table_filename)
+
+        x = self.preprocess(x)
+        out = self.inference(x)
+        out = self.postprocess(out)
+
+        result = self.output_formatter(
+            out,
+            images=self.images,
+            tables=tables,
+            meta=meta,
             categories=self.categories,
             regressions=self.regressions,
         )

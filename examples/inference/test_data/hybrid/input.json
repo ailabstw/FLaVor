@@ -1,0 +1,21 @@
+{
+    "images": [
+        {
+            "id": "image_001",
+            "index": 0,
+            "file_name": "451c164d-7684-44b1-81b2-956247db765b_20160112_102927.jpg",
+            "category_ids": null,
+            "regressions": null,
+            "table_ids": ["table_001"]
+        }
+    ],
+    "tables": [
+        {
+            "id": "table_001",
+            "file_name": "test_cls.csv"
+        }
+    ],
+    "meta": {
+        
+    }
+}

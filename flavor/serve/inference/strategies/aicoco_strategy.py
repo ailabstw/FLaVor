@@ -68,6 +68,14 @@ class AiCOCOTabularOut(TypedDict):
     records: Sequence[AiRecord]
     meta: AiTableMeta
 
+class AiCOCOHybridOut(TypedDict):
+    images: List[AiImage]
+    tables: Sequence[AiTable]
+    annotations: List[AiAnnotation]
+    categories: List[AiCategory]
+    regressions: List[AiRegression]
+    objects: List[AiObject]
+    meta: AiMeta
 
 def check_any_nonint(x):
     return np.any(~(np.mod(x, 1) == 0))
@@ -177,7 +185,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             "images": images,
             "categories": self.aicoco_categories,
             "regressions": self.aicoco_regressions,
-            "meta": AiMeta(**meta),
+            "meta": meta,
         }
 
         return aicoco_ref
@@ -981,3 +989,55 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
             ]
 
         return aicoco_ref
+    
+
+class AiCOCOHybridClassificationOutputStrategy(AiCOCOClassificationOutputStrategy):
+    def __call__(
+        self,
+        model_out: np.ndarray,
+        images: List[AiImage],
+        tables: Sequence[Dict[str, Any]],
+        categories: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        **kwargs,
+    ) -> AiCOCOHybridOut:
+        self.validate_model_output(model_out, categories)
+        aicoco_ref = self.prepare_aicoco(images=images, categories=categories, meta=meta)
+        aicoco_out = self.model_to_aicoco(aicoco_ref, model_out, tables)
+        return aicoco_out
+    
+    def model_to_aicoco(
+        self, aicoco_ref: AiCOCOImageRef, model_out: np.ndarray, tables: Sequence[Dict[str, Any]]
+    ) -> AiCOCOHybridOut:
+        aicoco_out = super().model_to_aicoco(aicoco_ref, model_out)
+        
+        tables = [AiTable(**table) for table in tables]
+        aicoco_out["tables"] = tables
+        
+        return aicoco_out
+        
+        
+class AiCOCOHybridRegressionOutputStrategy(AiCOCORegressionOutputStrategy):
+    def __call__(
+        self,
+        model_out: np.ndarray,
+        images: List[AiImage],
+        tables: Sequence[Dict[str, Any]],
+        regressions: Sequence[Dict[str, Any]],
+        meta: Dict[str, Any],
+        **kwargs,
+    ) -> AiCOCOHybridOut:
+        self.validate_model_output(model_out)
+        aicoco_ref = self.prepare_aicoco(images=images, regressions=regressions, meta=meta)
+        aicoco_out = self.model_to_aicoco(aicoco_ref, model_out, tables)
+        return aicoco_out
+    
+    def model_to_aicoco(
+        self, aicoco_ref: AiCOCOImageRef, model_out: np.ndarray, tables: Sequence[Dict[str, Any]]
+    ) -> AiCOCOHybridOut:
+        aicoco_out = super().model_to_aicoco(aicoco_ref, model_out)
+        
+        tables = [AiTable(**table) for table in tables]
+        aicoco_out["tables"] = tables
+        
+        return aicoco_out

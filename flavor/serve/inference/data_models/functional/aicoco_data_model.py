@@ -42,6 +42,10 @@ class AiMeta(BaseModel, extra="allow"):
     category_ids: Optional[List[str]]
     regressions: Optional[List[AiRegressionItem]]
 
+class AiHybridMeta(BaseModel, extra="allow"):
+    category_ids: Optional[List[str]]
+    regressions: Optional[List[AiRegressionItem]]
+    table_ids: Optional[List[str]]
 
 class AiImage(BaseModel, extra="allow"):
     file_name: str
@@ -83,3 +87,13 @@ class AiCOCOTabularFormat(BaseModel, extra="forbid"):
     regressions: Sequence[AiRegression]
     records: Sequence[AiRecord]
     meta: AiTableMeta
+
+
+class AiCOCOHybridFormat(BaseModel, extra="forbid"):
+    images: Sequence[AiImage]
+    tables: Sequence[AiTable]
+    annotations: Sequence[AiAnnotation]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    objects: Sequence[AiObject]
+    meta: AiHybridMeta
