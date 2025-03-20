@@ -1,16 +1,18 @@
 import random
 import string
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, Union
 
 import cv2  # type: ignore
 import numpy as np
 import pandas as pd
 from nanoid import generate as nanoid_generate
+from pydantic import BaseModel
 
 from ..data_models.functional import (
     AiAnnotation,
     AiCategory,
+    AiCOCOImageFormat,
     AiImage,
     AiMeta,
     AiObject,
@@ -63,11 +65,11 @@ class AiCOCOImageOut(TypedDict):
     meta: AiMeta
 
 
-class AiCOCOImageRef(TypedDict):
+class AiCOCORef(BaseModel):
     images: List[AiImage]
     categories: List[AiCategory]
     regressions: List[AiRegression]
-    meta: AiMeta
+    meta: Union[AiMeta, AiTableMeta]
 
 
 class AiCOCOAnnotObj(TypedDict):
@@ -82,6 +84,7 @@ class AiCOCOTabularOut(TypedDict):
     records: Sequence[AiRecord]
     meta: AiTableMeta
 
+
 class AiCOCOHybridOut(TypedDict):
     images: List[AiImage]
     tables: Sequence[AiTable]
@@ -90,6 +93,7 @@ class AiCOCOHybridOut(TypedDict):
     regressions: List[AiRegression]
     objects: List[AiObject]
     meta: AiMeta
+
 
 def check_any_nonint(x):
     return np.any(~(np.mod(x, 1) == 0))
@@ -101,7 +105,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         raise NotImplementedError
 
     @abstractmethod
-    def model_to_aicoco(self, aicoco_ref: AiCOCOImageRef, model_out: Any) -> AiCOCOImageOut:
+    def model_to_aicoco(self, aicoco_ref: AiCOCORef, model_out: Any) -> AiCOCOImageFormat:
         """
         Abstract method to convert model output to AiCOCO compatible format.
         """
@@ -184,7 +188,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
         meta: Optional[Dict[str, Any]] = None,
-    ) -> AiCOCOImageRef:
+    ) -> AiCOCORef:
         """
         Prepare prerequisite for AiCOCO.
 
@@ -194,7 +198,7 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
             regressions (Optional[Sequence[Dict[str, Any]]]): List of unprocessed regressions. Default: None.
             meta (Optional[Dict[str, Any]]): AiCOCO meta field. Default: None.
         Returns:
-            AiCOCOImageRef: Prepared AiCOCO output and inference model output array.
+            AiCOCORef: Prepared AiCOCO output and inference model output array.
         """
 
         categories = categories if categories is not None else []
@@ -203,14 +207,14 @@ class BaseAiCOCOOutputStrategy(BaseStrategy):
         aicoco_categories = self.generate_categories(categories)
         aicoco_regressions = self.generate_regressions(regressions)
 
-        aicoco_ref: AiCOCOImageRef = {
+        aicoco_ref = {
             "images": images,
             "categories": aicoco_categories,
             "regressions": aicoco_regressions,
             "meta": meta,
         }
 
-        return aicoco_ref
+        return AiCOCORef.model_validate(aicoco_ref)
 
 
 class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
@@ -220,7 +224,7 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
         images: List[AiImage],
         categories: Sequence[Dict[str, Any]],
         **kwargs,
-    ) -> AiCOCOImageOut:
+    ) -> AiCOCOImageFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
@@ -258,12 +262,12 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
         if check_any_nonint(model_out):
             raise ValueError("The value of `model_out` should be integer (0,1,2...) with int type.")
 
-    def model_to_aicoco(self, aicoco_ref: AiCOCOImageRef, model_out: np.ndarray) -> AiCOCOImageOut:
+    def model_to_aicoco(self, aicoco_ref: AiCOCORef, model_out: np.ndarray) -> AiCOCOImageOut:
         """
         Convert segmentation inference model output to AiCOCO compatible format.
 
         Args:
-            aicoco_ref (AiCOCOImageRef): Complete AiCOCO output.
+            aicoco_ref (AiCOCORef): Complete AiCOCO output.
             model_out (np.ndarray): Segmentation inference model output.
 
         Returns:
@@ -274,11 +278,8 @@ class AiCOCOSegmentationOutputStrategy(BaseAiCOCOOutputStrategy):
             aicoco_ref["categories"],
             aicoco_ref["images"],
         )
-        aicoco_out: AiCOCOImageOut = {
-            **aicoco_ref,
-            **annot_obj,
-        }
-        return aicoco_out
+
+        return AiCOCOImageFormat.model_validate({**aicoco_ref, **annot_obj})
 
     def generate_annotations_objects(
         self,
@@ -376,7 +377,7 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
         images: List[AiImage],
         categories: Sequence[Dict[str, Any]],
         **kwargs,
-    ) -> AiCOCOImageOut:
+    ) -> AiCOCOImageFormat:
         """
         Apply the AiCOCO output strategy to reformat the model's output.
 
@@ -416,33 +417,34 @@ class AiCOCOClassificationOutputStrategy(BaseAiCOCOOutputStrategy):
 
     def model_to_aicoco(
         self,
-        aicoco_ref: AiCOCOImageRef,
+        aicoco_ref: AiCOCORef,
         model_out: np.ndarray,
-    ) -> AiCOCOImageOut:
+    ) -> AiCOCOImageFormat:
         """
         Convert classification inference model output to AiCOCO compatible format.
 
         Args:
-            aicoco_ref (AiCOCOImageRef): Complete AiCOCO output.
+            aicoco_ref (AiCOCORef): Complete AiCOCO output.
             model_out (np.ndarray): Classification inference model output.
 
         Returns:
             AiCOCOImageOut: Result in AiCOCO compatible format.
         """
         updated_images, updated_meta = self.update_images_meta(
-            model_out, aicoco_ref["images"], aicoco_ref["meta"], aicoco_ref["categories"]
+            model_out, aicoco_ref.images, aicoco_ref.meta, aicoco_ref.categories
         )
 
         annot_obj = {"annotations": [], "objects": []}
 
-        aicoco_out: AiCOCOImageOut = {
+        aicoco_out = {
             "images": updated_images,
-            "categories": aicoco_ref["categories"],
-            "regressions": aicoco_ref["regressions"],
+            "categories": aicoco_ref.categories,
+            "regressions": aicoco_ref.regressions,
             "meta": updated_meta,
             **annot_obj,
         }
-        return aicoco_out
+
+        return AiCOCOImageFormat.model_validate(aicoco_out)
 
     def update_images_meta(
         self,
@@ -561,14 +563,14 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
 
     def model_to_aicoco(
         self,
-        aicoco_ref: AiCOCOImageRef,
+        aicoco_ref: AiCOCORef,
         model_out: Dict[str, Any],
-    ) -> AiCOCOImageOut:
+    ) -> AiCOCOImageFormat:
         """
         Convert detection inference model output to AiCOCO compatible format.
 
         Args:
-            aicoco_ref (AiCOCOImageRef): Complete AiCOCO output.
+            aicoco_ref (AiCOCORef): Complete AiCOCO output.
             model_out (Dict[str, Any]): Detection inference model output.
 
         Returns:
@@ -576,12 +578,13 @@ class AiCOCODetectionOutputStrategy(BaseAiCOCOOutputStrategy):
         """
         annot_obj = self.generate_annotations_objects(
             model_out,
-            aicoco_ref["categories"],
-            aicoco_ref["regressions"],
-            aicoco_ref["images"],
+            aicoco_ref.categories,
+            aicoco_ref.regressions,
+            aicoco_ref.images,
         )
-        aicoco_out: AiCOCOImageOut = {**aicoco_ref, **annot_obj}
-        return aicoco_out
+        aicoco_out = {**aicoco_ref.model_dump(), **annot_obj}
+
+        return AiCOCOImageFormat.model_validate(aicoco_out)
 
     def generate_annotations_objects(
         self,
@@ -710,14 +713,14 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
 
     def model_to_aicoco(
         self,
-        aicoco_ref: AiCOCOImageRef,
+        aicoco_ref: AiCOCORef,
         model_out: np.ndarray,
     ) -> AiCOCOImageOut:
         """
         Convert regression inference model output to AiCOCO compatible format.
 
         Args:
-            aicoco_ref (AiCOCOImageRef): Complete AiCOCO output.
+            aicoco_ref (AiCOCORef): Complete AiCOCO output.
             model_out (np.ndarray): Regression inference model output.
 
         Returns:
@@ -1016,7 +1019,7 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
             ]
 
         return aicoco_ref
-    
+
 
 class AiCOCOHybridClassificationOutputStrategy(AiCOCOClassificationOutputStrategy):
     def __call__(
@@ -1032,18 +1035,18 @@ class AiCOCOHybridClassificationOutputStrategy(AiCOCOClassificationOutputStrateg
         aicoco_ref = self.prepare_aicoco(images=images, categories=categories, meta=meta)
         aicoco_out = self.model_to_aicoco(aicoco_ref, model_out, tables)
         return aicoco_out
-    
+
     def model_to_aicoco(
-        self, aicoco_ref: AiCOCOImageRef, model_out: np.ndarray, tables: Sequence[Dict[str, Any]]
+        self, aicoco_ref: AiCOCORef, model_out: np.ndarray, tables: Sequence[Dict[str, Any]]
     ) -> AiCOCOHybridOut:
         aicoco_out = super().model_to_aicoco(aicoco_ref, model_out)
-        
+
         tables = [AiTable(**table) for table in tables]
         aicoco_out["tables"] = tables
-        
+
         return aicoco_out
-        
-        
+
+
 class AiCOCOHybridRegressionOutputStrategy(AiCOCORegressionOutputStrategy):
     def __call__(
         self,
@@ -1058,13 +1061,13 @@ class AiCOCOHybridRegressionOutputStrategy(AiCOCORegressionOutputStrategy):
         aicoco_ref = self.prepare_aicoco(images=images, regressions=regressions, meta=meta)
         aicoco_out = self.model_to_aicoco(aicoco_ref, model_out, tables)
         return aicoco_out
-    
+
     def model_to_aicoco(
-        self, aicoco_ref: AiCOCOImageRef, model_out: np.ndarray, tables: Sequence[Dict[str, Any]]
+        self, aicoco_ref: AiCOCORef, model_out: np.ndarray, tables: Sequence[Dict[str, Any]]
     ) -> AiCOCOHybridOut:
         aicoco_out = super().model_to_aicoco(aicoco_ref, model_out)
-        
+
         tables = [AiTable(**table) for table in tables]
         aicoco_out["tables"] = tables
-        
+
         return aicoco_out
