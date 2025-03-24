@@ -7,11 +7,14 @@ from fastapi import UploadFile
 from pydantic import BaseModel, model_serializer, model_validator
 
 from ..functional import (
-    AiCOCOImageFormat,
-    AiCOCOTabularFormat,
-    AiCOCOHybridFormat,
-    AiMeta,
+    AiAnnotation,
+    AiCategory,
+    AiHybridMeta,
     AiImage,
+    AiMeta,
+    AiObject,
+    AiRecord,
+    AiRegression,
     AiTable,
     AiTableMeta,
 )
@@ -70,7 +73,7 @@ class NpArray(BaseModel, arbitrary_types_allowed=True):
         }
 
 
-class BaseAiCOCOImageInputDataModel(BaseModel):
+class AiCOCOImageInputDataModel(BaseModel):
     """
     Base class for defining input data model with AiCOCO format.
 
@@ -99,42 +102,16 @@ class BaseAiCOCOImageInputDataModel(BaseModel):
     files: Sequence[UploadFile]
 
 
-class BaseAiCOCOImageOutputDataModel(AiCOCOImageFormat):
-    """
-    Base class for defining output data model with AiCOCO format.
-
-    Inherit it if you need extra fields.
-
-    Attributes:
-        images (Sequence[AiImage]): Sequence of AiImage objects. Defaults to None.
-        annotations (Sequence[AiAnnotation]): Sequence of AiAnnotation objects. Defaults to None.
-        categories (Sequence[AiCategory]): Sequence of AiCategory objects. Defaults to None.
-        regressions (Sequence[AiRegression]): Sequence of AiRegression objects. Defaults to None.
-        objects (Sequence[AiObject]): Sequence of AiObject objects. Defaults to None.
-        meta (AiMeta): AiMeta object. Defaults to None.
-
-    Example:
-    ```
-    class OutputDataModel(BaseAiCOCOImageOutputDataModel):
-        mask_bin: NpArray
-
-    OutputDataModel(
-        {
-            "images": ...,
-            "annotations": ...,
-            "categories": ...,
-            "objects": ...,
-            "meta": ...,
-            "mask_bin": ...
-        }
-    )
-    ```
-    """
-
-    pass
+class AiCOCOImageOutputDataModel(BaseModel, extra="forbid"):
+    images: Sequence[AiImage]
+    annotations: Sequence[AiAnnotation]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    objects: Sequence[AiObject]
+    meta: AiMeta
 
 
-class BaseAiCOCOTabularInputDataModel(BaseModel):
+class AiCOCOTabularInputDataModel(BaseModel):
     """
     Base class for tabular input data with AiCOCO format.
 
@@ -150,15 +127,15 @@ class BaseAiCOCOTabularInputDataModel(BaseModel):
     files: Sequence[UploadFile]
 
 
-class BaseAiCOCOTabularOutputDataModel(AiCOCOTabularFormat):
-    """
-    Base class for tabular output data with AiCOCO tabular format.
-    """
+class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):
+    tables: Sequence[AiTable]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    records: Sequence[AiRecord]
+    meta: AiTableMeta
 
-    pass
 
-
-class BaseAiCOCOHybridInputDataModel(BaseModel):
+class AiCOCOHybridInputDataModel(BaseModel):
     """
     Base class for hybrid input data with AiCOCO format.
 
@@ -168,13 +145,21 @@ class BaseAiCOCOHybridInputDataModel(BaseModel):
         meta (AiMeta): Metadata with information like category_ids / regressions / table_ids.
         files (Sequence[UploadFile]): Sequence of UploadFile objects.
     """
+
     images: Sequence[AiImage]
     tables: Sequence[AiTable]
     meta: AiMeta
     files: Sequence[UploadFile]
-    
 
-class BaseAiCOCOHybridOutputDataModel(AiCOCOHybridFormat):
+
+class AiCOCOHybridOutputDataModel(BaseModel, extra="forbid"):
+    images: Sequence[AiImage]
+    tables: Sequence[AiTable]
+    annotations: Sequence[AiAnnotation]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    objects: Sequence[AiObject]
+    meta: AiHybridMeta
     """
     Base class for hybrid output data with AiCOCO format.
     """
