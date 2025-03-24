@@ -1,9 +1,13 @@
 """
 This module defines a set of Pydantic models for handling AICOCO format.
 """
-from typing import List, Literal, Optional, Sequence
+from typing import List, Literal, Optional, Sequence, TypedDict, Union
 
 from pydantic import BaseModel
+
+# ==============================
+# Annotation Related Models
+# ==============================
 
 
 class AiAnnotation(BaseModel, extra="allow"):
@@ -13,6 +17,11 @@ class AiAnnotation(BaseModel, extra="allow"):
     object_id: str
     bbox: Optional[Sequence[Sequence[int]]]
     segmentation: Optional[List[Sequence[int]]]
+
+
+# ==============================
+# Category and Regression Definitions
+# ==============================
 
 
 class AiCategory(BaseModel, extra="allow"):
@@ -32,6 +41,11 @@ class AiRegressionItem(BaseModel, extra="forbid"):
     value: float
 
 
+# ==============================
+# Object and Metadata Models
+# ==============================
+
+
 class AiObject(BaseModel, extra="allow"):
     id: str
     category_ids: Optional[List[str]]
@@ -42,10 +56,21 @@ class AiMeta(BaseModel, extra="allow"):
     category_ids: Optional[List[str]]
     regressions: Optional[List[AiRegressionItem]]
 
+
+class AiTableMeta(BaseModel, extra="allow"):
+    window_size: int
+
+
 class AiHybridMeta(BaseModel, extra="allow"):
     category_ids: Optional[List[str]]
     regressions: Optional[List[AiRegressionItem]]
     table_ids: Optional[List[str]]
+
+
+# ==============================
+# Image Related Models
+# ==============================
+
 
 class AiImage(BaseModel, extra="allow"):
     file_name: str
@@ -55,13 +80,9 @@ class AiImage(BaseModel, extra="allow"):
     regressions: Optional[List[AiRegressionItem]]
 
 
-class AiCOCOImageFormat(BaseModel, extra="forbid"):
-    images: Sequence[AiImage]
-    annotations: Sequence[AiAnnotation]
-    categories: Sequence[AiCategory]
-    regressions: Sequence[AiRegression]
-    objects: Sequence[AiObject]
-    meta: AiMeta
+# ==============================
+# Tabular Related Models
+# ==============================
 
 
 class AiTable(BaseModel, extra="allow"):
@@ -77,8 +98,35 @@ class AiRecord(BaseModel, extra="allow"):
     regressions: Optional[Sequence[AiRegressionItem]]
 
 
-class AiTableMeta(BaseModel, extra="allow"):
-    window_size: int
+# ==============================
+# Intermediate Models
+# ==============================
+
+
+class AiCOCORef(BaseModel):
+    images: List[AiImage]
+    categories: List[AiCategory]
+    regressions: List[AiRegression]
+    meta: Union[AiMeta, AiTableMeta, AiHybridMeta]
+
+
+class AiCOCOAnnotObj(TypedDict):
+    annotations: List[AiAnnotation]
+    objects: List[AiObject]
+
+
+# ==============================
+# Full Format Models
+# ==============================
+
+
+class AiCOCOImageFormat(BaseModel, extra="forbid"):
+    images: Sequence[AiImage]
+    annotations: Sequence[AiAnnotation]
+    categories: Sequence[AiCategory]
+    regressions: Sequence[AiRegression]
+    objects: Sequence[AiObject]
+    meta: AiMeta
 
 
 class AiCOCOTabularFormat(BaseModel, extra="forbid"):
