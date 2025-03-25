@@ -927,7 +927,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
                 category_id.id for pred, category_id in zip(cls_pred, categories) if pred
             )
 
-        return aicoco_ref
+        return AiCOCOTabularOutputDataModel.model_validate(aicoco_ref)
 
 
 class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
