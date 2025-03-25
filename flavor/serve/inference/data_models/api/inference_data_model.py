@@ -103,6 +103,19 @@ class AiCOCOImageInputDataModel(BaseModel):
 
 
 class AiCOCOImageOutputDataModel(BaseModel, extra="forbid"):
+    """
+    Base class for defining image output data model with AiCOCO format.
+
+    Attributes:
+        images (Sequence[AiImage]): Sequence of AiImage objects. Defaults to None.
+        annotations (Sequence[AiAnnotation]): Sequence of AiAnnotation objects. Defaults to None.
+        categories (Sequence[AiCategory]): Sequence of AiCategory objects. Defaults to None.
+        regressions (Sequence[AiRegression]): Sequence of AiRegression objects. Defaults to None.
+        objects (Sequence[AiObject]): Sequence of AiObject objects. Defaults to None.
+        meta (AiMeta): AiMeta object. Defaults to None.
+
+    """
+
     images: Sequence[AiImage]
     annotations: Sequence[AiAnnotation]
     categories: Sequence[AiCategory]
@@ -113,7 +126,7 @@ class AiCOCOImageOutputDataModel(BaseModel, extra="forbid"):
 
 class AiCOCOTabularInputDataModel(BaseModel):
     """
-    Base class for tabular input data with AiCOCO format.
+    Base class for defining tabular input data with AiCOCO format.
 
     Attributes:
         tables (Sequence[AiTable]): Sequence of AiTable objects.
@@ -128,6 +141,21 @@ class AiCOCOTabularInputDataModel(BaseModel):
 
 
 class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):
+    """
+    Base class for defining tabular output data with AiCOCO format.
+
+    This class represents the structured output for tabular data processing,
+    including transformed tables, categories, regressions, and metadata.
+
+    Attributes:
+        tables (Sequence[AiTable]): Processed or transformed tables.
+        categories (Sequence[AiCategory]): Categorization results from the data processing.
+        regressions (Sequence[AiRegression]): Regression analysis results.
+        records (Sequence[AiRecord]): Individual records derived from the processing.
+        meta (AiTableMeta): Metadata associated with the tabular output.
+
+    """
+
     tables: Sequence[AiTable]
     categories: Sequence[AiCategory]
     regressions: Sequence[AiRegression]
@@ -144,6 +172,7 @@ class AiCOCOHybridInputDataModel(BaseModel):
         tables (Sequence[AiTable]): Sequence of AiTable objects.
         meta (AiMeta): Metadata with information like category_ids / regressions / table_ids.
         files (Sequence[UploadFile]): Sequence of UploadFile objects.
+
     """
 
     images: Sequence[AiImage]
@@ -153,6 +182,24 @@ class AiCOCOHybridInputDataModel(BaseModel):
 
 
 class AiCOCOHybridOutputDataModel(BaseModel, extra="forbid"):
+    """
+    Base class for hybrid output data with AiCOCO format.
+
+    This class represents the structured output for hybrid data processing,
+    combining results from both image and tabular data analysis.
+
+    Attributes:
+        images (Sequence[AiImage]): Processed or analyzed image data.
+        tables (Sequence[AiTable]): Processed or transformed tabular data.
+        annotations (Sequence[AiAnnotation]): Annotations generated during
+            the data processing.
+        categories (Sequence[AiCategory]): Categorization results.
+        regressions (Sequence[AiRegression]): Regression analysis results.
+        objects (Sequence[AiObject]): Detected or processed objects.
+        meta (AiHybridMeta): Metadata specific to hybrid data processing.
+
+    """
+
     images: Sequence[AiImage]
     tables: Sequence[AiTable]
     annotations: Sequence[AiAnnotation]
@@ -160,7 +207,3 @@ class AiCOCOHybridOutputDataModel(BaseModel, extra="forbid"):
     regressions: Sequence[AiRegression]
     objects: Sequence[AiObject]
     meta: AiHybridMeta
-    """
-    Base class for hybrid output data with AiCOCO format.
-    """
-    pass
