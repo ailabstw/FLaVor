@@ -8,8 +8,8 @@ import torch.nn as nn
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference.data_models.api import (
-    BaseAiCOCOTabularInputDataModel,
-    BaseAiCOCOTabularOutputDataModel,
+    AiCOCOTabularInputDataModel,
+    AiCOCOTabularOutputDataModel,
 )
 from flavor.serve.inference.data_models.functional import AiTable
 from flavor.serve.inference.inference_models import BaseAiCOCOTabularInferenceModel
@@ -75,7 +75,7 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
         meta: Dict[str, Any],
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
         **kwargs,
-    ) -> BaseAiCOCOTabularOutputDataModel:
+    ) -> AiCOCOTabularOutputDataModel:
 
         output = self.formatter(
             model_out=model_out,
@@ -89,8 +89,8 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
 
 app = InferAPP(
     infer_function=RegressionInferenceModel(),
-    input_data_model=BaseAiCOCOTabularInputDataModel,
-    output_data_model=BaseAiCOCOTabularOutputDataModel,
+    input_data_model=AiCOCOTabularInputDataModel,
+    output_data_model=AiCOCOTabularOutputDataModel,
 )
 
 if __name__ == "__main__":

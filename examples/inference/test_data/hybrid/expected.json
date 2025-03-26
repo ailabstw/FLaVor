@@ -13,6 +13,12 @@
       ]
     }
   ],
+  "tables": [
+    {
+      "id": "table_001",
+      "file_name": "test_cls.csv"
+    }
+  ],
   "annotations": [],
   "categories": [
     {
@@ -30,6 +36,7 @@
   "objects": [],
   "meta": {
     "category_ids": null,
-    "regressions": null
+    "regressions": null,
+    "table_ids": null
   }
 }

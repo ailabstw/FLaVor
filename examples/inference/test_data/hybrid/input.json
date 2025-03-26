@@ -16,6 +16,8 @@
         }
     ],
     "meta": {
-        
+        "category_ids": null,
+        "regressions": null,
+        "table_ids": null
     }
 }
