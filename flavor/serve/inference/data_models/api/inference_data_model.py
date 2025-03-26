@@ -142,7 +142,7 @@ class AiCOCOTabularInputDataModel(BaseModel):
 
 class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):
     """
-    Base class for defining tabular output data with AiCOCO format.
+    Base class for defining tabular output data model with AiCOCO format.
 
     This class represents the structured output for tabular data processing,
     including transformed tables, categories, regressions, and metadata.
@@ -183,7 +183,7 @@ class AiCOCOHybridInputDataModel(BaseModel):
 
 class AiCOCOHybridOutputDataModel(BaseModel, extra="forbid"):
     """
-    Base class for hybrid output data with AiCOCO format.
+    Base class for hybrid output data model with AiCOCO format.
 
     This class represents the structured output for hybrid data processing,
     combining results from both image and tabular data analysis.
