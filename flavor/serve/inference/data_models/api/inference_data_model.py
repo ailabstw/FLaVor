@@ -85,7 +85,7 @@ class AiCOCOImageInputDataModel(BaseModel):
 
     Example inheritance:
     ```
-    class InputDataModel(BaseAiCOCOImageInputDataModel):
+    class InputDataModel(AiCOCOImageInputDataModel):
         image_embeddings: NpArray
 
     InputDataModel(

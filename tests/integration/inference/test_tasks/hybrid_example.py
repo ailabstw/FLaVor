@@ -10,12 +10,12 @@ from PIL import Image
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference.data_models.api import (
-    BaseAiCOCOImageInputDataModel,
-    BaseAiCOCOImageOutputDataModel,
+    AiCOCOHybridInputDataModel,
+    AiCOCOHybridOutputDataModel,
 )
-from flavor.serve.inference.data_models.functional import AiImage
+from flavor.serve.inference.data_models.functional import AiImage, AiTable
 from flavor.serve.inference.inference_models import BaseAiCOCOHybridInferenceModel
-from flavor.serve.inference.strategies import AiCOCOClassificationOutputStrategy
+from flavor.serve.inference.strategies import AiCOCOHybridClassificationOutputStrategy
 
 torch.manual_seed(1234)
 np.random.seed(1234)
@@ -81,7 +81,7 @@ class HybridNet(nn.Module):
 class ClassificationInferenceModel(BaseAiCOCOHybridInferenceModel):
     def __init__(self):
         super().__init__()
-        self.formatter = AiCOCOClassificationOutputStrategy()
+        self.formatter = AiCOCOHybridClassificationOutputStrategy()
 
     def define_inference_network(self) -> Callable:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -129,18 +129,21 @@ class ClassificationInferenceModel(BaseAiCOCOHybridInferenceModel):
         self,
         model_out: np.ndarray,
         images: Sequence[AiImage],
+        tables: Sequence[AiTable],
         categories: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> BaseAiCOCOImageOutputDataModel:
+    ) -> AiCOCOHybridOutputDataModel:
 
-        output = self.formatter(model_out=model_out, images=images, categories=categories)
+        output = self.formatter(
+            model_out=model_out, images=images, tables=tables, categories=categories
+        )
         return output
 
 
 app = InferAPP(
     infer_function=ClassificationInferenceModel(),
-    input_data_model=BaseAiCOCOImageInputDataModel,
-    output_data_model=BaseAiCOCOImageOutputDataModel,
+    input_data_model=AiCOCOHybridInputDataModel,
+    output_data_model=AiCOCOHybridOutputDataModel,
 )
 
 if __name__ == "__main__":
