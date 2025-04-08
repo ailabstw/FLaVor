@@ -1,9 +1,6 @@
 from .aicoco_data_model import (
     AiAnnotation,
     AiCategory,
-    AiCOCOHybridFormat,
-    AiCOCOImageFormat,
-    AiCOCOTabularFormat,
     AiHybridMeta,
     AiImage,
     AiMeta,

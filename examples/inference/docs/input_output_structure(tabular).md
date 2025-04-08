@@ -42,7 +42,7 @@ def output_formatter(
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
         **kwargs,
-    ) -> BaseAiCOCOTabularOutputDataModel:
+    ) -> AiCOCOTabularOutputDataModel:
 
     ...
 

@@ -1,7 +1,7 @@
 """
 This module defines a set of Pydantic models for handling AICOCO format.
 """
-from typing import List, Literal, Optional, Sequence
+from typing import List, Literal, Optional, Sequence, TypedDict, Union
 
 from pydantic import BaseModel
 
@@ -99,32 +99,17 @@ class AiRecord(BaseModel, extra="allow"):
 
 
 # ==============================
-# Full Format Models
+# Intermediate Models
 # ==============================
 
 
-class AiCOCOImageFormat(BaseModel, extra="forbid"):
-    images: Sequence[AiImage]
-    annotations: Sequence[AiAnnotation]
-    categories: Sequence[AiCategory]
-    regressions: Sequence[AiRegression]
-    objects: Sequence[AiObject]
-    meta: AiMeta
+class AiCOCORef(BaseModel):
+    images: List[AiImage]
+    categories: List[AiCategory]
+    regressions: List[AiRegression]
+    meta: Union[AiMeta, AiTableMeta, AiHybridMeta]
 
 
-class AiCOCOTabularFormat(BaseModel, extra="forbid"):
-    tables: Sequence[AiTable]
-    categories: Sequence[AiCategory]
-    regressions: Sequence[AiRegression]
-    records: Sequence[AiRecord]
-    meta: AiTableMeta
-
-
-class AiCOCOHybridFormat(BaseModel, extra="forbid"):
-    images: Sequence[AiImage]
-    tables: Sequence[AiTable]
-    annotations: Sequence[AiAnnotation]
-    categories: Sequence[AiCategory]
-    regressions: Sequence[AiRegression]
-    objects: Sequence[AiObject]
-    meta: AiHybridMeta
+class AiCOCOAnnotObj(TypedDict):
+    annotations: List[AiAnnotation]
+    objects: List[AiObject]

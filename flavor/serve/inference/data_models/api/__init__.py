@@ -1,19 +1,22 @@
 from .inference_data_model import (
-    BaseAiCOCOImageInputDataModel,
-    BaseAiCOCOImageOutputDataModel,
-    BaseAiCOCOTabularInputDataModel,
-    BaseAiCOCOTabularOutputDataModel,
-    BaseAiCOCOHybridInputDataModel,
-    BaseAiCOCOHybridOutputDataModel,
+    AiCOCOHybridInputDataModel,
+    AiCOCOHybridOutputDataModel,
+    AiCOCOImageInputDataModel,
+    AiCOCOImageOutputDataModel,
+    AiCOCOTabularInputDataModel,
+    AiCOCOTabularOutputDataModel,
     NpArray,
 )
 
 __all__ = [
     "NpArray",
-    "BaseAiCOCOImageInputDataModel",
-    "BaseAiCOCOImageOutputDataModel",
-    "BaseAiCOCOTabularInputDataModel",
-    "BaseAiCOCOTabularOutputDataModel",
-    "BaseAiCOCOHybridInputDataModel",
-    "BaseAiCOCOHybridOutputDataModel"
+    "AiCOCOImageInputDataModel",
+    "AiCOCOImageOutputDataModel",
+    "AiCOCOTabularInputDataModel",
+    "AiCOCOTabularOutputDataModel",
+    "AiCOCOHybridInputDataModel",
+    "AiCOCOHybridOutputDataModel",
+    "AiCOCOImageOutputDataModel",
+    "AiCOCOTabularOutputDataModel",
+    "AiCOCOHybridOutputDataModel",
 ]

@@ -36,7 +36,7 @@ def output_formatter(
     images: Sequence[AiImage],
     categories: Sequence[Dict[str, Any]],
     **kwargs
-) -> BaseAiCOCOImageOutputDataModel:
+) -> AiCOCOImageOutputDataModel:
 
     output = self.formatter(model_out=model_out, images=images, categories=categories)
     return output

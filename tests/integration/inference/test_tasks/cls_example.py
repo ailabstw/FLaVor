@@ -9,8 +9,8 @@ from torchvision.models import ResNet18_Weights, resnet18
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference.data_models.api import (
-    BaseAiCOCOImageInputDataModel,
-    BaseAiCOCOImageOutputDataModel,
+    AiCOCOImageInputDataModel,
+    AiCOCOImageOutputDataModel,
 )
 from flavor.serve.inference.data_models.functional import AiImage
 from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
@@ -62,7 +62,7 @@ class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
         images: Sequence[AiImage],
         categories: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> BaseAiCOCOImageOutputDataModel:
+    ) -> AiCOCOImageOutputDataModel:
 
         output = self.formatter(model_out=model_out, images=images, categories=categories)
         return output
@@ -70,8 +70,8 @@ class ClassificationInferenceModel(BaseAiCOCOImageInferenceModel):
 
 app = InferAPP(
     infer_function=ClassificationInferenceModel(),
-    input_data_model=BaseAiCOCOImageInputDataModel,
-    output_data_model=BaseAiCOCOImageOutputDataModel,
+    input_data_model=AiCOCOImageInputDataModel,
+    output_data_model=AiCOCOImageOutputDataModel,
 )
 
 if __name__ == "__main__":

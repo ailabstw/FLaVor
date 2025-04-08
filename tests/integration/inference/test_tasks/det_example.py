@@ -7,8 +7,8 @@ from ultralytics import YOLO
 
 from flavor.serve.apps import InferAPP
 from flavor.serve.inference.data_models.api import (
-    BaseAiCOCOImageInputDataModel,
-    BaseAiCOCOImageOutputDataModel,
+    AiCOCOImageInputDataModel,
+    AiCOCOImageOutputDataModel,
 )
 from flavor.serve.inference.data_models.functional import AiImage
 from flavor.serve.inference.inference_models import BaseAiCOCOImageInferenceModel
@@ -76,7 +76,7 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
         categories: Sequence[Dict[str, Any]],
         regressions: Sequence[Dict[str, Any]],
         **kwargs
-    ) -> BaseAiCOCOImageOutputDataModel:
+    ) -> AiCOCOImageOutputDataModel:
         output = self.formatter(
             model_out=model_out, images=images, categories=categories, regressions=regressions
         )
@@ -85,8 +85,8 @@ class DetectionInferenceModel(BaseAiCOCOImageInferenceModel):
 
 app = InferAPP(
     infer_function=DetectionInferenceModel(),
-    input_data_model=BaseAiCOCOImageInputDataModel,
-    output_data_model=BaseAiCOCOImageOutputDataModel,
+    input_data_model=AiCOCOImageInputDataModel,
+    output_data_model=AiCOCOImageOutputDataModel,
 )
 
 if __name__ == "__main__":
