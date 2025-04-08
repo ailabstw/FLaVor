@@ -4,6 +4,11 @@ from typing import Any, Dict, List
 import numpy as np
 import pandas as pd
 
+from flavor.serve.inference.data_models.api import (
+    AiCOCOHybridOutputDataModel,
+    AiCOCOImageOutputDataModel,
+    AiCOCOTabularOutputDataModel,
+)
 from flavor.serve.inference.data_models.functional.aicoco_data_model import (
     AiImage,
     AiMeta,
@@ -19,7 +24,6 @@ from flavor.serve.inference.strategies.aicoco_strategy import (
     AiCOCORegressionOutputStrategy,
     AiCOCOSegmentationOutputStrategy,
     AiCOCOTabularClassificationOutputStrategy,
-    AiCOCOTabularFormat,
     AiCOCOTabularRegressionOutputStrategy,
     BaseAiCOCOOutputStrategy,
     BaseAiCOCOTabularOutputStrategy,
@@ -204,6 +208,11 @@ class TestAiCOCOSegmentationOutputStrategy(unittest.TestCase):
         )
 
         # Then - Verify the result structure and content
+        self.assertIsInstance(
+            result,
+            AiCOCOImageOutputDataModel,
+            "Result should be an AiCOCOImageOutputDataModel instance",
+        )
         # Check that all expected attributes exist
         expected_attrs = ["images", "categories", "regressions", "meta", "annotations", "objects"]
         for attr in expected_attrs:
@@ -608,6 +617,11 @@ class TestAiCOCORegressionOutputStrategy(unittest.TestCase):
         )
 
         # Then - Verify regression was attached to the image
+        self.assertIsInstance(
+            result,
+            AiCOCOImageOutputDataModel,
+            "Result should be an AiCOCOImageOutputDataModel instance",
+        )
         updated_image = result.images[0]
         self.assertIsNotNone(updated_image.regressions, "Image should have regression values")
         self.assertEqual(
@@ -716,7 +730,9 @@ class TestBaseAiCOCOTabularOutputStrategy(unittest.TestCase):
 
         # Then - Verify AiCOCO output structure
         self.assertIsInstance(
-            aicoco_output, AiCOCOTabularFormat, "Output should be an AiCOCOTabularFormat instance"
+            aicoco_output,
+            AiCOCOTabularOutputDataModel,
+            "Output should be an AiCOCOTabularOutputDataModel instance",
         )
 
         # Verify tables
@@ -816,7 +832,9 @@ class TestAiCOCOTabularClassificationOutputStrategy(unittest.TestCase):
 
         # Then - Verify conversion results
         self.assertIsInstance(
-            out_ref, AiCOCOTabularFormat, "Result should be an AiCOCOTabularFormat instance"
+            out_ref,
+            AiCOCOTabularOutputDataModel,
+            "Result should be an AiCOCOTabularOutputDataModel instance",
         )
         self.assertEqual(
             out_ref.records[0].category_ids[0],
@@ -960,7 +978,9 @@ class TestAiCOCOTabularRegressionOutputStrategy(unittest.TestCase):
 
         # Then - Verify regression was applied correctly
         self.assertIsInstance(
-            result, AiCOCOTabularFormat, "Result should be an AiCOCOTabularFormat instance"
+            result,
+            AiCOCOTabularOutputDataModel,
+            "Result should be an AiCOCOTabularOutputDataModel instance",
         )
         self.assertEqual(len(result.records), 2, "Should have created 2 records")
         for i, record in enumerate(result.records):
@@ -1057,6 +1077,11 @@ class TestAiCOCOHybridClassificationOutputStrategy(unittest.TestCase):
         )
 
         # Then - Verify hybrid output structure contains expected components
+        self.assertIsInstance(
+            result,
+            AiCOCOHybridOutputDataModel,
+            "Result should be an AiCOCOHybridOutputDataModel instance",
+        )
         self.assertTrue(hasattr(result, "images"), "Result should contain images")
         self.assertTrue(hasattr(result, "categories"), "Result should contain categories")
         self.assertTrue(hasattr(result, "tables"), "Result should contain tables")
@@ -1145,6 +1170,11 @@ class TestAiCOCOHybridRegressionOutputStrategy(unittest.TestCase):
         )
 
         # Then - Verify hybrid output structure contains expected components
+        self.assertIsInstance(
+            result,
+            AiCOCOHybridOutputDataModel,
+            "Result should be an AiCOCOHybridOutputDataModel instance",
+        )
         self.assertTrue(hasattr(result, "images"), "Result should contain images")
         self.assertTrue(hasattr(result, "regressions"), "Result should contain regressions")
         self.assertTrue(hasattr(result, "tables"), "Result should contain tables")
