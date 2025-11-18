@@ -16,7 +16,7 @@ nanoid = "^2.0.0"
 gradio = "^4.0.0"
 requests = "^2.28.0"
 opencv-python-headless = "^4.5.3.56"
-tritonclient = {version = "^2.17.0", extras = ["http"]}
+tritonclient = { version = ">=2.17.0, <=2.60.0", extras = ["http"] }
 pandas = "*"
 
 [tool.poetry.group.test]
