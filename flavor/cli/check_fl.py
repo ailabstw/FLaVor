@@ -99,6 +99,7 @@ def main():
         "-p", "--preprocess", type=str, help="data preprocess command", default=None
     )
     parser.add_argument("-y", "--yes", action="store_true", help="skip setting env", default=False)
+    parser.add_argument("--env", type=str, help="path to .env file", default=None)
     parser.add_argument(
         "--ignore-ckpt",
         action="store_true",
@@ -107,16 +108,21 @@ def main():
     )
     args, unparsed = parser.parse_known_args()
 
-    force_default = args.yes
-    set_env_var("INPUT_PATH", os.getenv("INPUT_PATH", "/data"), force_default)
-    set_env_var("OUTPUT_PATH", os.getenv("OUTPUT_PATH", "/output"), force_default)
-    set_env_var(
-        "LOCAL_MODEL_PATH", os.getenv("LOCAL_MODEL_PATH", "/weight/local.ckpt"), force_default
-    )
-    set_env_var(
-        "GLOBAL_MODEL_PATH", os.getenv("GLOBAL_MODEL_PATH", "/weight/global.ckpt"), force_default
-    )
-    set_env_var("LOG_PATH", os.getenv("LOG_PATH", "/log"), force_default)
+    if args.env:
+        from dotenv import load_dotenv
+
+        load_dotenv(args.env, override=True)
+    else:
+        force_default = args.yes
+        set_env_var("INPUT_PATH", os.getenv("INPUT_PATH", "/data"), force_default)
+        set_env_var("OUTPUT_PATH", os.getenv("OUTPUT_PATH", "/output"), force_default)
+        set_env_var(
+            "LOCAL_MODEL_PATH", os.getenv("LOCAL_MODEL_PATH", "/weight/local.ckpt"), force_default
+        )
+        set_env_var(
+            "GLOBAL_MODEL_PATH", os.getenv("GLOBAL_MODEL_PATH", "/weight/global.ckpt"), force_default
+        )
+        set_env_var("LOG_PATH", os.getenv("LOG_PATH", "/log"), force_default)
 
     os.makedirs(os.environ["LOG_PATH"], exist_ok=True)
     os.makedirs(os.environ["OUTPUT_PATH"], exist_ok=True)
