@@ -13,6 +13,17 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.datastructures import UploadFile
 
+UPLOAD_COPY_CHUNK_SIZE_BYTES = 8 * 1024 * 1024
+
+
+async def copy_upload_file(upload_file: UploadFile, destination: str) -> None:
+    async with aiofile.async_open(destination, "wb") as f:
+        while True:
+            chunk = await upload_file.read(UPLOAD_COPY_CHUNK_SIZE_BYTES)
+            if not chunk:
+                break
+            await f.write(chunk)
+
 
 class InferInvocationAPP:
     """
@@ -68,12 +79,12 @@ class InferInvocationAPP:
                     suffix = str(path).replace(
                         "/", "@@@"
                     )  # consist with `flavor/serve/inference/inference_models/base_aicoco_inference_model.py` in L249
-                    temp_file = NamedTemporaryFile(
+                    with NamedTemporaryFile(
                         delete=False, dir=tempdir.name, suffix=f"_{suffix}"
-                    )
-                    async with aiofile.async_open(temp_file.name, "wb") as f:
-                        await f.write(await file_.read())
-                    filenames.append(temp_file.name)
+                    ) as temp_file:
+                        temp_file_name = temp_file.name
+                    await copy_upload_file(file_, temp_file_name)
+                    filenames.append(temp_file_name)
                 input_dict[k] = filenames
 
         return input_dict
