@@ -1,6 +1,6 @@
 import ast
 import json
-from typing import Any, Dict, Sequence, Tuple
+from typing import Any, Dict, Literal, Sequence, Tuple
 
 import numpy as np
 from fastapi import UploadFile
@@ -13,7 +13,6 @@ from ..functional import (
     AiImage,
     AiMeta,
     AiObject,
-    AiRecord,
     AiRegression,
     AiTable,
     AiTableMeta,
@@ -140,18 +139,27 @@ class AiCOCOTabularInputDataModel(BaseModel):
     files: Sequence[UploadFile]
 
 
+class AiCOCOTabularRecordsFile(BaseModel, extra="forbid"):
+    """File reference for tabular AiCOCO records stored as JSON Lines."""
+
+    format: Literal["jsonl"]
+    path: str
+    rows: int
+    bytes: int
+
+
 class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):
     """
     Base class for defining tabular output data model with AiCOCO format.
 
-    This class represents the structured output for tabular data processing,
-    including transformed tables, categories, regressions, and metadata.
+    Tabular inference can produce one record per input row, so records are
+    represented as an external JSONL file instead of an in-memory response list.
 
     Attributes:
         tables (Sequence[AiTable]): Processed or transformed tables.
         categories (Sequence[AiCategory]): Categorization results from the data processing.
         regressions (Sequence[AiRegression]): Regression analysis results.
-        records (Sequence[AiRecord]): Individual records derived from the processing.
+        records_file (AiCOCOTabularRecordsFile): JSONL file containing per-row records.
         meta (AiTableMeta): Metadata associated with the tabular output.
 
     """
@@ -159,7 +167,7 @@ class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):
     tables: Sequence[AiTable]
     categories: Sequence[AiCategory]
     regressions: Sequence[AiRegression]
-    records: Sequence[AiRecord]
+    records_file: AiCOCOTabularRecordsFile
     meta: AiTableMeta
 
 

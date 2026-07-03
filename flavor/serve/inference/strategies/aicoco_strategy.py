@@ -1,6 +1,10 @@
+import json
+import os
 import random
 import string
+import tempfile
 from abc import abstractmethod
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, Union
 
 import cv2  # type: ignore
@@ -21,7 +25,6 @@ from ..data_models.functional import (
     AiImage,
     AiMeta,
     AiObject,
-    AiRecord,
     AiRegression,
     AiRegressionItem,
     AiTable,
@@ -771,42 +774,53 @@ class AiCOCORegressionOutputStrategy(BaseAiCOCOOutputStrategy):
 class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
     @abstractmethod
     def model_to_aicoco(
-        self, aicoco_ref: AiCOCORef, model_out: np.ndarray, **kwargs
+        self, aicoco_ref: Dict[str, Any], model_out: np.ndarray, **kwargs
     ) -> AiCOCOTabularOutputDataModel:
         """
         Abstract method to convert model output to AiCOCO compatible format.
         """
         raise NotImplementedError
 
-    def generate_records(
+    def iter_record_windows(
         self, dataframes: Sequence[pd.DataFrame], tables: Sequence[AiTable], meta: Dict[str, Any]
-    ) -> List[AiRecord]:
-        """
-        Generates records in AiCOCO compatible format from each tables.
-
-        dataframes (Sequence[pd.DataFrame]): Sequence of dataframes correspond each tables.
-        tables (Sequence[AiTable]): List of AiTable objects.
-        meta (Dict[str, Any]): Additional metadata.
-
-        Notes:
-            - each table contains an unique table id.
-            - each table may contains multiple records.
-            - each record contains an unique record id.
-        """
+    ):
+        """Yield table/window metadata for tabular records without materialising records."""
         window_size = meta["window_size"]
-        res = []
         for df, table in zip(dataframes, tables):
             num_records = len(df) // window_size
             for i in range(num_records):
-                rec = AiRecord(
-                    id=generate(),
-                    table_id=table.id,
-                    row_indexes=list(range(i * window_size, (i + 1) * window_size)),
-                    category_ids=None,
-                    regressions=None,
-                )
-                res.append(rec)
-        return res
+                yield table, list(range(i * window_size, (i + 1) * window_size))
+
+    def write_records_file(
+        self, records, records_output_dir: Optional[str] = None
+    ) -> Dict[str, Any]:
+        output_dir = Path(
+            records_output_dir
+            or os.environ.get("AICOCO_RECORDS_OUTPUT_DIR")
+            or tempfile.gettempdir()
+        )
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_path = output_dir / f"records_{generate()}.jsonl"
+        tmp_path = output_path.with_suffix(output_path.suffix + ".tmp")
+        rows = 0
+
+        try:
+            with tmp_path.open("w", encoding="utf-8") as f:
+                for record in records:
+                    f.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
+                    f.write("\n")
+                    rows += 1
+            tmp_path.replace(output_path)
+        except Exception:
+            tmp_path.unlink(missing_ok=True)
+            raise
+
+        return {
+            "format": "jsonl",
+            "path": str(output_path),
+            "rows": rows,
+            "bytes": output_path.stat().st_size,
+        }
 
     def prepare_aicoco(
         self,
@@ -815,37 +829,18 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
         dataframes: Sequence[pd.DataFrame],
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
-    ) -> AiCOCOTabularOutputDataModel:
-        """
-        Prepare prerequisite for AiCOCO.
-
-        Args:
-            tables (Sequence[Dict]): List of AiCOCO table compatible dict.
-            meta (Dict[str, Any]): AiCOCO tabular meta dict.
-            dataframes (Sequence[pd.DataFrame]): Sequence of dataframes correspond each tables.
-            categories (Optional[Sequence[Dict[str, Any]]]): List of unprocessed categories. Default: None.
-            regressions (Optional[Sequence[Dict[str, Any]]]): List of unprocessed regressions. Default: None.
-
-        Returns:
-            AiCOCOTabularOutputDataModel: Result in AiCOCOTabularOutputDataModel.
-        """
+    ) -> Dict[str, Any]:
+        """Prepare tabular AiCOCO metadata without creating in-memory records."""
         aicoco_tables = [AiTable(**tb) for tb in tables]
         categories = categories if categories is not None else []
         regressions = regressions if regressions is not None else []
 
-        aicoco_records = self.generate_records(dataframes, aicoco_tables, meta)
-        aicoco_categories = self.generate_categories(categories)
-        aicoco_regressions = self.generate_regressions(regressions)
-
-        aicoco_ref = {
+        return {
             "tables": aicoco_tables,
-            "categories": aicoco_categories,
-            "regressions": aicoco_regressions,
-            "records": aicoco_records,
+            "categories": self.generate_categories(categories),
+            "regressions": self.generate_regressions(regressions),
             "meta": meta,
         }
-
-        return AiCOCOTabularOutputDataModel.model_validate(aicoco_ref)
 
 
 class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy):
@@ -875,7 +870,12 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
         aicoco_ref = self.prepare_aicoco(
             tables=tables, meta=meta, dataframes=dataframes, categories=categories
         )
-        aicoco_out = self.model_to_aicoco(aicoco_ref, model_out)
+        aicoco_out = self.model_to_aicoco(
+            aicoco_ref,
+            model_out,
+            dataframes=dataframes,
+            records_output_dir=kwargs.get("records_output_dir"),
+        )
         return aicoco_out
 
     def validate_model_output(self, model_out: np.ndarray, categories: Sequence[Dict[str, Any]]):
@@ -898,36 +898,45 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
             raise ValueError("`model_out` contains elements other than 0 and 1")
 
     def model_to_aicoco(
-        self, aicoco_ref: AiCOCOTabularOutputDataModel, model_out: np.ndarray
+        self,
+        aicoco_ref: Dict[str, Any],
+        model_out: np.ndarray,
+        dataframes: Sequence[pd.DataFrame],
+        records_output_dir: Optional[str] = None,
     ) -> AiCOCOTabularOutputDataModel:
-        """
-        Args:
-            aicoco_ref (AiCOCOTabularOutputDataModel): AiCOCOTabularOutputDataModel reference.
+        """Write classification records as JSONL and return a file reference."""
+        categories = aicoco_ref["categories"]
 
-            model_out (np.ndarray): Inference model output.
-                - binary classification: [[0], [1], [1], ...]
-                - multiclass classification: [[0, 0, 1], [1, 0, 0], ...]
-                - multilabel classification: [[1, 0, 1], [1, 1, 1], ...]
+        def records():
+            output_index = 0
+            for table, row_indexes in self.iter_record_windows(
+                dataframes, aicoco_ref["tables"], aicoco_ref["meta"]
+            ):
+                if output_index >= len(model_out):
+                    raise ValueError(
+                        "The number of records is not matched with the inference model output."
+                    )
+                cls_pred = np.atleast_1d(model_out[output_index])
+                output_index += 1
+                yield {
+                    "id": generate(),
+                    "table_id": table.id,
+                    "row_indexes": row_indexes,
+                    "category_ids": [
+                        category.id for pred, category in zip(cls_pred, categories) if pred
+                    ],
+                    "regressions": None,
+                }
 
-        Returns:
-            AiCOCOTabularOutputDataModel: Result in AiCOCOTabularOutputDataModel.
-        """
-        categories = aicoco_ref.categories
-        records = aicoco_ref.records
+            if output_index != len(model_out):
+                raise ValueError(
+                    "The number of records is not matched with the inference model output."
+                )
 
-        if len(model_out) != len(records):
-            raise ValueError(
-                "The number of records is not matched with the inference model output."
-            )
-
-        for record, cls_pred in zip(records, model_out):
-            if record.category_ids is None:
-                record.category_ids = []
-            record.category_ids.extend(
-                category_id.id for pred, category_id in zip(cls_pred, categories) if pred
-            )
-
-        return AiCOCOTabularOutputDataModel.model_validate(aicoco_ref)
+        records_file = self.write_records_file(records(), records_output_dir=records_output_dir)
+        return AiCOCOTabularOutputDataModel.model_validate(
+            {**aicoco_ref, "records_file": records_file}
+        )
 
 
 class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
@@ -957,7 +966,12 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
         aicoco_ref = self.prepare_aicoco(
             tables=tables, meta=meta, dataframes=dataframes, regressions=regressions
         )
-        aicoco_out = self.model_to_aicoco(aicoco_ref, model_out)
+        aicoco_out = self.model_to_aicoco(
+            aicoco_ref,
+            model_out,
+            dataframes=dataframes,
+            records_output_dir=kwargs.get("records_output_dir"),
+        )
         return aicoco_out
 
     def validate_model_output(self, model_out: np.ndarray):
@@ -974,34 +988,46 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
             raise ValueError("`model_out` contains infinite or NaN values.")
 
     def model_to_aicoco(
-        self, aicoco_ref: AiCOCOTabularOutputDataModel, model_out: np.ndarray
+        self,
+        aicoco_ref: Dict[str, Any],
+        model_out: np.ndarray,
+        dataframes: Sequence[pd.DataFrame],
+        records_output_dir: Optional[str] = None,
     ) -> AiCOCOTabularOutputDataModel:
-        """
-        Args:
-            aicoco_ref (AiCOCOTabularOutputDataModel): AiCOCOTabularOutputDataModel reference.
+        """Write regression records as JSONL and return a file reference."""
+        regressions = aicoco_ref["regressions"]
 
-            model_out (np.ndarray): Inference model output.
-                - single regression: [[1], [2], [3], ...]
-                - multiple regression: [[1, 2, 3], [4, 5, 6], ...]
+        def records():
+            output_index = 0
+            for table, row_indexes in self.iter_record_windows(
+                dataframes, aicoco_ref["tables"], aicoco_ref["meta"]
+            ):
+                if output_index >= len(model_out):
+                    raise ValueError(
+                        "The number of records is not matched with the inference model output."
+                    )
+                pred = np.atleast_1d(model_out[output_index])
+                output_index += 1
+                yield {
+                    "id": generate(),
+                    "table_id": table.id,
+                    "row_indexes": row_indexes,
+                    "category_ids": None,
+                    "regressions": [
+                        {"regression_id": reg.id, "value": float(value)}
+                        for reg, value in zip(regressions, pred)
+                    ],
+                }
 
-        Returns:
-            AiCOCOTabularOutputDataModel: Result in AiCOCOTabularOutputDataModel.
-        """
-        regressions = aicoco_ref.regressions
-        records = aicoco_ref.records
+            if output_index != len(model_out):
+                raise ValueError(
+                    "The number of records is not matched with the inference model output."
+                )
 
-        if len(model_out) != len(records):
-            raise ValueError(
-                "The number of records is not matched with the inference model output."
-            )
-
-        for record, pred in zip(records, model_out):
-            record.regressions = [
-                AiRegressionItem(regression_id=reg.id, value=value)
-                for reg, value in zip(regressions, pred)
-            ]
-
-        return AiCOCOTabularOutputDataModel.model_validate(aicoco_ref)
+        records_file = self.write_records_file(records(), records_output_dir=records_output_dir)
+        return AiCOCOTabularOutputDataModel.model_validate(
+            {**aicoco_ref, "records_file": records_file}
+        )
 
 
 class BaseAiCOCOHybridOutputStrategy(BaseAiCOCOOutputStrategy):

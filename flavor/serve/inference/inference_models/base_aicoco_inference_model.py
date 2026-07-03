@@ -412,7 +412,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         self,
         model_out: Any,
         tables: Sequence[Dict[str, Any]],
-        records: Sequence[Dict[str, Any]],
+        dataframes: Sequence[pd.DataFrame],
         meta: Dict[str, Any],
         categories: Optional[Sequence[Dict[str, Any]]] = None,
         regressions: Optional[Sequence[Dict[str, Any]]] = None,
@@ -425,7 +425,7 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         Args:
             model_out (Any): Inference output.
             tables (Sequence[Dict[str, Any]]): List of tables.
-            records (Sequence[AiRecord]): List of inference records.
+            dataframes (Sequence[pd.DataFrame]): List of input dataframes.
             meta (Dict[str, Any]): Additional metadata.
             categories (Optional[Sequence[Dict[str, Any]]]): List of inference categories. Default: None.
             regressions (Optional[Sequence[Dict[str, Any]]]): List of inference regressions. Default: None.
