@@ -191,7 +191,7 @@ The general pattern of the expected output should be a dictionary containing the
 
 * `records`:
 
-   a JSONL artifact reference for all predicted records. The response contains `format`, `href`, `rows`, `bytes`, and `expires_at`. Clients should `GET records.href` to download or stream per-record JSONL lines. Each line contains:
+   a JSONL artifact reference for all predicted records. The response contains `format`, `href`, `rows`, and `bytes`. Clients should `GET records.href` to download or stream per-record JSONL lines. FLaVor does not delete generated records artifacts after a successful invocation; operators or integrating services are responsible for cleaning the configured records output directory according to their retention policy. Each line contains:
    * `row_indexes`: the indexes of the records in the raw dataframe.
    * `category_ids`: the predicted categories corresponding to the records.
    * `regressions`: the predicted regression values corresponding to the records.

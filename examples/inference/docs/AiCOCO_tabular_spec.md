@@ -78,8 +78,7 @@ Response code: `400`, `500`
     "format": "jsonl",
     "href": "/invocations/artifacts/records_<id>.jsonl",
     "rows": 1000,
-    "bytes": 123456,
-    "expires_at": null
+    "bytes": 123456
   },
   "meta": {
     // Required fields
@@ -94,7 +93,7 @@ Response code: `400`, `500`
 
 ### Records Artifact
 
-The `records.href` value is a downloadable JSONL artifact. Clients should issue a `GET` request to that href to stream per-record results. Each JSONL line has the same record structure previously embedded in the response:
+The `records.href` value is a downloadable JSONL artifact. Clients should issue a `GET` request to that href to stream per-record results. Each JSONL line has the same record structure previously embedded in the response. FLaVor does not delete generated records artifacts after a successful invocation; operators or integrating services are responsible for cleaning the configured records output directory according to their retention policy.
 
 ```jsonl
 {"id":"nanoid(21)","table_id":"nanoid(21)","row_indexes":[0],"category_ids":["nanoid(21)"],"regressions":null}

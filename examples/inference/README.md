@@ -132,6 +132,10 @@ app.run(port=int(os.getenv("PORT", 9111)))
 
 Once the FLaVor Inference Service is running, send POST requests to the `/invocations` endpoint with image data and associated JSON formatted in AiCOCO format to perform inference. See [`send_request.py`](./send_request.py) for python example.
 
+### Tabular Records Artifacts
+
+Tabular inference responses may include `records.href`, a downloadable JSONL artifact for per-row results. FLaVor serves this artifact through `GET records.href`, but does not delete generated records artifacts after a successful invocation. Operators or integrating services are responsible for cleaning the configured records output directory according to their retention policy.
+
 ### More Examples for Various Tasks
 
 We try to integrate FLaVor with other existing projects or libraries. Please visit following instruction pages:

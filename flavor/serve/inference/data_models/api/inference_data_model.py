@@ -1,7 +1,6 @@
 import ast
 import json
-from datetime import datetime
-from typing import Any, Dict, Literal, Optional, Sequence, Tuple
+from typing import Any, Dict, Literal, Sequence, Tuple
 
 import numpy as np
 from fastapi import UploadFile
@@ -147,7 +146,6 @@ class AiCOCOTabularRecordsArtifact(BaseModel, extra="forbid"):
     href: str
     rows: int
     bytes: int
-    expires_at: Optional[datetime] = None
 
 
 class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):

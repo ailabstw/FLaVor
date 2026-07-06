@@ -70,5 +70,4 @@ class TabularRecordsArtifactStore:
             "href": self.href_for(artifact_name),
             "rows": rows,
             "bytes": output_path.stat().st_size,
-            "expires_at": None,
         }

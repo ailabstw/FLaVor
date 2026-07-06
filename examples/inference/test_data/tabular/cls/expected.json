@@ -42,8 +42,7 @@
     "format": "jsonl",
     "href": "/invocations/artifacts/records_Y0FqaQEWxXrZUAIRmJZqZ.jsonl",
     "rows": 3,
-    "bytes": 396,
-    "expires_at": null
+    "bytes": 396
   },
   "meta": {
     "window_size": 1

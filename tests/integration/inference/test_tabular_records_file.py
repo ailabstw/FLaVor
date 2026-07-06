@@ -28,7 +28,6 @@ def test_tabular_output_model_uses_records_artifact_href():
                 "href": "/invocations/artifacts/records_abc.jsonl",
                 "rows": 1,
                 "bytes": 3,
-                "expires_at": None,
             },
             "meta": {"window_size": 1},
         }
@@ -38,6 +37,24 @@ def test_tabular_output_model_uses_records_artifact_href():
     assert result.records.href == "/invocations/artifacts/records_abc.jsonl"
     assert result.records.rows == 1
     assert result.records.bytes == 3
+    assert "expires_at" not in result.records.model_dump()
+
+    with pytest.raises(ValidationError):
+        AiCOCOTabularOutputDataModel.model_validate(
+            {
+                "tables": [{"id": "table_1", "file_name": "infer.csv"}],
+                "categories": [{"id": "0", "name": "Normal", "supercategory_id": None}],
+                "regressions": [],
+                "records": {
+                    "format": "jsonl",
+                    "href": "/invocations/artifacts/records_abc.jsonl",
+                    "rows": 1,
+                    "bytes": 3,
+                    "expires_at": None,
+                },
+                "meta": {"window_size": 1},
+            }
+        )
 
     with pytest.raises(ValidationError):
         AiCOCOTabularOutputDataModel.model_validate(
@@ -74,6 +91,7 @@ def test_tabular_classification_strategy_writes_records_jsonl(tmp_path):
     assert result.records.href == f"/invocations/artifacts/{artifact_name}"
     assert result.records.rows == 3
     assert result.records.bytes == records_path.stat().st_size
+    assert "expires_at" not in result.records.model_dump()
 
     records = [
         json.loads(line)
@@ -105,7 +123,6 @@ async def test_invocations_serves_tabular_records_artifact_href(tmp_path):
                 "href": f"/invocations/artifacts/{artifact_name}",
                 "rows": 1,
                 "bytes": records_path.stat().st_size,
-                "expires_at": None,
             },
             "meta": {"window_size": 1},
         }
