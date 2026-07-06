@@ -1,10 +1,6 @@
-import json
-import os
 import random
 import string
-import tempfile
 from abc import abstractmethod
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, TypedDict, Union
 
 import cv2  # type: ignore
@@ -30,6 +26,7 @@ from ..data_models.functional import (
     AiTable,
     AiTableMeta,
 )
+from ..records_artifacts import TabularRecordsArtifactStore
 from .base_strategy import BaseStrategy
 
 # --------------------------------------------------------------------------------
@@ -791,36 +788,17 @@ class BaseAiCOCOTabularOutputStrategy(BaseAiCOCOOutputStrategy):
             for i in range(num_records):
                 yield table, list(range(i * window_size, (i + 1) * window_size))
 
-    def write_records_file(
-        self, records, records_output_dir: Optional[str] = None
+    def write_records_artifact(
+        self,
+        records,
+        records_output_dir: Optional[str] = None,
+        records_href_prefix: Optional[str] = None,
     ) -> Dict[str, Any]:
-        output_dir = Path(
-            records_output_dir
-            or os.environ.get("AICOCO_RECORDS_OUTPUT_DIR")
-            or tempfile.gettempdir()
+        artifact_name = f"records_{generate()}.jsonl"
+        store = TabularRecordsArtifactStore(
+            output_dir=records_output_dir, href_prefix=records_href_prefix
         )
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"records_{generate()}.jsonl"
-        tmp_path = output_path.with_suffix(output_path.suffix + ".tmp")
-        rows = 0
-
-        try:
-            with tmp_path.open("w", encoding="utf-8") as f:
-                for record in records:
-                    f.write(json.dumps(record, ensure_ascii=False, separators=(",", ":")))
-                    f.write("\n")
-                    rows += 1
-            tmp_path.replace(output_path)
-        except Exception:
-            tmp_path.unlink(missing_ok=True)
-            raise
-
-        return {
-            "format": "jsonl",
-            "path": str(output_path),
-            "rows": rows,
-            "bytes": output_path.stat().st_size,
-        }
+        return store.write_jsonl(records, artifact_name=artifact_name)
 
     def prepare_aicoco(
         self,
@@ -875,6 +853,7 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
             model_out,
             dataframes=dataframes,
             records_output_dir=kwargs.get("records_output_dir"),
+            records_href_prefix=kwargs.get("records_href_prefix"),
         )
         return aicoco_out
 
@@ -903,8 +882,9 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
         model_out: np.ndarray,
         dataframes: Sequence[pd.DataFrame],
         records_output_dir: Optional[str] = None,
+        records_href_prefix: Optional[str] = None,
     ) -> AiCOCOTabularOutputDataModel:
-        """Write classification records as JSONL and return a file reference."""
+        """Write classification records as JSONL and return an artifact reference."""
         categories = aicoco_ref["categories"]
 
         def records():
@@ -933,9 +913,13 @@ class AiCOCOTabularClassificationOutputStrategy(BaseAiCOCOTabularOutputStrategy)
                     "The number of records is not matched with the inference model output."
                 )
 
-        records_file = self.write_records_file(records(), records_output_dir=records_output_dir)
+        records_artifact = self.write_records_artifact(
+            records(),
+            records_output_dir=records_output_dir,
+            records_href_prefix=records_href_prefix,
+        )
         return AiCOCOTabularOutputDataModel.model_validate(
-            {**aicoco_ref, "records_file": records_file}
+            {**aicoco_ref, "records": records_artifact}
         )
 
 
@@ -971,6 +955,7 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
             model_out,
             dataframes=dataframes,
             records_output_dir=kwargs.get("records_output_dir"),
+            records_href_prefix=kwargs.get("records_href_prefix"),
         )
         return aicoco_out
 
@@ -993,8 +978,9 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
         model_out: np.ndarray,
         dataframes: Sequence[pd.DataFrame],
         records_output_dir: Optional[str] = None,
+        records_href_prefix: Optional[str] = None,
     ) -> AiCOCOTabularOutputDataModel:
-        """Write regression records as JSONL and return a file reference."""
+        """Write regression records as JSONL and return an artifact reference."""
         regressions = aicoco_ref["regressions"]
 
         def records():
@@ -1024,9 +1010,13 @@ class AiCOCOTabularRegressionOutputStrategy(BaseAiCOCOTabularOutputStrategy):
                     "The number of records is not matched with the inference model output."
                 )
 
-        records_file = self.write_records_file(records(), records_output_dir=records_output_dir)
+        records_artifact = self.write_records_artifact(
+            records(),
+            records_output_dir=records_output_dir,
+            records_href_prefix=records_href_prefix,
+        )
         return AiCOCOTabularOutputDataModel.model_validate(
-            {**aicoco_ref, "records_file": records_file}
+            {**aicoco_ref, "records": records_artifact}
         )
 
 

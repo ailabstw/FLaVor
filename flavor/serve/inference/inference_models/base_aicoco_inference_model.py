@@ -443,6 +443,9 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
         assert len(tables) == len(files), "`files` and `tables` should have same length."
 
+        records_output_dir = kwargs.pop("records_output_dir", None)
+        records_href_prefix = kwargs.pop("records_href_prefix", None)
+
         tables, files = self.sort_tables_files(tables, files)
         dataframes = self.data_reader(files, **kwargs)
         self.check_inputs(dataframes, tables, meta)
@@ -458,6 +461,8 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
             dataframes=dataframes,
             categories=self.categories,
             regressions=self.regressions,
+            records_output_dir=records_output_dir,
+            records_href_prefix=records_href_prefix,
         )
 
         return result

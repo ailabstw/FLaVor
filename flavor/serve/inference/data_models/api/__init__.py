@@ -5,7 +5,7 @@ from .inference_data_model import (
     AiCOCOImageOutputDataModel,
     AiCOCOTabularInputDataModel,
     AiCOCOTabularOutputDataModel,
-    AiCOCOTabularRecordsFile,
+    AiCOCOTabularRecordsArtifact,
     NpArray,
 )
 
@@ -15,7 +15,7 @@ __all__ = [
     "AiCOCOImageOutputDataModel",
     "AiCOCOTabularInputDataModel",
     "AiCOCOTabularOutputDataModel",
-    "AiCOCOTabularRecordsFile",
+    "AiCOCOTabularRecordsArtifact",
     "AiCOCOHybridInputDataModel",
     "AiCOCOHybridOutputDataModel",
     "AiCOCOImageOutputDataModel",
