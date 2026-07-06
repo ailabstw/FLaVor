@@ -86,6 +86,7 @@ class ClassificationInferenceModel(BaseAiCOCOTabularInferenceModel):
             dataframes=dataframes,
             categories=categories,
             meta=meta,
+            **kwargs,
         )
         return output
 

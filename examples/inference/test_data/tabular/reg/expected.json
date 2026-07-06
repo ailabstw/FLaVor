@@ -8,55 +8,18 @@
   "categories": [],
   "regressions": [
     {
-      "id": "pIxMOea1qo-E1EOjO3HVQ",
+      "id": "2WAqGzYtEL6GsWNq6_Z5t",
       "name": "reg_value",
       "superregression_id": null
     }
   ],
-  "records": [
-    {
-      "id": "2WAqGzYtEL6GsWNq6_Z5t",
-      "table_id": "table_001",
-      "row_indexes": [
-        0
-      ],
-      "category_ids": null,
-      "regressions": [
-        {
-          "regression_id": "pIxMOea1qo-E1EOjO3HVQ",
-          "value": 2.6637110710144043
-        }
-      ]
-    },
-    {
-      "id": "i2WqFCPYgb1BWaCUo85bb",
-      "table_id": "table_001",
-      "row_indexes": [
-        1
-      ],
-      "category_ids": null,
-      "regressions": [
-        {
-          "regression_id": "pIxMOea1qo-E1EOjO3HVQ",
-          "value": 91.44110107421875
-        }
-      ]
-    },
-    {
-      "id": "98df1VQtMMLkBzU-8ICrc",
-      "table_id": "table_001",
-      "row_indexes": [
-        2
-      ],
-      "category_ids": null,
-      "regressions": [
-        {
-          "regression_id": "pIxMOea1qo-E1EOjO3HVQ",
-          "value": 6.6937079429626465
-        }
-      ]
-    }
-  ],
+  "records": {
+    "format": "jsonl",
+    "href": "/invocations/artifacts/records_i2WqFCPYgb1BWaCUo85bb.jsonl",
+    "rows": 3,
+    "bytes": 530,
+    "expires_at": null
+  },
   "meta": {
     "window_size": 1
   }
