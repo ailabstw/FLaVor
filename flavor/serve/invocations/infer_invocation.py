@@ -58,22 +58,35 @@ class InferInvocationAPP:
         self.infer_function = infer_function
         self.input_data_model = input_data_model
         self.output_data_model = output_data_model
-        self.records_artifact_store = TabularRecordsArtifactStore(
-            output_dir=records_output_dir, href_prefix=records_href_prefix
-        )
+        self.records_artifact_store: Optional[TabularRecordsArtifactStore] = None
+        if self.supports_records_artifacts():
+            self.records_artifact_store = TabularRecordsArtifactStore(
+                output_dir=records_output_dir, href_prefix=records_href_prefix
+            )
 
         self.app.add_api_route(
             "/invocations",
             self.invocations,
             methods=["post"],
         )
-        self.app.add_api_route(
-            f"{self.records_artifact_store.href_prefix}/{{artifact_name}}",
-            self.records_artifact,
-            methods=["get"],
-        )
+        if self.records_artifact_store is not None:
+            self.app.add_api_route(
+                f"{self.records_artifact_store.href_prefix}/{{artifact_name}}",
+                self.records_artifact,
+                methods=["get"],
+            )
+
+    def supports_records_artifacts(self) -> bool:
+        output_fields = getattr(self.output_data_model, "model_fields", {})
+        return "records" in output_fields
 
     async def records_artifact(self, artifact_name: str) -> FileResponse:
+        if self.records_artifact_store is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Records artifact not found.",
+            )
+
         try:
             artifact_path = self.records_artifact_store.resolve_path(artifact_name)
         except ValueError as err:
@@ -95,8 +108,7 @@ class InferInvocationAPP:
         )
 
     def add_records_artifact_context(self, input_dict: Dict) -> Dict:
-        output_fields = getattr(self.output_data_model, "model_fields", {})
-        if "records" not in output_fields:
+        if self.records_artifact_store is None:
             return input_dict
 
         try:

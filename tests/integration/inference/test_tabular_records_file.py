@@ -8,9 +8,33 @@ from pydantic import BaseModel, ValidationError
 
 from flavor.serve.invocations.infer_invocation import InferInvocationAPP
 from flavor.serve.inference.data_models.api import AiCOCOTabularOutputDataModel
+from flavor.serve.inference.inference_models import BaseAiCOCOTabularInferenceModel
 from flavor.serve.inference.strategies.aicoco_strategy import (
     AiCOCOTabularClassificationOutputStrategy,
 )
+
+
+class LegacyTabularInferenceModel(BaseAiCOCOTabularInferenceModel):
+    def define_inference_network(self):
+        return lambda dataframes: np.array([[1, 0]])
+
+    def set_categories(self):
+        return [{"name": "Normal"}, {"name": "Fraud"}]
+
+    def set_regressions(self):
+        return None
+
+    def data_reader(self, files):
+        return [pd.DataFrame({"amount": [10]})]
+
+    def output_formatter(self, model_out, tables, dataframes, meta, categories=None):
+        return self.formatter(
+            model_out=model_out,
+            tables=tables,
+            dataframes=dataframes,
+            categories=categories,
+            meta=meta,
+        )
 
 
 class EmptyInputDataModel(BaseModel):
@@ -105,7 +129,7 @@ def test_tabular_classification_strategy_writes_records_jsonl(tmp_path):
 
 @pytest.mark.asyncio
 async def test_invocations_serves_tabular_records_artifact_href(tmp_path):
-    artifact_name = "records_test.jsonl"
+    artifact_name = "records_0123456789ABCDEFGHIJK.jsonl"
     records_path = tmp_path / artifact_name
     content = (
         '{"id":"record_1","table_id":"table_1","row_indexes":[0],'
@@ -146,3 +170,106 @@ async def test_invocations_serves_tabular_records_artifact_href(tmp_path):
     assert records_response.status_code == 200
     assert records_response.headers["content-type"].startswith("application/x-ndjson")
     assert records_response.text == content
+
+
+@pytest.mark.asyncio
+async def test_invocations_writes_and_serves_generated_records_artifact(tmp_path):
+    strategy = AiCOCOTabularClassificationOutputStrategy()
+
+    def infer_function(**kwargs):
+        return strategy(
+            model_out=np.array([[1, 0], [0, 1]]),
+            tables=[{"id": "table_1", "file_name": "infer.csv"}],
+            dataframes=[pd.DataFrame({"amount": [10, 20]})],
+            categories=[{"id": "0", "name": "Normal"}, {"id": "1", "name": "Fraud"}],
+            meta={"window_size": 1},
+            **kwargs,
+        )
+
+    app = InferInvocationAPP(
+        infer_function,
+        EmptyInputDataModel,
+        AiCOCOTabularOutputDataModel,
+        records_output_dir=tmp_path,
+        records_href_prefix="/custom-artifacts",
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.app), base_url="http://test"
+    ) as client:
+        response = await client.post("/invocations", data={})
+        assert response.status_code == 200
+        href = response.json()["records"]["href"]
+        assert href.startswith("/custom-artifacts/records_")
+
+        artifact_name = href.rsplit("/", 1)[-1]
+        assert (tmp_path / artifact_name).is_file()
+
+        records_response = await client.get(href)
+
+    assert records_response.status_code == 200
+    records = [json.loads(line) for line in records_response.text.splitlines()]
+    assert [record["row_indexes"] for record in records] == [[0], [1]]
+
+
+@pytest.mark.asyncio
+async def test_non_tabular_invocations_do_not_expose_records_artifacts(tmp_path):
+    artifact_name = "records_0123456789ABCDEFGHIJK.jsonl"
+    (tmp_path / artifact_name).write_text("{}\n", encoding="utf-8")
+    app = InferInvocationAPP(
+        lambda: {},
+        EmptyInputDataModel,
+        BaseModel,
+        records_output_dir=tmp_path,
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.app), base_url="http://test"
+    ) as client:
+        response = await client.get(f"/invocations/artifacts/{artifact_name}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_invocations_rejects_non_records_artifact_names(tmp_path):
+    artifact_name = "unrelated.jsonl"
+    (tmp_path / artifact_name).write_text("{}\n", encoding="utf-8")
+    app = InferInvocationAPP(
+        lambda: {
+            "tables": [{"id": "table_1", "file_name": "infer.csv"}],
+            "categories": [],
+            "regressions": [],
+            "records": {
+                "format": "jsonl",
+                "href": f"/invocations/artifacts/{artifact_name}",
+                "rows": 1,
+                "bytes": 3,
+            },
+            "meta": {"window_size": 1},
+        },
+        EmptyInputDataModel,
+        AiCOCOTabularOutputDataModel,
+        records_output_dir=tmp_path,
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app.app), base_url="http://test"
+    ) as client:
+        response = await client.get(f"/invocations/artifacts/{artifact_name}")
+
+    assert response.status_code == 404
+
+
+def test_tabular_inference_model_supports_legacy_output_formatter_signature(tmp_path):
+    model = LegacyTabularInferenceModel()
+    model.formatter = AiCOCOTabularClassificationOutputStrategy()
+
+    result = model(
+        tables=[{"id": "table_1", "file_name": "infer.csv"}],
+        meta={"window_size": 1},
+        files=[str(tmp_path / "infer.csv")],
+        records_output_dir=tmp_path,
+    )
+
+    assert result.records.rows == 1

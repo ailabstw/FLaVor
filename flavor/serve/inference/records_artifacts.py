@@ -1,11 +1,13 @@
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 from typing import Any, Dict, Iterable, Optional
 
 DEFAULT_RECORDS_ARTIFACT_HREF_PREFIX = "/invocations/artifacts"
 RECORDS_ARTIFACT_MEDIA_TYPE = "application/x-ndjson"
+RECORDS_ARTIFACT_NAME_RE = re.compile(r"^records_[A-Za-z0-9_-]{21}\.jsonl$")
 
 
 def _normalize_href_prefix(href_prefix: str) -> str:
@@ -16,7 +18,7 @@ def _normalize_href_prefix(href_prefix: str) -> str:
 def validate_artifact_name(artifact_name: str) -> str:
     if not artifact_name or Path(artifact_name).name != artifact_name:
         raise ValueError("Invalid records artifact name.")
-    if artifact_name in {".", ".."} or not artifact_name.endswith(".jsonl"):
+    if not RECORDS_ARTIFACT_NAME_RE.fullmatch(artifact_name):
         raise ValueError("Invalid records artifact name.")
     return artifact_name
 
