@@ -83,6 +83,7 @@ class RegressionInferenceModel(BaseAiCOCOTabularInferenceModel):
             dataframes=dataframes,
             regressions=regressions,
             meta=meta,
+            **kwargs,
         )
         return output
 

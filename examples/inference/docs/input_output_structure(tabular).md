@@ -52,7 +52,8 @@ def output_formatter(
                 dataframes=dataframes,
                 categories=categories,
                 regressions=regressions,
-                meta=meta
+                meta=meta,
+                **kwargs
             )
 
     return output
@@ -190,7 +191,7 @@ The general pattern of the expected output should be a dictionary containing the
 
 * `records`:
 
-   a list of all predicted records that contains the following information
-   * `row_indexes`: the indexes of the records in the raw datafram.
+   a JSONL artifact reference for all predicted records. The response contains `format`, `href`, `rows`, and `bytes`. Clients should `GET records.href` to download or stream per-record JSONL lines. FLaVor does not delete generated records artifacts after a successful invocation; operators or integrating services are responsible for cleaning the configured records output directory according to their retention policy. Each line contains:
+   * `row_indexes`: the indexes of the records in the raw dataframe.
    * `category_ids`: the predicted categories corresponding to the records.
    * `regressions`: the predicted regression values corresponding to the records.

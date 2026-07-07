@@ -139,11 +139,11 @@ class AiCOCOTabularInputDataModel(BaseModel):
     files: Sequence[UploadFile]
 
 
-class AiCOCOTabularRecordsFile(BaseModel, extra="forbid"):
-    """File reference for tabular AiCOCO records stored as JSON Lines."""
+class AiCOCOTabularRecordsArtifact(BaseModel, extra="forbid"):
+    """Downloadable artifact reference for tabular AiCOCO records stored as JSON Lines."""
 
     format: Literal["jsonl"]
-    path: str
+    href: str
     rows: int
     bytes: int
 
@@ -153,13 +153,13 @@ class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):
     Base class for defining tabular output data model with AiCOCO format.
 
     Tabular inference can produce one record per input row, so records are
-    represented as an external JSONL file instead of an in-memory response list.
+    represented as a downloadable JSONL artifact instead of an in-memory response list.
 
     Attributes:
         tables (Sequence[AiTable]): Processed or transformed tables.
         categories (Sequence[AiCategory]): Categorization results from the data processing.
         regressions (Sequence[AiRegression]): Regression analysis results.
-        records_file (AiCOCOTabularRecordsFile): JSONL file containing per-row records.
+        records (AiCOCOTabularRecordsArtifact): JSONL artifact containing per-row records.
         meta (AiTableMeta): Metadata associated with the tabular output.
 
     """
@@ -167,7 +167,7 @@ class AiCOCOTabularOutputDataModel(BaseModel, extra="forbid"):
     tables: Sequence[AiTable]
     categories: Sequence[AiCategory]
     regressions: Sequence[AiRegression]
-    records_file: AiCOCOTabularRecordsFile
+    records: AiCOCOTabularRecordsArtifact
     meta: AiTableMeta
 
 

@@ -1,17 +1,23 @@
+import inspect
 import json
 import logging
 import pathlib
 import traceback
 from collections.abc import Iterable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 
 import aiofile
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from starlette.datastructures import UploadFile
+
+from ..inference.records_artifacts import (
+    RECORDS_ARTIFACT_MEDIA_TYPE,
+    TabularRecordsArtifactStore,
+)
 
 UPLOAD_COPY_CHUNK_SIZE_BYTES = 8 * 1024 * 1024
 
@@ -45,17 +51,85 @@ class InferInvocationAPP:
         infer_function: Callable,
         input_data_model: BaseModel,
         output_data_model: BaseModel,
+        records_output_dir: Optional[str] = None,
+        records_href_prefix: Optional[str] = None,
     ):
         self.app = FastAPI()
+        self.infer_function = infer_function
+        self.input_data_model = input_data_model
+        self.output_data_model = output_data_model
+        self.records_artifact_store: Optional[TabularRecordsArtifactStore] = None
+        if self.supports_records_artifacts():
+            self.records_artifact_store = TabularRecordsArtifactStore(
+                output_dir=records_output_dir, href_prefix=records_href_prefix
+            )
+
         self.app.add_api_route(
             "/invocations",
             self.invocations,
             methods=["post"],
         )
+        if self.records_artifact_store is not None:
+            self.app.add_api_route(
+                f"{self.records_artifact_store.href_prefix}/{{artifact_name}}",
+                self.records_artifact,
+                methods=["get"],
+            )
 
-        self.infer_function = infer_function
-        self.input_data_model = input_data_model
-        self.output_data_model = output_data_model
+    def supports_records_artifacts(self) -> bool:
+        output_fields = getattr(self.output_data_model, "model_fields", {})
+        return "records" in output_fields
+
+    async def records_artifact(self, artifact_name: str) -> FileResponse:
+        if self.records_artifact_store is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Records artifact not found.",
+            )
+
+        try:
+            artifact_path = self.records_artifact_store.resolve_path(artifact_name)
+        except ValueError as err:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Records artifact not found.",
+            ) from err
+
+        if not artifact_path.is_file():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Records artifact not found.",
+            )
+
+        return FileResponse(
+            artifact_path,
+            media_type=RECORDS_ARTIFACT_MEDIA_TYPE,
+            filename=artifact_name,
+        )
+
+    def add_records_artifact_context(self, input_dict: Dict) -> Dict:
+        if self.records_artifact_store is None:
+            return input_dict
+
+        try:
+            parameters = inspect.signature(self.infer_function).parameters
+        except (TypeError, ValueError):
+            return input_dict
+
+        accepts_kwargs = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in parameters.values()
+        )
+        if accepts_kwargs or "records_output_dir" in parameters:
+            input_dict.setdefault(
+                "records_output_dir", str(self.records_artifact_store.output_dir)
+            )
+        if accepts_kwargs or "records_href_prefix" in parameters:
+            input_dict.setdefault(
+                "records_href_prefix", self.records_artifact_store.href_prefix
+            )
+
+        return input_dict
 
     async def save_temp_files(self, input_dict: Dict, tempdir: TemporaryDirectory) -> Dict:
         """
@@ -128,6 +202,7 @@ class InferInvocationAPP:
             self.input_data_model.model_validate(input_dict)
 
             input_dict = await self.save_temp_files(input_dict, tempdir)
+            input_dict = self.add_records_artifact_context(input_dict)
             response = self.infer_function(**input_dict)
             response = self.output_data_model.model_validate(response)
 

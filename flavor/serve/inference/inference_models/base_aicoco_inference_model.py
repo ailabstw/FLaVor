@@ -1,3 +1,4 @@
+import inspect
 from abc import abstractmethod
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
@@ -435,6 +436,21 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         """
         raise NotImplementedError
 
+    def _filter_output_formatter_kwargs(self, formatter_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        try:
+            parameters = inspect.signature(self.output_formatter).parameters
+        except (TypeError, ValueError):
+            return formatter_kwargs
+
+        accepts_kwargs = any(
+            parameter.kind == inspect.Parameter.VAR_KEYWORD
+            for parameter in parameters.values()
+        )
+        if accepts_kwargs:
+            return formatter_kwargs
+
+        return {key: value for key, value in formatter_kwargs.items() if key in parameters}
+
     def __call__(
         self, tables: Dict[str, Any], meta: Dict[str, Any], files: Sequence[str], **kwargs
     ) -> Any:
@@ -442,6 +458,9 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         Run the inference model.
         """
         assert len(tables) == len(files), "`files` and `tables` should have same length."
+
+        records_output_dir = kwargs.pop("records_output_dir", None)
+        records_href_prefix = kwargs.pop("records_href_prefix", None)
 
         tables, files = self.sort_tables_files(tables, files)
         dataframes = self.data_reader(files, **kwargs)
@@ -451,14 +470,18 @@ class BaseAiCOCOTabularInferenceModel(BaseAiCOCOInferenceModel):
         out = self.inference(out)
         out = self.postprocess(out)
 
-        result = self.output_formatter(
-            out,
-            tables=tables,
-            meta=meta,
-            dataframes=dataframes,
-            categories=self.categories,
-            regressions=self.regressions,
+        formatter_kwargs = self._filter_output_formatter_kwargs(
+            {
+                "tables": tables,
+                "meta": meta,
+                "dataframes": dataframes,
+                "categories": self.categories,
+                "regressions": self.regressions,
+                "records_output_dir": records_output_dir,
+                "records_href_prefix": records_href_prefix,
+            }
         )
+        result = self.output_formatter(out, **formatter_kwargs)
 
         return result
 

@@ -1,117 +1,27 @@
-[tool.poetry]
+[project]
 name = "flavor"
-version = "2.2.0"
+version = "2.2.3"
 description = "AILabs Federated Learning and Validation Framework"
-authors = ["Stanley Huang <ding3820@gmail.com>", "Keng-Chi Liu <calvin89029@gmail.com>"]
+authors = [
+    { name = "Stanley Huang", email = "ding3820@gmail.com" },
+    { name = "Keng-Chi Liu", email = "calvin89029@gmail.com" },
+]
 readme = "README.md"
-exclude = ["examples*", "tests"]
+requires-python = ">=3.9"
+dependencies = [
+    "aiofile>=3.8.2,<4.0.0",
+    "fastapi>=0.100.0,<0.101.0",
+    "pydantic>=2.0.0,<3.0.0",
+    "uvicorn>=0.21.0,<0.22.0",
+    "nanoid>=2.0.0,<3.0.0",
+    "gradio>=4.0.0,<5.0.0",
+    "requests>=2.28.0,<3.0.0",
+    "opencv-python-headless>=4.5.3.56,<5.0.0",
+    "tritonclient[http]>=2.17.0,<=2.60.0",
+    "pandas",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-aiofile = "^3.8.2"
-fastapi = "^0.100.0"
-pydantic = "^2.0.0"
-uvicorn = "^0.21.0"
-nanoid = "^2.0.0"
-gradio = "^4.0.0"
-requests = "^2.28.0"
-opencv-python-headless = "^4.5.3.56"
-tritonclient = { version = ">=2.17.0, <=2.60.0", extras = ["http"] }
-pandas = "*"
-
-[tool.poetry.group.test]
-optional = true
-
-[tool.poetry.group.test.dependencies]
-pytest = "^8.2.0"
-pytest-asyncio = "^0.23.6"
-httpx = "^0.27.0"
-
-[tool.poetry.group.all_examples]
-optional = true
-
-[tool.poetry.group.all_examples.dependencies]
-simpleitk = "^2.3.1"
-scipy = "^1.9.2"
-torch = { version = "2.1.0+cu121", source = "torch-cu121" }
-lungmask = "^0.2.20"
-monai = {version = "~1.1.0", extras = ["einops"]}
-ultralytics = "^8.2.16"
-numpy = "<2.0.0"
-scikit-learn = "^1.5.1"
-seaborn = "^0.13.2"
-huggingface-hub = "^0.24.5"
-skops = "^0.10.0"
-quantile-forest = "^1.3.7"
-
-[tool.poetry.group.cls_example]
-optional = true
-
-[tool.poetry.group.cls_example.dependencies]
-torch = { version = "2.1.0+cu121", source = "torch-cu121" }
-numpy = "<2.0.0"
-
-[tool.poetry.group.det_example]
-optional = true
-
-[tool.poetry.group.det_example.dependencies]
-ultralytics = "^8.2.16"
-numpy = "<2.0.0"
-
-[tool.poetry.group.reg_example]
-optional = true
-
-[tool.poetry.group.reg_example.dependencies]
-torch = { version = "2.1.0+cu121", source = "torch-cu121" }
-numpy = "<2.0.0"
-
-[tool.poetry.group.seg_example]
-optional = true
-
-[tool.poetry.group.seg_example.dependencies]
-simpleitk = "^2.3.1"
-lungmask = "^0.2.20"
-numpy = "<2.0.0"
-
-[tool.poetry.group.seg3d_example]
-optional = true
-
-[tool.poetry.group.seg3d_example.dependencies]
-torch = { version = "2.1.0+cu121", source = "torch-cu121" }
-scipy = "^1.9.2"
-monai = {version = "~1.1.0", extras = ["einops"]}
-simpleitk = "^2.3.1"
-numpy = "<2.0.0"
-
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "^3.5.0"
-ipykernel = "^6.29.4"
-
-[tool.poetry.group.tabular_cls_example]
-optional = true
-
-[tool.poetry.group.tabular_cls_example.dependencies]
-scikit-learn = "^1.5.1"
-seaborn = "^0.13.2"
-huggingface-hub = "^0.24.5"
-
-[tool.poetry.group.tabular_reg_example]
-optional = true
-
-[tool.poetry.group.tabular_reg_example.dependencies]
-skops = "^0.10.0"
-quantile-forest = "^1.3.7"
-torch = { version = "2.1.0+cu121", source = "torch-cu121" }
-
-[[tool.poetry.source]]
-name = "torch-cu121"
-url = "https://download.pytorch.org/whl/cu121"
-priority = "explicit"
-
-[tool.poetry.scripts]
+[project.scripts]
 flavor-fl = "flavor.cli.flavor_fl:main"
 flavor-fv = "flavor.cli.flavor_fv:main"
 flavor-agg = "flavor.cli.flavor_agg:main"
@@ -119,6 +29,82 @@ check-fl = "flavor.cli.check_fl:main"
 check-fv = "flavor.cli.check_fv:main"
 check-agg = "flavor.cli.check_agg:main"
 
+[dependency-groups]
+dev = [
+    "pre-commit>=3.5.0,<4.0.0",
+    "ipykernel>=6.29.4,<7.0.0",
+]
+test = [
+    "pytest>=8.2.0,<9.0.0",
+    "pytest-asyncio>=0.23.6,<0.24.0",
+    "httpx>=0.27.0,<0.28.0",
+]
+all_examples = [
+    "simpleitk>=2.3.1,<3.0.0",
+    "scipy>=1.9.2,<2.0.0",
+    "torch==2.1.0+cu121",
+    "lungmask>=0.2.20,<0.3.0",
+    "monai[einops]>=1.1.0,<1.2.0",
+    "ultralytics>=8.2.16,<9.0.0",
+    "numpy<2.0.0",
+    "scikit-learn>=1.5.1,<2.0.0",
+    "seaborn>=0.13.2,<0.14.0",
+    "huggingface-hub>=0.24.5,<0.25.0",
+    "skops>=0.10.0,<0.11.0",
+    "quantile-forest>=1.3.7,<2.0.0",
+]
+cls_example = [
+    "torch==2.1.0+cu121",
+    "numpy<2.0.0",
+]
+det_example = [
+    "ultralytics>=8.2.16,<9.0.0",
+    "numpy<2.0.0",
+]
+reg_example = [
+    "torch==2.1.0+cu121",
+    "numpy<2.0.0",
+]
+seg_example = [
+    "simpleitk>=2.3.1,<3.0.0",
+    "lungmask>=0.2.20,<0.3.0",
+    "numpy<2.0.0",
+]
+seg3d_example = [
+    "torch==2.1.0+cu121",
+    "scipy>=1.9.2,<2.0.0",
+    "monai[einops]>=1.1.0,<1.2.0",
+    "simpleitk>=2.3.1,<3.0.0",
+    "numpy<2.0.0",
+]
+tabular_cls_example = [
+    "scikit-learn>=1.5.1,<2.0.0",
+    "seaborn>=0.13.2,<0.14.0",
+    "huggingface-hub>=0.24.5,<0.25.0",
+]
+tabular_reg_example = [
+    "skops>=0.10.0,<0.11.0",
+    "quantile-forest>=1.3.7,<2.0.0",
+    "torch==2.1.0+cu121",
+]
+
+[tool.uv]
+default-groups = []
+
+[[tool.uv.index]]
+name = "torch-cu121"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "torch-cu121" }
+
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["flavor"]
+
+[tool.hatch.build.targets.sdist]
+exclude = ["examples*", "tests"]

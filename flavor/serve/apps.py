@@ -39,6 +39,8 @@ class InferAPP(BaseAPP):
         infer_function: Callable,
         input_data_model: Optional[Type[BaseModel]] = None,
         output_data_model: Optional[Type[BaseModel]] = None,
+        records_output_dir: Optional[str] = None,
+        records_href_prefix: Optional[str] = None,
     ):
 
         super().__init__()
@@ -46,7 +48,13 @@ class InferAPP(BaseAPP):
         # Mount the InferInvocationAPP which handles model inference
         self.app.mount(
             path="",
-            app=InferInvocationAPP(infer_function, input_data_model, output_data_model).app,
+            app=InferInvocationAPP(
+                infer_function,
+                input_data_model,
+                output_data_model,
+                records_output_dir=records_output_dir,
+                records_href_prefix=records_href_prefix,
+            ).app,
         )
 
         # Add middleware to compress responses using gzip
