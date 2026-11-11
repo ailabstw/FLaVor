@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from starlette.datastructures import UploadFile
 
+from ..errors import OutOfMemoryError
 from ..inference.records_artifacts import (
     RECORDS_ARTIFACT_MEDIA_TYPE,
     TabularRecordsArtifactStore,
@@ -40,21 +41,24 @@ async def copy_upload_file(upload_file: UploadFile, destination: str) -> None:
 
 def is_cuda_out_of_memory(exc: BaseException) -> bool:
     """
-    Whether `exc`, or an exception it was raised from or while handling, is
-    `torch.cuda.OutOfMemoryError`. torch is not a FLaVor dependency, so it is looked up only if
-    the inference code has already imported it.
+    Whether `exc`, or any exception in its chain (`__cause__` and `__context__`, followed
+    transitively), is a GPU out-of-memory error: FLaVor's `OutOfMemoryError` (raised by the Triton
+    inference models, or by model code) or `torch.cuda.OutOfMemoryError`. torch is not a FLaVor
+    dependency, so it is looked up only if the inference code has already imported it.
     """
     torch = sys.modules.get("torch")
-    oom_error = getattr(getattr(torch, "cuda", None), "OutOfMemoryError", None)
-    if oom_error is None:
-        return False
+    torch_oom = getattr(getattr(torch, "cuda", None), "OutOfMemoryError", None)
+    oom_errors = (OutOfMemoryError,) + ((torch_oom,) if isinstance(torch_oom, type) else ())
 
-    seen = set()
-    while exc is not None and id(exc) not in seen:
-        if isinstance(exc, oom_error):
+    stack, seen = [exc], set()
+    while stack:
+        e = stack.pop()
+        if e is None or id(e) in seen:
+            continue
+        if isinstance(e, oom_errors):
             return True
-        seen.add(id(exc))
-        exc = exc.__cause__ or exc.__context__
+        seen.add(id(e))
+        stack += [e.__cause__, e.__context__]
     return False
 
 
@@ -220,8 +224,8 @@ class InferInvocationAPP:
 
         Returns:
             JSONResponse: The JSON response with the inference results (200) or the traceback:
-                500 with header `X-FLaVor-Error: CUDA_OUT_OF_MEMORY` for a CUDA out-of-memory
-                error, 400 for any other error.
+                500 with header `X-FLaVor-Error: CUDA_OUT_OF_MEMORY` for a GPU out-of-memory
+                error (see `is_cuda_out_of_memory`), 400 for any other error.
         """
         form_data = await request.form()
         tempdir: TemporaryDirectory = TemporaryDirectory()

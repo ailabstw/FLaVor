@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ConfigDict
 
+from flavor.serve.errors import OutOfMemoryError
 from flavor.serve.invocations.infer_invocation import (
     CUDA_OUT_OF_MEMORY,
     FLAVOR_ERROR_HEADER,
@@ -78,6 +79,33 @@ def test_successful_inference_is_unchanged(fake_torch):
 
     assert response.status_code == 200
     assert response.json() == {"ok": True}
+
+
+def test_flavor_out_of_memory_error_returns_500_without_torch(monkeypatch):
+    monkeypatch.setitem(sys.modules, "torch", None)
+
+    response = post_invocation(raise_(OutOfMemoryError("Triton ran out of memory")))
+
+    assert response.status_code == 500
+    assert response.headers[FLAVOR_ERROR_HEADER] == CUDA_OUT_OF_MEMORY
+
+
+def test_out_of_memory_in_context_behind_an_explicit_cause_is_detected(fake_torch):
+    # raise X from Y inside `except OOM:`: the OOM is only in X.__context__, Y is X.__cause__
+    try:
+        try:
+            raise FakeOutOfMemoryError("CUDA out of memory")
+        except FakeOutOfMemoryError:
+            raise ValueError("postprocess failed") from KeyError("missing key")
+    except ValueError as err:
+        assert is_cuda_out_of_memory(err)
+
+
+def test_cyclic_exception_chain_terminates(fake_torch):
+    a, b = ValueError("a"), KeyError("b")
+    a.__context__, b.__context__ = b, a
+
+    assert not is_cuda_out_of_memory(a)
 
 
 def test_runtime_error_mentioning_memory_is_not_out_of_memory(fake_torch):

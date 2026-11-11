@@ -1,11 +1,23 @@
 import ctypes
 import logging
+import re
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 import tritonclient  # type: ignore
 import tritonclient.http  # type: ignore
 import tritonclient.utils.shared_memory as shm  # type: ignore
+from tritonclient.utils import InferenceServerException  # type: ignore
+
+from ...errors import OutOfMemoryError
+
+# How Triton backends word a GPU out-of-memory error: PyTorch ("CUDA out of memory"), ONNX Runtime
+# ("CUDA failure 2: out of memory", "Failed to allocate memory"), cuDNN / cuBLAS allocation failures.
+TRITON_OUT_OF_MEMORY = re.compile(
+    r"out of memory|outofmemory|failed to allocate memory|CUDNN_STATUS_ALLOC_FAILED"
+    r"|CUBLAS_STATUS_ALLOC_FAILED",
+    re.IGNORECASE,
+)
 
 
 class BaseTritonClient:
@@ -226,6 +238,19 @@ class TritonInferenceModel(BaseTritonClient):
 
         return result
 
+    def _infer(self, **kwargs) -> tritonclient.http.InferResult:
+        """
+        `self.client.infer(**kwargs)`, but a GPU out-of-memory error reported by the server is
+        raised as FLaVor's `OutOfMemoryError` (from the original error), so `InferAPP` can report
+        it as such.
+        """
+        try:
+            return self.client.infer(**kwargs)
+        except InferenceServerException as err:
+            if TRITON_OUT_OF_MEMORY.search(str(err)):
+                raise OutOfMemoryError(f"Triton inference server ran out of memory: {err}") from err
+            raise
+
     def forward(self, data_dict: Dict[str, np.ndarray], *args, **kwargs) -> Dict[str, np.ndarray]:
         """
         inference steps for triton inference server, including:
@@ -238,7 +263,7 @@ class TritonInferenceModel(BaseTritonClient):
                 dictionary with network input data
         """
         infer_inputs = self.set_input_data(data_dict)
-        infer_results = self.client.infer(
+        infer_results = self._infer(
             model_name=self.model_name,
             inputs=infer_inputs,
             model_version=self.model_version,
@@ -441,7 +466,7 @@ class TritonInferenceModelSharedSystemMemory(TritonInferenceModel):
         infer_inputs = self.set_input_data(data_dict)
         infer_outputs = self.set_output_data(output_shapes)
 
-        infer_results = self.client.infer(
+        infer_results = self._infer(
             model_name=self.model_name,
             inputs=infer_inputs,
             outputs=infer_outputs,
