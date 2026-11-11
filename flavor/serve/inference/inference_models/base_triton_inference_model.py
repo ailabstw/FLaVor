@@ -13,11 +13,21 @@ from ...errors import OutOfMemoryError
 
 # How Triton backends word a GPU out-of-memory error: PyTorch ("CUDA out of memory"), ONNX Runtime
 # ("CUDA failure 2: out of memory", "Failed to allocate memory"), cuDNN / cuBLAS allocation failures.
+# The generic wordings are also used for host memory (ONNX Runtime's CPU arena says "Failed to
+# allocate memory for requested buffer ..."), so they count only when the message names the GPU.
 TRITON_OUT_OF_MEMORY = re.compile(
-    r"out of memory|outofmemory|failed to allocate memory|CUDNN_STATUS_ALLOC_FAILED"
-    r"|CUBLAS_STATUS_ALLOC_FAILED",
-    re.IGNORECASE,
+    r"out of memory|outofmemory|failed to allocate memory", re.IGNORECASE
 )
+TRITON_GPU = re.compile(r"cuda|gpu", re.IGNORECASE)
+TRITON_GPU_ALLOC_FAILED = re.compile(r"CUDNN_STATUS_ALLOC_FAILED|CUBLAS_STATUS_ALLOC_FAILED")
+
+
+def is_triton_gpu_out_of_memory(message: str) -> bool:
+    """Whether a Triton server error message reports running out of GPU memory."""
+    return bool(
+        TRITON_GPU_ALLOC_FAILED.search(message)
+        or (TRITON_OUT_OF_MEMORY.search(message) and TRITON_GPU.search(message))
+    )
 
 
 class BaseTritonClient:
@@ -247,7 +257,7 @@ class TritonInferenceModel(BaseTritonClient):
         try:
             return self.client.infer(**kwargs)
         except InferenceServerException as err:
-            if TRITON_OUT_OF_MEMORY.search(str(err)):
+            if is_triton_gpu_out_of_memory(str(err)):
                 raise OutOfMemoryError(f"Triton inference server ran out of memory: {err}") from err
             raise
 
