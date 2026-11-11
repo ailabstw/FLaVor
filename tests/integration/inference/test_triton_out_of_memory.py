@@ -27,7 +27,13 @@ def model_with(err):
     [
         "PyTorch execute failure: CUDA out of memory. Tried to allocate 2.00 GiB",
         "onnx runtime error 6: CUDA failure 2: out of memory",
-        "onnx runtime error 6: CUDA error: Failed to allocate memory for requested buffer of size 1024",
+        # ONNX Runtime's memory arena (CUDA provider, real messages): no mention of the device
+        "onnx runtime error 1: [ONNXRuntimeError] : 1 : FAIL : /onnxruntime_src/onnxruntime/core/"
+        "framework/bfc_arena.cc:360 void* onnxruntime::BFCArena::AllocateRawInternal(size_t, bool, "
+        "onnxruntime::Stream*) Failed to allocate memory for requested buffer of size 8464000000",
+        "onnx runtime error 1: [ONNXRuntimeError] : 1 : FAIL : /onnxruntime_src/onnxruntime/core/"
+        "framework/bfc_arena.cc:360 void* onnxruntime::BFCArena::AllocateRawInternal(size_t, bool, "
+        "onnxruntime::Stream*) Available memory of 67108864 is smaller than requested bytes of 268435456",
         "CUDNN_STATUS_ALLOC_FAILED",
     ],
 )
@@ -40,16 +46,8 @@ def test_triton_out_of_memory_becomes_flavor_out_of_memory_error(message):
     assert info.value.__cause__ is err
 
 
-@pytest.mark.parametrize(
-    "message",
-    [
-        "unexpected shape for input 'images'",
-        # ONNX Runtime's CPU arena: host memory, not GPU memory
-        "onnx runtime error 6: Failed to allocate memory for requested buffer of size 1024",
-    ],
-)
-def test_other_triton_errors_are_raised_unchanged(message):
-    err = InferenceServerException(msg=message, status="400")
+def test_other_triton_errors_are_raised_unchanged():
+    err = InferenceServerException(msg="unexpected shape for input 'images'", status="400")
 
     with pytest.raises(InferenceServerException) as info:
         model_with(err).forward({})

@@ -1,6 +1,6 @@
 class OutOfMemoryError(RuntimeError):
     """
-    Inference ran out of GPU memory.
+    Inference ran out of memory, as a rule GPU memory.
 
     `InferAPP` answers HTTP 500 with the header `X-FLaVor-Error: CUDA_OUT_OF_MEMORY` for this
     error, as it does for `torch.cuda.OutOfMemoryError`. Raise it (or raise another error from it)

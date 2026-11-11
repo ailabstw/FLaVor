@@ -35,7 +35,7 @@ By sending a POST request to the `/invocations` endpoint of `InferAPP`, it will 
 
 - **Responses**:
   - `200`: the result, in the format of the output data model.
-  - `500` with header `X-FLaVor-Error: CUDA_OUT_OF_MEMORY`: the GPU ran out of memory during inference. The body is the traceback. Detected when the error, or any error in its chain, is PyTorch's `torch.cuda.OutOfMemoryError` (in-process models) or FLaVor's `flavor.serve.errors.OutOfMemoryError`. The Triton inference models raise the latter when the Triton server reports running out of GPU memory; other code can raise it too, e.g. for another framework's out-of-memory error.
+  - `500` with header `X-FLaVor-Error: CUDA_OUT_OF_MEMORY`: the inference ran out of memory, as a rule GPU memory. The body is the traceback. Detected when the error, or any error in its chain, is PyTorch's `torch.cuda.OutOfMemoryError` (in-process models) or FLaVor's `flavor.serve.errors.OutOfMemoryError`. The Triton inference models raise the latter when the Triton server reports running out of memory; ONNX Runtime's wording there does not say whether GPU or host memory ran out, so a host-memory failure of a Triton ONNX model gets this header too. Other code can raise it as well, e.g. for another framework's out-of-memory error.
   - `400`: any other error. The body is the traceback.
 
 **Example**:
