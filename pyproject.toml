@@ -1,6 +1,6 @@
 [project]
 name = "flavor"
-version = "2.2.3"
+version = "2.2.4"
 description = "AILabs Federated Learning and Validation Framework"
 authors = [
     { name = "Stanley Huang", email = "ding3820@gmail.com" },

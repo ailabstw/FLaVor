@@ -33,6 +33,11 @@ By sending a POST request to the `/invocations` endpoint of `InferAPP`, it will 
     - `data`: A JSON file with an `images` field in AiCOCO format, referencing the input image.
     - `metadata` (optional): Any additional information related to the files.
 
+- **Responses**:
+  - `200`: the result, in the format of the output data model.
+  - `500` with header `X-FLaVor-Error: CUDA_OUT_OF_MEMORY`: the GPU ran out of memory during inference (PyTorch `torch.cuda.OutOfMemoryError`). The body is the traceback.
+  - `400`: any other error. The body is the traceback.
+
 **Example**:
 
 ```python
