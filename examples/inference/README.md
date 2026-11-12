@@ -159,5 +159,5 @@ We try to integrate FLaVor with other existing projects or libraries. Please vis
 - [AiCOCO tabular format specification](./docs/AiCOCO_tabular_spec.md)
 - [Standard input and output structure (image)](./docs/input_output_structure(image).md)
 - [Standard input and output structure (tabular)](./docs/input_output_structure(tabular).md)
-- [Visualization of inference output with Gradio](./gradio_example.ipynb)
+- [Visualization of inference output with Gradio](./gradio_example.ipynb) (needs the `gradio` extra: `pip install 'flavor[gradio]'`)
 - [Segment Anything Model (SAM) with Triton Inference Server](./triton_example.ipynb)

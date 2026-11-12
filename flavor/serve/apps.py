@@ -1,7 +1,6 @@
 import traceback
 from typing import Callable, Optional, Sequence, Type
 
-import gradio as gr
 import uvicorn
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.gzip import GZipMiddleware
@@ -96,6 +95,10 @@ class GradioInferAPP:
         return response
 
     def run(self, port=9111, **kwargs):
+        try:
+            import gradio as gr
+        except ImportError as err:
+            raise ImportError("GradioInferAPP needs gradio: pip install 'flavor[gradio]'") from err
 
         iface = gr.Interface(
             fn=self.invocations,
