@@ -2,6 +2,7 @@ import inspect
 import json
 import logging
 import pathlib
+import sys
 import traceback
 from collections.abc import Iterable
 from tempfile import NamedTemporaryFile, TemporaryDirectory
@@ -14,12 +15,19 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from starlette.datastructures import UploadFile
 
+from ..errors import OutOfMemoryError
 from ..inference.records_artifacts import (
     RECORDS_ARTIFACT_MEDIA_TYPE,
     TabularRecordsArtifactStore,
 )
 
 UPLOAD_COPY_CHUNK_SIZE_BYTES = 8 * 1024 * 1024
+
+# A CUDA out-of-memory error during inference is answered with HTTP 500 and this header, so the
+# caller can tell "not enough GPU memory" from other failures without parsing the traceback.
+# Every other error is HTTP 400. The header name and value are a contract: do not change them.
+FLAVOR_ERROR_HEADER = "X-FLaVor-Error"
+CUDA_OUT_OF_MEMORY = "CUDA_OUT_OF_MEMORY"
 
 
 async def copy_upload_file(upload_file: UploadFile, destination: str) -> None:
@@ -29,6 +37,29 @@ async def copy_upload_file(upload_file: UploadFile, destination: str) -> None:
             if not chunk:
                 break
             await f.write(chunk)
+
+
+def is_cuda_out_of_memory(exc: BaseException) -> bool:
+    """
+    Whether `exc`, or any exception in its chain (`__cause__` and `__context__`, followed
+    transitively), is a GPU out-of-memory error: FLaVor's `OutOfMemoryError` (raised by the Triton
+    inference models, or by model code) or `torch.cuda.OutOfMemoryError`. torch is not a FLaVor
+    dependency, so it is looked up only if the inference code has already imported it.
+    """
+    torch = sys.modules.get("torch")
+    torch_oom = getattr(getattr(torch, "cuda", None), "OutOfMemoryError", None)
+    oom_errors = (OutOfMemoryError,) + ((torch_oom,) if isinstance(torch_oom, type) else ())
+
+    stack, seen = [exc], set()
+    while stack:
+        e = stack.pop()
+        if e is None or id(e) in seen:
+            continue
+        if isinstance(e, oom_errors):
+            return True
+        seen.add(id(e))
+        stack += [e.__cause__, e.__context__]
+    return False
 
 
 class InferInvocationAPP:
@@ -192,7 +223,9 @@ class InferInvocationAPP:
             request (Request): The FastAPI request object.
 
         Returns:
-            JSONResponse: The JSON response with the inference results or error message.
+            JSONResponse: The JSON response with the inference results (200) or the traceback:
+                500 with header `X-FLaVor-Error: CUDA_OUT_OF_MEMORY` for a GPU out-of-memory
+                error (see `is_cuda_out_of_memory`), 400 for any other error.
         """
         form_data = await request.form()
         tempdir: TemporaryDirectory = TemporaryDirectory()
@@ -206,9 +239,15 @@ class InferInvocationAPP:
             response = self.infer_function(**input_dict)
             response = self.output_data_model.model_validate(response)
 
-        except Exception:
+        except Exception as err:
             err_msg = traceback.format_exc()
             logging.error(err_msg)
+            if is_cuda_out_of_memory(err):
+                return JSONResponse(
+                    content=err_msg,
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    headers={FLAVOR_ERROR_HEADER: CUDA_OUT_OF_MEMORY},
+                )
             return JSONResponse(content=err_msg, status_code=status.HTTP_400_BAD_REQUEST)
 
         finally:
